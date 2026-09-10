@@ -39,6 +39,7 @@ export interface Database {
           is_active?: boolean;
         };
         Update: Partial<Database["public"]["Tables"]["teams"]["Insert"]>;
+        Relationships: [];
       };
       players: {
         Row: {
@@ -75,6 +76,7 @@ export interface Database {
           is_active?: boolean;
         };
         Update: Partial<Database["public"]["Tables"]["players"]["Insert"]>;
+        Relationships: [];
       };
       player_team_history: {
         Row: {
@@ -100,6 +102,7 @@ export interface Database {
         Update: Partial<
           Database["public"]["Tables"]["player_team_history"]["Insert"]
         >;
+        Relationships: [];
       };
       player_stats: {
         Row: {
@@ -159,6 +162,7 @@ export interface Database {
         Update: Partial<
           Database["public"]["Tables"]["player_stats"]["Insert"]
         >;
+        Relationships: [];
       };
       team_stats: {
         Row: {
@@ -214,7 +218,10 @@ export interface Database {
           personal_fouls?: number;
         };
         Update: Partial<Database["public"]["Tables"]["team_stats"]["Insert"]>;
+        Relationships: [];
       };
     };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
   };
 }
