@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 
 export interface ContractRow {
   id: string;
@@ -24,25 +24,61 @@ type SortKey =
   | "isTeamOption"
   | "isGuaranteed";
 
-const COLUMNS: { key: SortKey; label: string }[] = [
-  { key: "playerName", label: "選手名" },
-  { key: "teamLabel", label: "チーム" },
-  { key: "season", label: "シーズン" },
-  { key: "salary", label: "年俸" },
-  { key: "contractType", label: "契約種別" },
-  { key: "isPlayerOption", label: "POオプション" },
-  { key: "isTeamOption", label: "TOオプション" },
-  { key: "isGuaranteed", label: "保証" },
+function formatSalary(salary: number): string {
+  return `$${salary.toLocaleString("en-US")}`;
+}
+
+// 選手名の次に年俸（本サイトの目玉情報）を並べ、モバイル幅でも先に見えるようにする。
+const COLUMNS: {
+  key: SortKey;
+  label: string;
+  render: (row: ContractRow) => ReactNode;
+  cellClassName?: string;
+}[] = [
+  {
+    key: "playerName",
+    label: "選手名",
+    render: (row) => row.playerName,
+    cellClassName: "font-medium",
+  },
+  {
+    key: "salary",
+    label: "年俸",
+    render: (row) => formatSalary(row.salary),
+  },
+  {
+    key: "teamLabel",
+    label: "チーム",
+    render: (row) => row.teamLabel,
+    cellClassName: "text-zinc-600 dark:text-zinc-400",
+  },
+  { key: "season", label: "シーズン", render: (row) => row.season },
+  {
+    key: "contractType",
+    label: "契約種別",
+    render: (row) => row.contractType ?? "-",
+  },
+  {
+    key: "isPlayerOption",
+    label: "POオプション",
+    render: (row) => (row.isPlayerOption ? "あり" : "なし"),
+  },
+  {
+    key: "isTeamOption",
+    label: "TOオプション",
+    render: (row) => (row.isTeamOption ? "あり" : "なし"),
+  },
+  {
+    key: "isGuaranteed",
+    label: "保証",
+    render: (row) => (row.isGuaranteed ? "あり" : "なし"),
+  },
 ];
 
 function sortValue(row: ContractRow, key: SortKey): string | number {
   const value = row[key];
   if (typeof value === "boolean") return value ? 1 : 0;
   return value ?? "";
-}
-
-function formatSalary(salary: number): string {
-  return `$${salary.toLocaleString("en-US")}`;
 }
 
 export function ContractsTable({ rows }: { rows: ContractRow[] }) {
@@ -77,69 +113,60 @@ export function ContractsTable({ rows }: { rows: ContractRow[] }) {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[720px] border-collapse text-sm">
-        <thead>
-          <tr className="border-b border-black/[.08] dark:border-white/[.145]">
-            {COLUMNS.map((col) => (
-              <th
-                key={col.key}
-                onClick={() => handleSort(col.key)}
-                className="cursor-pointer select-none whitespace-nowrap px-3 py-2 text-left font-medium text-zinc-600 hover:text-foreground dark:text-zinc-400"
-              >
-                {col.label}
-                {sortKey === col.key
-                  ? sortDirection === "asc"
-                    ? " ▲"
-                    : " ▼"
-                  : ""}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {sortedRows.length === 0 ? (
-            <tr>
-              <td
-                colSpan={COLUMNS.length}
-                className="px-3 py-6 text-center text-sm text-zinc-500 dark:text-zinc-400"
-              >
-                契約データがありません。
-              </td>
+    <div>
+      <p className="mb-2 text-xs text-zinc-500 sm:hidden dark:text-zinc-400">
+        → 横にスクロールできます
+      </p>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[720px] border-collapse text-sm">
+          <thead>
+            <tr className="border-b border-black/[.08] dark:border-white/[.145]">
+              {COLUMNS.map((col) => (
+                <th
+                  key={col.key}
+                  onClick={() => handleSort(col.key)}
+                  className="cursor-pointer select-none whitespace-nowrap px-3 py-2 text-left font-medium text-zinc-600 hover:text-foreground dark:text-zinc-400"
+                >
+                  {col.label}
+                  {sortKey === col.key
+                    ? sortDirection === "asc"
+                      ? " ▲"
+                      : " ▼"
+                    : ""}
+                </th>
+              ))}
             </tr>
-          ) : (
-            sortedRows.map((row) => (
-              <tr
-                key={row.id}
-                className="border-b border-black/[.05] dark:border-white/[.08]"
-              >
-                <td className="whitespace-nowrap px-3 py-2 font-medium">
-                  {row.playerName}
-                </td>
-                <td className="whitespace-nowrap px-3 py-2 text-zinc-600 dark:text-zinc-400">
-                  {row.teamLabel}
-                </td>
-                <td className="whitespace-nowrap px-3 py-2">{row.season}</td>
-                <td className="whitespace-nowrap px-3 py-2">
-                  {formatSalary(row.salary)}
-                </td>
-                <td className="whitespace-nowrap px-3 py-2">
-                  {row.contractType ?? "-"}
-                </td>
-                <td className="whitespace-nowrap px-3 py-2">
-                  {row.isPlayerOption ? "あり" : "なし"}
-                </td>
-                <td className="whitespace-nowrap px-3 py-2">
-                  {row.isTeamOption ? "あり" : "なし"}
-                </td>
-                <td className="whitespace-nowrap px-3 py-2">
-                  {row.isGuaranteed ? "あり" : "なし"}
+          </thead>
+          <tbody>
+            {sortedRows.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={COLUMNS.length}
+                  className="px-3 py-6 text-center text-sm text-zinc-500 dark:text-zinc-400"
+                >
+                  契約データがありません。
                 </td>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+            ) : (
+              sortedRows.map((row) => (
+                <tr
+                  key={row.id}
+                  className="border-b border-black/[.05] dark:border-white/[.08]"
+                >
+                  {COLUMNS.map((col) => (
+                    <td
+                      key={col.key}
+                      className={`whitespace-nowrap px-3 py-2 ${col.cellClassName ?? ""}`}
+                    >
+                      {col.render(row)}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

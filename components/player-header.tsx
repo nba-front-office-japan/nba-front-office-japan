@@ -26,7 +26,10 @@ export function PlayerHeader({
         {currentTeam ? (
           <>
             {" ・ "}
-            <Link href={`/teams/${currentTeam.id}`} className="underline">
+            <Link
+              href={`/teams/${currentTeam.id}`}
+              className="text-accent underline"
+            >
               {currentTeam.name}
             </Link>
           </>

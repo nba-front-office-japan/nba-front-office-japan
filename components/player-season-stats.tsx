@@ -34,7 +34,7 @@ export function PlayerSeasonStats({ rows }: { rows: PlayerStatRow[] }) {
             onClick={() => setSeasonType(type)}
             className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
               seasonType === type
-                ? "bg-foreground text-background"
+                ? "bg-accent text-white"
                 : "border border-black/[.08] text-zinc-600 dark:border-white/[.145] dark:text-zinc-400"
             }`}
           >
@@ -42,6 +42,10 @@ export function PlayerSeasonStats({ rows }: { rows: PlayerStatRow[] }) {
           </button>
         ))}
       </div>
+
+      <p className="mb-2 text-xs text-zinc-500 sm:hidden dark:text-zinc-400">
+        → 横にスクロールできます
+      </p>
 
       <div className="overflow-x-auto">
         <table className="w-full min-w-[560px] border-collapse text-sm">

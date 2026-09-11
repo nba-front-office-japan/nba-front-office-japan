@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import type { Database } from "@/lib/supabase/types";
 import { deriveStats, formatStat } from "@/lib/stats";
 
@@ -43,16 +43,40 @@ type SortKey =
   | "threePct"
   | "tsPct";
 
-const COLUMNS: { key: SortKey; label: string }[] = [
-  { key: "playerName", label: "選手名" },
-  { key: "teamLabel", label: "チーム" },
-  { key: "gamesPlayed", label: "試合数" },
-  { key: "ppg", label: "PPG" },
-  { key: "rpg", label: "RPG" },
-  { key: "apg", label: "APG" },
-  { key: "fgPct", label: "FG%" },
-  { key: "threePct", label: "3P%" },
-  { key: "tsPct", label: "TS%" },
+// 選手名の次に主要スタッツ(PPG等)を並べ、モバイル幅でも先に見えるようにする。
+const COLUMNS: {
+  key: SortKey;
+  label: string;
+  render: (row: DerivedRow) => ReactNode;
+  cellClassName?: string;
+}[] = [
+  {
+    key: "playerName",
+    label: "選手名",
+    render: (row) => row.playerName,
+    cellClassName: "font-medium",
+  },
+  { key: "ppg", label: "PPG", render: (row) => formatStat(row.ppg) },
+  { key: "rpg", label: "RPG", render: (row) => formatStat(row.rpg) },
+  { key: "apg", label: "APG", render: (row) => formatStat(row.apg) },
+  {
+    key: "teamLabel",
+    label: "チーム",
+    render: (row) => row.teamLabel,
+    cellClassName: "text-zinc-600 dark:text-zinc-400",
+  },
+  {
+    key: "gamesPlayed",
+    label: "試合数",
+    render: (row) => row.gamesPlayed,
+  },
+  { key: "fgPct", label: "FG%", render: (row) => formatStat(row.fgPct) },
+  {
+    key: "threePct",
+    label: "3P%",
+    render: (row) => formatStat(row.threePct),
+  },
+  { key: "tsPct", label: "TS%", render: (row) => formatStat(row.tsPct) },
 ];
 
 function deriveRow(row: StatRow): DerivedRow {
@@ -105,7 +129,7 @@ export function StatsTable({ rows }: { rows: StatRow[] }) {
             onClick={() => setSeasonType(type)}
             className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
               seasonType === type
-                ? "bg-foreground text-background"
+                ? "bg-accent text-white"
                 : "border border-black/[.08] text-zinc-600 dark:border-white/[.145] dark:text-zinc-400"
             }`}
           >
@@ -113,6 +137,10 @@ export function StatsTable({ rows }: { rows: StatRow[] }) {
           </button>
         ))}
       </div>
+
+      <p className="mb-2 text-xs text-zinc-500 sm:hidden dark:text-zinc-400">
+        → 横にスクロールできます
+      </p>
 
       <div className="overflow-x-auto">
         <table className="w-full min-w-[640px] border-collapse text-sm">
@@ -150,33 +178,14 @@ export function StatsTable({ rows }: { rows: StatRow[] }) {
                   key={row.id}
                   className="border-b border-black/[.05] dark:border-white/[.08]"
                 >
-                  <td className="whitespace-nowrap px-3 py-2 font-medium">
-                    {row.playerName}
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-2 text-zinc-600 dark:text-zinc-400">
-                    {row.teamLabel}
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-2">
-                    {row.gamesPlayed}
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-2">
-                    {formatStat(row.ppg)}
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-2">
-                    {formatStat(row.rpg)}
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-2">
-                    {formatStat(row.apg)}
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-2">
-                    {formatStat(row.fgPct)}
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-2">
-                    {formatStat(row.threePct)}
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-2">
-                    {formatStat(row.tsPct)}
-                  </td>
+                  {COLUMNS.map((col) => (
+                    <td
+                      key={col.key}
+                      className={`whitespace-nowrap px-3 py-2 ${col.cellClassName ?? ""}`}
+                    >
+                      {col.render(row)}
+                    </td>
+                  ))}
                 </tr>
               ))
             )}
