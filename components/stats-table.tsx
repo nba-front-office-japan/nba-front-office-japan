@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { Database } from "@/lib/supabase/types";
+import { deriveStats, formatStat } from "@/lib/stats";
 
 type SeasonType =
   Database["public"]["Tables"]["player_stats"]["Row"]["season_type"];
@@ -54,37 +55,8 @@ const COLUMNS: { key: SortKey; label: string }[] = [
   { key: "tsPct", label: "TS%" },
 ];
 
-function divide(numerator: number, denominator: number): number | null {
-  if (!denominator) return null;
-  return numerator / denominator;
-}
-
 function deriveRow(row: StatRow): DerivedRow {
-  const ppg = divide(row.points, row.gamesPlayed);
-  const rpg = divide(row.reboundsTotal, row.gamesPlayed);
-  const apg = divide(row.assists, row.gamesPlayed);
-  const fgPct = divide(row.fieldGoalsMade, row.fieldGoalsAttempted);
-  const threePct = divide(
-    row.threePointersMade,
-    row.threePointersAttempted
-  );
-  const tsDenominator =
-    2 * (row.fieldGoalsAttempted + 0.44 * row.freeThrowsAttempted);
-  const tsPct = divide(row.points, tsDenominator);
-
-  return {
-    ...row,
-    ppg,
-    rpg,
-    apg,
-    fgPct: fgPct !== null ? fgPct * 100 : null,
-    threePct: threePct !== null ? threePct * 100 : null,
-    tsPct: tsPct !== null ? tsPct * 100 : null,
-  };
-}
-
-function formatNumber(value: number | null, digits = 1): string {
-  return value === null ? "-" : value.toFixed(digits);
+  return { ...row, ...deriveStats(row) };
 }
 
 export function StatsTable({ rows }: { rows: StatRow[] }) {
@@ -188,22 +160,22 @@ export function StatsTable({ rows }: { rows: StatRow[] }) {
                     {row.gamesPlayed}
                   </td>
                   <td className="whitespace-nowrap px-3 py-2">
-                    {formatNumber(row.ppg)}
+                    {formatStat(row.ppg)}
                   </td>
                   <td className="whitespace-nowrap px-3 py-2">
-                    {formatNumber(row.rpg)}
+                    {formatStat(row.rpg)}
                   </td>
                   <td className="whitespace-nowrap px-3 py-2">
-                    {formatNumber(row.apg)}
+                    {formatStat(row.apg)}
                   </td>
                   <td className="whitespace-nowrap px-3 py-2">
-                    {formatNumber(row.fgPct)}
+                    {formatStat(row.fgPct)}
                   </td>
                   <td className="whitespace-nowrap px-3 py-2">
-                    {formatNumber(row.threePct)}
+                    {formatStat(row.threePct)}
                   </td>
                   <td className="whitespace-nowrap px-3 py-2">
-                    {formatNumber(row.tsPct)}
+                    {formatStat(row.tsPct)}
                   </td>
                 </tr>
               ))
