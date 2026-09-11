@@ -24,3 +24,8 @@
 - Phase 1完了後にPhase 2へ進む
 - 各Phase完了時にGitHubへcommit・push
 - 不明点は実装前に質問する
+
+## 自動化ルール
+- コンポーネント構成の確認後、OKが出たら実装・ビルド確認・push・vercel --prodまで一気に進めてよい
+- 毎回の確認は不要。問題が発生した時だけ報告して止める
+- pushとvercel --prodは常にセットで実行する
