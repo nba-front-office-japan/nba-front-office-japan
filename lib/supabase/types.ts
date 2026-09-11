@@ -220,6 +220,36 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["team_stats"]["Insert"]>;
         Relationships: [];
       };
+      contracts: {
+        Row: {
+          id: string;
+          player_id: string;
+          team_id: string;
+          season: number;
+          salary: number;
+          contract_type: string | null;
+          is_player_option: boolean;
+          is_team_option: boolean;
+          is_guaranteed: boolean;
+          signed_date: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          player_id: string;
+          team_id: string;
+          season: number;
+          salary: number;
+          contract_type?: string | null;
+          is_player_option?: boolean;
+          is_team_option?: boolean;
+          is_guaranteed?: boolean;
+          signed_date?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["contracts"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
