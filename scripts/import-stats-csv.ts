@@ -10,6 +10,10 @@
 // 重要: Excelで保存する際は必ず「CSV UTF-8（コンマ区切り）」形式を選んでください。
 // 通常の「CSV（コンマ区切り）」だとShift-JISで保存され、日本語列（シーズン種別等）が
 // 文字化けして読み込めません。
+//
+// 選手名の照合は、まず完全一致を試み、見つからなければ発音区別符号（例: Porziņģis の
+// ņ ģ 等）を取り除いた正規化名でも照合する（当サイトのplayersテーブルはASCII表記の
+// ことが多いため）。
 
 import { loadEnvConfig } from "@next/env";
 loadEnvConfig(process.cwd());
@@ -37,6 +41,7 @@ type SeasonType = "regular_season" | "playoffs";
 
 const SEASON_TYPE_LABELS: Record<string, SeasonType> = {
   レギュラーシーズン: "regular_season",
+  レギュラー: "regular_season",
   プレーオフ: "playoffs",
   regular_season: "regular_season",
   playoffs: "playoffs",
@@ -97,6 +102,63 @@ function normalizeTeamAbbr(abbr: string): string {
   return TEAM_ABBR_ALIASES[upper] ?? upper;
 }
 
+function normalizeName(name: string): string {
+  return name
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+interface PlayerRef {
+  id: string;
+  full_name: string;
+}
+
+async function fetchAllPlayers(
+  supabase: ReturnType<typeof createAdminSupabaseClient>
+): Promise<PlayerRef[]> {
+  const PAGE_SIZE = 1000;
+  const all: PlayerRef[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from("players")
+      .select("id, full_name")
+      .range(from, from + PAGE_SIZE - 1);
+    if (error) throw new Error(`players取得に失敗しました: ${error.message}`);
+    all.push(...(data ?? []));
+    if (!data || data.length < PAGE_SIZE) break;
+  }
+  return all;
+}
+
+function resolvePlayerId(
+  playerName: string,
+  exactMap: Map<string, string[]>,
+  normalizedMap: Map<string, string[]>
+): { id: string | null; note: string | null } {
+  const exact = exactMap.get(playerName);
+  if (exact && exact.length === 1) {
+    return { id: exact[0], note: null };
+  }
+  if (exact && exact.length > 1) {
+    return { id: null, note: `同姓同名が${exact.length}件見つかりました（完全一致）` };
+  }
+
+  const normalized = normalizedMap.get(normalizeName(playerName));
+  if (normalized && normalized.length === 1) {
+    return { id: normalized[0], note: "発音区別符号を無視して一致" };
+  }
+  if (normalized && normalized.length > 1) {
+    return {
+      id: null,
+      note: `同姓同名が${normalized.length}件見つかりました（正規化一致）`,
+    };
+  }
+
+  return { id: null, note: null };
+}
+
 async function main() {
   const csvPath = process.argv[2];
   if (!csvPath) {
@@ -120,6 +182,22 @@ async function main() {
   const teamIdByAbbr = new Map(
     (teams ?? []).map((t) => [t.abbreviation, t.id])
   );
+
+  console.log("players一覧を取得中...");
+  const players = await fetchAllPlayers(supabase);
+  const exactMap = new Map<string, string[]>();
+  const normalizedMap = new Map<string, string[]>();
+  for (const p of players) {
+    const exactList = exactMap.get(p.full_name) ?? [];
+    exactList.push(p.id);
+    exactMap.set(p.full_name, exactList);
+
+    const key = normalizeName(p.full_name);
+    const normList = normalizedMap.get(key) ?? [];
+    normList.push(p.id);
+    normalizedMap.set(key, normList);
+  }
+  console.log(`players ${players.length}件を読み込みました\n`);
 
   let inserted = 0;
   let updated = 0;
@@ -159,31 +237,22 @@ async function main() {
       continue;
     }
 
-    const { data: matchedPlayers, error: playerError } = await supabase
-      .from("players")
-      .select("id")
-      .eq("full_name", playerName);
-
-    if (playerError) {
-      console.error(`[行${rowNum}] players検索でエラー: ${playerError.message}`);
-      skipped++;
-      continue;
-    }
-    if (!matchedPlayers || matchedPlayers.length === 0) {
-      console.warn(`[行${rowNum}] 選手が見つかりません: "${playerName}"`);
-      skipped++;
-      continue;
-    }
-    if (matchedPlayers.length > 1) {
+    const { id: playerId, note } = resolvePlayerId(
+      playerName,
+      exactMap,
+      normalizedMap
+    );
+    if (!playerId) {
       console.warn(
-        `[行${rowNum}] 同姓同名が${matchedPlayers.length}件見つかったためスキップします（手動確認が必要）: "${playerName}" ids=${matchedPlayers
-          .map((p) => p.id)
-          .join(", ")}`
+        `[行${rowNum}] 選手が見つかりません: "${playerName}"${note ? `（${note}、手動確認が必要）` : ""}`
       );
       skipped++;
       continue;
     }
-    const playerId = matchedPlayers[0].id;
+    if (note) {
+      console.log(`[行${rowNum}] ${playerName}: ${note}`);
+    }
+
     const season = toInt(seasonRaw);
 
     const row = {
