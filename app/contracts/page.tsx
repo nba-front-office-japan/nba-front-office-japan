@@ -24,24 +24,35 @@ export default async function ContractsPage() {
     );
   }
 
-  const playerIds = [...new Set(contracts.map((c) => c.player_id))];
-  const teamIds = [...new Set(contracts.map((c) => c.team_id))];
+  // .in()でIDを直接渡すと件数が増えた際にURLが長くなりすぎて失敗しうるため
+  // （Stats Labで実際に発生）、players/teams全件を取得してMapで引く方式にする。
+  const [{ data: players, error: playersError }, { data: teams, error: teamsError }] =
+    await Promise.all([
+      fetchAllRows((from, to) =>
+        supabase.from("players").select("id, full_name").range(from, to)
+      ),
+      fetchAllRows((from, to) =>
+        supabase.from("teams").select("id, abbreviation").range(from, to)
+      ),
+    ]);
 
-  const [{ data: players }, { data: teams }] = await Promise.all([
-    playerIds.length > 0
-      ? supabase.from("players").select("id, full_name").in("id", playerIds)
-      : Promise.resolve({ data: [] as { id: string; full_name: string }[] }),
-    teamIds.length > 0
-      ? supabase.from("teams").select("id, abbreviation").in("id", teamIds)
-      : Promise.resolve({ data: [] as { id: string; abbreviation: string }[] }),
-  ]);
+  if (playersError || teamsError) {
+    return (
+      <div className="flex flex-1 flex-col bg-background text-foreground">
+        <SiteHeader />
+        <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-10">
+          <h1 className="mb-6 text-2xl font-semibold">Contracts</h1>
+          <p className="text-sm text-red-600 dark:text-red-400">
+            選手・チームデータの取得に失敗しました:{" "}
+            {playersError?.message ?? teamsError?.message}
+          </p>
+        </main>
+      </div>
+    );
+  }
 
-  const playerNameById = new Map(
-    (players ?? []).map((p) => [p.id, p.full_name])
-  );
-  const teamAbbrById = new Map(
-    (teams ?? []).map((t) => [t.id, t.abbreviation])
-  );
+  const playerNameById = new Map(players.map((p) => [p.id, p.full_name]));
+  const teamAbbrById = new Map(teams.map((t) => [t.id, t.abbreviation]));
 
   const rows: ContractRow[] = contracts.map((c) => ({
     id: c.id,
