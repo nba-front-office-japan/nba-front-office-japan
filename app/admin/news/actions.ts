@@ -1,10 +1,16 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { collectAllActiveRssSources } from "@/lib/news/collect";
 import { canonicalizeUrl } from "@/lib/news/canonical-url";
 import { computeContentHash } from "@/lib/news/hash";
+import type {
+  EventSourceRelation,
+  NewsEventCategory,
+  VerificationStatus,
+} from "@/lib/supabase/types";
 
 export interface CollectActionState {
   status: "idle" | "success" | "error";
@@ -90,4 +96,65 @@ export async function registerManualOfficialUrlAction(formData: FormData) {
   }
 
   revalidatePath("/admin/news");
+}
+
+function generateEventKey(): string {
+  return `evt-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+export async function createEventFromItemsAction(formData: FormData) {
+  const itemIds = formData.getAll("itemIds").map(String).filter(Boolean);
+  const headlineEn = String(formData.get("headlineEn") ?? "").trim();
+  const category = String(formData.get("category") ?? "") as NewsEventCategory;
+  const verificationStatus = String(
+    formData.get("verificationStatus") ?? ""
+  ) as VerificationStatus;
+  const importanceScore = Number(formData.get("importanceScore") ?? 50);
+  const reliabilityScore = Number(formData.get("reliabilityScore") ?? 50);
+
+  if (itemIds.length === 0) {
+    throw new Error("記事を1件以上選択してください。");
+  }
+  if (!headlineEn) {
+    throw new Error("内部見出し（英語）は必須です。");
+  }
+
+  const supabase = createAdminSupabaseClient();
+
+  const { data: event, error: eventError } = await supabase
+    .from("news_events")
+    .insert({
+      event_key: generateEventKey(),
+      headline_en: headlineEn,
+      category,
+      verification_status: verificationStatus,
+      reliability_score: reliabilityScore,
+      importance_score: importanceScore,
+    })
+    .select("id")
+    .single();
+
+  if (eventError || !event) {
+    throw new Error(`イベント作成に失敗しました: ${eventError?.message}`);
+  }
+
+  const eventSourceRows = itemIds.map((newsItemId, index) => ({
+    event_id: event.id,
+    news_item_id: newsItemId,
+    relation: (index === 0 ? "primary" : "confirmation") as EventSourceRelation,
+  }));
+
+  const { error: linkError } = await supabase
+    .from("news_event_sources")
+    .insert(eventSourceRows);
+
+  if (linkError) {
+    throw new Error(`ソースの紐付けに失敗しました: ${linkError.message}`);
+  }
+
+  await supabase.from("news_items").update({ status: "processed" }).in("id", itemIds);
+
+  revalidatePath("/admin/news");
+  revalidatePath("/admin/news/events");
+  redirect(`/admin/news/events/${event.id}`);
 }

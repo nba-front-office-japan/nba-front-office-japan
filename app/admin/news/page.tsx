@@ -2,6 +2,7 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { isSourceDegraded } from "@/lib/news/health";
 import { registerManualOfficialUrlAction } from "./actions";
 import { CollectButton } from "./collect-button";
+import { ItemsSelector, type SelectableNewsItem } from "./items-selector";
 import type { Database } from "@/lib/supabase/types";
 
 type JobRun = Database["public"]["Tables"]["news_collector_job_runs"]["Row"];
@@ -52,13 +53,25 @@ export default async function AdminNewsPage() {
     runsBySource.set(run.source_id, list);
   }
 
+  const itemsForSelector: SelectableNewsItem[] = (recentItems ?? []).map((item) => ({
+    id: item.id,
+    title: item.title,
+    canonicalUrl: item.canonical_url,
+    authorName: item.author_name,
+    publishedAtLabel: formatDateTime(item.published_at),
+    fetchedAtLabel: formatDateTime(item.fetched_at),
+    sourceName: sourceById.get(item.source_id)?.name ?? "-",
+    sourceReliability: sourceById.get(item.source_id)?.reliability_level ?? 50,
+    status: item.status,
+  }));
+
   return (
-    <div className="min-h-screen bg-background px-4 py-8 text-foreground sm:px-8">
+    <div className="px-4 py-8 sm:px-8">
       <div className="mx-auto max-w-5xl">
         <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
-          News Collector v1 · Phase B
+          News Collector v1
         </p>
-        <h1 className="mb-6 text-2xl font-semibold">管理画面</h1>
+        <h1 className="mb-6 text-2xl font-semibold">RSS収集ジョブ</h1>
 
         {sourcesError && (
           <p className="mb-6 text-sm text-red-600 dark:text-red-400">
@@ -228,54 +241,11 @@ export default async function AdminNewsPage() {
         </section>
 
         <section className="border border-line bg-surface p-6">
-          <h2 className="mb-4 text-lg font-semibold">最近取得したニュース</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-line text-left text-[11px] font-bold text-muted">
-                  <th className="px-3 py-2">タイトル</th>
-                  <th className="px-3 py-2">ソース</th>
-                  <th className="px-3 py-2">著者</th>
-                  <th className="px-3 py-2">公開日時</th>
-                  <th className="px-3 py-2">取得日時</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(recentItems ?? []).length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-3 py-6 text-center text-muted">
-                      まだ取得したニュースがありません。
-                    </td>
-                  </tr>
-                ) : (
-                  (recentItems ?? []).map((item) => (
-                    <tr key={item.id} className="border-b border-line/60">
-                      <td className="max-w-[320px] px-3 py-2.5">
-                        <a
-                          href={item.canonical_url}
-                          target="_blank"
-                          rel="noreferrer noopener"
-                          className="font-semibold text-blue hover:underline"
-                        >
-                          {item.title}
-                        </a>
-                      </td>
-                      <td className="px-3 py-2.5 text-muted">
-                        {sourceById.get(item.source_id)?.name ?? "-"}
-                      </td>
-                      <td className="px-3 py-2.5 text-muted">{item.author_name ?? "-"}</td>
-                      <td className="whitespace-nowrap px-3 py-2.5 text-muted">
-                        {formatDateTime(item.published_at)}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 text-muted">
-                        {formatDateTime(item.fetched_at)}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+          <h2 className="mb-1 text-lg font-semibold">最近取得したニュース</h2>
+          <p className="mb-4 text-xs text-muted">
+            同じ出来事を報じている記事をチェックして選び、イベントを作成してください。
+          </p>
+          <ItemsSelector items={itemsForSelector} />
         </section>
       </div>
     </div>

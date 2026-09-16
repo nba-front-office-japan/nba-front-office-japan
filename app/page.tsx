@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { getLatestSeason } from "@/lib/supabase/current-season";
+import { fetchPublishedArticles } from "@/lib/news/public-articles";
 import { PageShell } from "@/components/page-shell";
-import { NEWS_ARTICLES } from "@/lib/news-data";
 
 const MARQUEE_ABBREVIATIONS = ["GSW", "LAL", "BOS", "OKC"];
 
@@ -16,18 +17,19 @@ const STATS_PICKS = [
 export default async function Home() {
   const supabase = createServerSupabaseClient();
 
-  const [{ count: playerCount }, { data: teams }, latestSeason] =
+  const [{ count: playerCount }, { data: teams }, latestSeason, articles] =
     await Promise.all([
       supabase.from("players").select("*", { count: "exact", head: true }),
       supabase.from("teams").select("*").order("name"),
       getLatestSeason(supabase),
+      fetchPublishedArticles(createAdminSupabaseClient()),
     ]);
 
   const marqueeTeams = MARQUEE_ABBREVIATIONS.map((abbr) =>
     (teams ?? []).find((t) => t.abbreviation === abbr)
   ).filter((t): t is NonNullable<typeof t> => Boolean(t));
 
-  const featured = NEWS_ARTICLES[0];
+  const featured = articles[0] ?? null;
 
   return (
     <PageShell>
@@ -64,11 +66,28 @@ export default async function Home() {
             Featured Analysis
           </p>
           <h2 className="mb-4 text-xl font-semibold">今日の分析</h2>
-          <h3 className="text-base font-bold">{featured.title}</h3>
-          <p className="mt-1.5 text-xs leading-6 text-muted">{featured.summary}</p>
-          <Link href="/teams" className="mt-3 inline-block text-sm font-extrabold text-blue">
-            チームDBを見る →
-          </Link>
+          {featured ? (
+            <>
+              <h3 className="text-base font-bold">
+                <Link href={`/news/${featured.id}`} className="hover:underline">
+                  {featured.headlineJa}
+                </Link>
+              </h3>
+              {featured.dekJa && (
+                <p className="mt-1.5 text-xs leading-6 text-muted">{featured.dekJa}</p>
+              )}
+              <Link href="/news" className="mt-3 inline-block text-sm font-extrabold text-blue">
+                News一覧を見る →
+              </Link>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-muted">まだ公開されている記事がありません。</p>
+              <Link href="/teams" className="mt-3 inline-block text-sm font-extrabold text-blue">
+                チームDBを見る →
+              </Link>
+            </>
+          )}
           <div className="mt-6 border-t border-line pt-4">
             <span className="mr-1.5 inline-block bg-[#eaf1ff] px-1.5 py-1 text-[11px] font-extrabold text-[#2457b7]">
               DATA
