@@ -34,8 +34,8 @@ export function PlayerSeasonStats({ rows }: { rows: PlayerStatRow[] }) {
             onClick={() => setSeasonType(type)}
             className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
               seasonType === type
-                ? "bg-accent text-white"
-                : "border border-black/[.08] text-zinc-600 dark:border-white/[.145] dark:text-zinc-400"
+                ? "bg-blue text-white"
+                : "border border-line text-muted"
             }`}
           >
             {type === "regular_season" ? "Regular Season" : "Playoffs"}
@@ -43,14 +43,12 @@ export function PlayerSeasonStats({ rows }: { rows: PlayerStatRow[] }) {
         ))}
       </div>
 
-      <p className="mb-2 text-xs text-zinc-500 sm:hidden dark:text-zinc-400">
-        → 横にスクロールできます
-      </p>
+      <p className="mb-2 text-xs text-muted sm:hidden">→ 横にスクロールできます</p>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto border border-line bg-surface">
         <table className="w-full min-w-[560px] border-collapse text-sm">
           <thead>
-            <tr className="border-b border-black/[.08] dark:border-white/[.145]">
+            <tr className="border-b border-line">
               {[
                 "シーズン",
                 "チーム",
@@ -64,7 +62,7 @@ export function PlayerSeasonStats({ rows }: { rows: PlayerStatRow[] }) {
               ].map((label) => (
                 <th
                   key={label}
-                  className="whitespace-nowrap px-3 py-2 text-left font-medium text-zinc-600 dark:text-zinc-400"
+                  className="whitespace-nowrap px-3 py-2.5 text-left text-[11px] font-bold text-muted"
                 >
                   {label}
                 </th>
@@ -74,10 +72,7 @@ export function PlayerSeasonStats({ rows }: { rows: PlayerStatRow[] }) {
           <tbody>
             {filteredRows.length === 0 ? (
               <tr>
-                <td
-                  colSpan={9}
-                  className="px-3 py-6 text-center text-sm text-zinc-500 dark:text-zinc-400"
-                >
+                <td colSpan={9} className="px-3 py-6 text-center text-sm text-muted">
                   データがありません。
                 </td>
               </tr>
@@ -85,35 +80,32 @@ export function PlayerSeasonStats({ rows }: { rows: PlayerStatRow[] }) {
               filteredRows.map((row) => {
                 const stats = deriveStats(row);
                 return (
-                  <tr
-                    key={row.id}
-                    className="border-b border-black/[.05] dark:border-white/[.08]"
-                  >
-                    <td className="whitespace-nowrap px-3 py-2 font-medium">
+                  <tr key={row.id} className="border-b border-line/60">
+                    <td className="whitespace-nowrap px-3 py-3 font-bold">
                       {row.season}
                     </td>
-                    <td className="whitespace-nowrap px-3 py-2 text-zinc-600 dark:text-zinc-400">
+                    <td className="whitespace-nowrap px-3 py-3 text-muted">
                       {row.teamLabel}
                     </td>
-                    <td className="whitespace-nowrap px-3 py-2">
+                    <td className="whitespace-nowrap px-3 py-3 font-semibold">
                       {row.gamesPlayed}
                     </td>
-                    <td className="whitespace-nowrap px-3 py-2">
+                    <td className="whitespace-nowrap px-3 py-3 font-semibold">
                       {formatStat(stats.ppg)}
                     </td>
-                    <td className="whitespace-nowrap px-3 py-2">
+                    <td className="whitespace-nowrap px-3 py-3 font-semibold">
                       {formatStat(stats.rpg)}
                     </td>
-                    <td className="whitespace-nowrap px-3 py-2">
+                    <td className="whitespace-nowrap px-3 py-3 font-semibold">
                       {formatStat(stats.apg)}
                     </td>
-                    <td className="whitespace-nowrap px-3 py-2">
+                    <td className="whitespace-nowrap px-3 py-3 font-semibold">
                       {formatStat(stats.fgPct)}
                     </td>
-                    <td className="whitespace-nowrap px-3 py-2">
+                    <td className="whitespace-nowrap px-3 py-3 font-semibold">
                       {formatStat(stats.threePct)}
                     </td>
-                    <td className="whitespace-nowrap px-3 py-2">
+                    <td className="whitespace-nowrap px-3 py-3 font-semibold">
                       {formatStat(stats.tsPct)}
                     </td>
                   </tr>

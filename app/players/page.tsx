@@ -1,6 +1,6 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
-import { SiteHeader } from "@/components/site-header";
+import { PageShell } from "@/components/page-shell";
 import {
   PlayerSearchList,
   type PlayerListItem,
@@ -23,18 +23,20 @@ export default async function PlayersPage() {
   }));
 
   return (
-    <div className="flex flex-1 flex-col bg-background text-foreground">
-      <SiteHeader />
-      <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-10">
-        <h1 className="mb-6 text-2xl font-semibold">Players</h1>
-        {error ? (
-          <p className="text-sm text-red-600 dark:text-red-400">
-            選手データの取得に失敗しました: {error.message}
-          </p>
-        ) : (
-          <PlayerSearchList players={items} />
-        )}
-      </main>
-    </div>
+    <PageShell>
+      <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
+        Player Database · 2026 Season
+      </p>
+      <h1 className="mb-7 text-[36px] font-semibold tracking-tight">
+        Players
+      </h1>
+      {error ? (
+        <p className="text-sm text-red-600 dark:text-red-400">
+          選手データの取得に失敗しました: {error.message}
+        </p>
+      ) : (
+        <PlayerSearchList players={items} />
+      )}
+    </PageShell>
   );
 }

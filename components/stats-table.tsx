@@ -21,6 +21,8 @@ export interface StatRow {
   threePointersMade: number;
   threePointersAttempted: number;
   freeThrowsAttempted: number;
+  position?: string | null;
+  season?: number;
 }
 
 interface DerivedRow extends StatRow {
@@ -32,7 +34,7 @@ interface DerivedRow extends StatRow {
   tsPct: number | null;
 }
 
-type SortKey =
+export type SortKey =
   | "playerName"
   | "teamLabel"
   | "gamesPlayed"
@@ -63,7 +65,7 @@ const COLUMNS: {
     key: "teamLabel",
     label: "チーム",
     render: (row) => row.teamLabel,
-    cellClassName: "text-zinc-600 dark:text-zinc-400",
+    cellClassName: "text-muted",
   },
   {
     key: "gamesPlayed",
@@ -79,18 +81,48 @@ const COLUMNS: {
   { key: "tsPct", label: "TS%", render: (row) => formatStat(row.tsPct) },
 ];
 
+const POSITIONS = ["PG", "SG", "SF", "PF", "C"];
+const MIN_GAMES_OPTIONS = [0, 20, 50];
+
 function deriveRow(row: StatRow): DerivedRow {
   return { ...row, ...deriveStats(row) };
 }
 
-export function StatsTable({ rows }: { rows: StatRow[] }) {
+export function StatsTable({
+  rows,
+  initialSortKey,
+}: {
+  rows: StatRow[];
+  initialSortKey?: SortKey;
+}) {
   const [seasonType, setSeasonType] = useState<SeasonType>("regular_season");
-  const [sortKey, setSortKey] = useState<SortKey>("ppg");
+  const [sortKey, setSortKey] = useState<SortKey>(initialSortKey ?? "ppg");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
+  const hasPosition = rows.some((r) => r.position);
+  const seasons = useMemo(
+    () => [...new Set(rows.map((r) => r.season).filter((s): s is number => s !== undefined))].sort(
+      (a, b) => b - a
+    ),
+    [rows]
+  );
+  const hasSeasonFilter = seasons.length > 1;
+
+  const [position, setPosition] = useState<string>("All");
+  const [minGames, setMinGames] = useState(0);
+  const [season, setSeason] = useState<number | "All">(
+    seasons.length > 0 ? seasons[0] : "All"
+  );
+
   const derivedRows = useMemo(
-    () => rows.filter((r) => r.seasonType === seasonType).map(deriveRow),
-    [rows, seasonType]
+    () =>
+      rows
+        .filter((r) => r.seasonType === seasonType)
+        .filter((r) => position === "All" || r.position === position)
+        .filter((r) => r.gamesPlayed >= minGames)
+        .filter((r) => season === "All" || r.season === season)
+        .map(deriveRow),
+    [rows, seasonType, position, minGames, season]
   );
 
   const sortedRows = useMemo(() => {
@@ -122,35 +154,88 @@ export function StatsTable({ rows }: { rows: StatRow[] }) {
 
   return (
     <div>
-      <div className="mb-4 flex gap-2">
-        {(["regular_season", "playoffs"] as const).map((type) => (
-          <button
-            key={type}
-            onClick={() => setSeasonType(type)}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-              seasonType === type
-                ? "bg-accent text-white"
-                : "border border-black/[.08] text-zinc-600 dark:border-white/[.145] dark:text-zinc-400"
-            }`}
+      <div className="mb-4 flex flex-wrap items-end gap-3 border border-line bg-surface p-4">
+        <div className="flex gap-2">
+          {(["regular_season", "playoffs"] as const).map((type) => (
+            <button
+              key={type}
+              onClick={() => setSeasonType(type)}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                seasonType === type
+                  ? "bg-blue text-white"
+                  : "border border-line text-muted"
+              }`}
+            >
+              {type === "regular_season" ? "Regular Season" : "Playoffs"}
+            </button>
+          ))}
+        </div>
+
+        {hasSeasonFilter && (
+          <label className="grid gap-1.5 text-[11px] font-bold text-muted">
+            SEASON
+            <select
+              value={season}
+              onChange={(e) =>
+                setSeason(e.target.value === "All" ? "All" : Number(e.target.value))
+              }
+              className="min-w-[100px] border border-line bg-surface px-2.5 py-2 text-sm text-foreground"
+            >
+              <option value="All">All</option>
+              {seasons.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+
+        {hasPosition && (
+          <label className="grid gap-1.5 text-[11px] font-bold text-muted">
+            POSITION
+            <select
+              value={position}
+              onChange={(e) => setPosition(e.target.value)}
+              className="min-w-[100px] border border-line bg-surface px-2.5 py-2 text-sm text-foreground"
+            >
+              <option value="All">All</option>
+              {POSITIONS.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+
+        <label className="grid gap-1.5 text-[11px] font-bold text-muted">
+          MINIMUM GAMES
+          <select
+            value={minGames}
+            onChange={(e) => setMinGames(Number(e.target.value))}
+            className="min-w-[100px] border border-line bg-surface px-2.5 py-2 text-sm text-foreground"
           >
-            {type === "regular_season" ? "Regular Season" : "Playoffs"}
-          </button>
-        ))}
+            {MIN_GAMES_OPTIONS.map((g) => (
+              <option key={g} value={g}>
+                {g === 0 ? "All" : g}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
-      <p className="mb-2 text-xs text-zinc-500 sm:hidden dark:text-zinc-400">
-        → 横にスクロールできます
-      </p>
+      <p className="mb-2 text-xs text-muted sm:hidden">→ 横にスクロールできます</p>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto border border-line bg-surface">
         <table className="w-full min-w-[640px] border-collapse text-sm">
           <thead>
-            <tr className="border-b border-black/[.08] dark:border-white/[.145]">
+            <tr className="border-b border-line">
               {COLUMNS.map((col) => (
                 <th
                   key={col.key}
                   onClick={() => handleSort(col.key)}
-                  className="cursor-pointer select-none whitespace-nowrap px-3 py-2 text-left font-medium text-zinc-600 hover:text-foreground dark:text-zinc-400"
+                  className="cursor-pointer select-none whitespace-nowrap px-3 py-2.5 text-left text-[11px] font-bold text-muted hover:text-foreground"
                 >
                   {col.label}
                   {sortKey === col.key
@@ -167,21 +252,18 @@ export function StatsTable({ rows }: { rows: StatRow[] }) {
               <tr>
                 <td
                   colSpan={COLUMNS.length}
-                  className="px-3 py-6 text-center text-sm text-zinc-500 dark:text-zinc-400"
+                  className="px-3 py-6 text-center text-sm text-muted"
                 >
                   データがありません。
                 </td>
               </tr>
             ) : (
               sortedRows.map((row) => (
-                <tr
-                  key={row.id}
-                  className="border-b border-black/[.05] dark:border-white/[.08]"
-                >
+                <tr key={row.id} className="border-b border-line/60 hover:bg-[#f6f9ff] dark:hover:bg-white/[.03]">
                   {COLUMNS.map((col) => (
                     <td
                       key={col.key}
-                      className={`whitespace-nowrap px-3 py-2 ${col.cellClassName ?? ""}`}
+                      className={`whitespace-nowrap px-3 py-3 font-semibold ${col.cellClassName ?? ""}`}
                     >
                       {col.render(row)}
                     </td>

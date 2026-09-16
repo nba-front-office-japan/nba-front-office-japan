@@ -1,6 +1,8 @@
 // player_statsは合計値で保存されているため、平均・シュート率はここで都度算出する。
 // stats-table.tsx / player-season-stats.tsx で共有する。
 
+import type { Database } from "@/lib/supabase/types";
+
 export interface RawStatTotals {
   gamesPlayed: number;
   points: number;
@@ -52,4 +54,21 @@ export function deriveStats(row: RawStatTotals): DerivedStats {
 
 export function formatStat(value: number | null, digits = 1): string {
   return value === null ? "-" : value.toFixed(digits);
+}
+
+type PlayerStatsRow = Database["public"]["Tables"]["player_stats"]["Row"];
+
+// player_statsテーブルの行(スネークケース)をRawStatTotals(キャメルケース)に変換する。
+export function toRawStatTotals(row: PlayerStatsRow): RawStatTotals {
+  return {
+    gamesPlayed: row.games_played,
+    points: row.points,
+    reboundsTotal: row.rebounds_total,
+    assists: row.assists,
+    fieldGoalsMade: row.field_goals_made,
+    fieldGoalsAttempted: row.field_goals_attempted,
+    threePointersMade: row.three_pointers_made,
+    threePointersAttempted: row.three_pointers_attempted,
+    freeThrowsAttempted: row.free_throws_attempted,
+  };
 }

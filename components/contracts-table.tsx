@@ -50,7 +50,7 @@ const COLUMNS: {
     key: "teamLabel",
     label: "チーム",
     render: (row) => row.teamLabel,
-    cellClassName: "text-zinc-600 dark:text-zinc-400",
+    cellClassName: "text-muted",
   },
   { key: "season", label: "シーズン", render: (row) => row.season },
   {
@@ -114,18 +114,16 @@ export function ContractsTable({ rows }: { rows: ContractRow[] }) {
 
   return (
     <div>
-      <p className="mb-2 text-xs text-zinc-500 sm:hidden dark:text-zinc-400">
-        → 横にスクロールできます
-      </p>
-      <div className="overflow-x-auto">
+      <p className="mb-2 text-xs text-muted sm:hidden">→ 横にスクロールできます</p>
+      <div className="overflow-x-auto border border-line bg-surface">
         <table className="w-full min-w-[720px] border-collapse text-sm">
           <thead>
-            <tr className="border-b border-black/[.08] dark:border-white/[.145]">
+            <tr className="border-b border-line">
               {COLUMNS.map((col) => (
                 <th
                   key={col.key}
                   onClick={() => handleSort(col.key)}
-                  className="cursor-pointer select-none whitespace-nowrap px-3 py-2 text-left font-medium text-zinc-600 hover:text-foreground dark:text-zinc-400"
+                  className="cursor-pointer select-none whitespace-nowrap px-3 py-2.5 text-left text-[11px] font-bold text-muted hover:text-foreground"
                 >
                   {col.label}
                   {sortKey === col.key
@@ -142,21 +140,18 @@ export function ContractsTable({ rows }: { rows: ContractRow[] }) {
               <tr>
                 <td
                   colSpan={COLUMNS.length}
-                  className="px-3 py-6 text-center text-sm text-zinc-500 dark:text-zinc-400"
+                  className="px-3 py-6 text-center text-sm text-muted"
                 >
                   契約データがありません。
                 </td>
               </tr>
             ) : (
               sortedRows.map((row) => (
-                <tr
-                  key={row.id}
-                  className="border-b border-black/[.05] dark:border-white/[.08]"
-                >
+                <tr key={row.id} className="border-b border-line/60 hover:bg-[#f6f9ff] dark:hover:bg-white/[.03]">
                   {COLUMNS.map((col) => (
                     <td
                       key={col.key}
-                      className={`whitespace-nowrap px-3 py-2 ${col.cellClassName ?? ""}`}
+                      className={`whitespace-nowrap px-3 py-3 font-semibold ${col.cellClassName ?? ""}`}
                     >
                       {col.render(row)}
                     </td>

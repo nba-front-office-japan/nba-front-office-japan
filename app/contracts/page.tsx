@@ -1,6 +1,6 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
-import { SiteHeader } from "@/components/site-header";
+import { PageShell } from "@/components/page-shell";
 import { ContractsTable, type ContractRow } from "@/components/contracts-table";
 
 export default async function ContractsPage() {
@@ -12,15 +12,12 @@ export default async function ContractsPage() {
 
   if (error) {
     return (
-      <div className="flex flex-1 flex-col bg-background text-foreground">
-        <SiteHeader />
-        <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-10">
-          <h1 className="mb-6 text-2xl font-semibold">Contracts</h1>
-          <p className="text-sm text-red-600 dark:text-red-400">
-            契約データの取得に失敗しました: {error.message}
-          </p>
-        </main>
-      </div>
+      <PageShell>
+        <h1 className="mb-6 text-2xl font-semibold">Contracts</h1>
+        <p className="text-sm text-red-600 dark:text-red-400">
+          契約データの取得に失敗しました: {error.message}
+        </p>
+      </PageShell>
     );
   }
 
@@ -38,16 +35,13 @@ export default async function ContractsPage() {
 
   if (playersError || teamsError) {
     return (
-      <div className="flex flex-1 flex-col bg-background text-foreground">
-        <SiteHeader />
-        <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-10">
-          <h1 className="mb-6 text-2xl font-semibold">Contracts</h1>
-          <p className="text-sm text-red-600 dark:text-red-400">
-            選手・チームデータの取得に失敗しました:{" "}
-            {playersError?.message ?? teamsError?.message}
-          </p>
-        </main>
-      </div>
+      <PageShell>
+        <h1 className="mb-6 text-2xl font-semibold">Contracts</h1>
+        <p className="text-sm text-red-600 dark:text-red-400">
+          選手・チームデータの取得に失敗しました:{" "}
+          {playersError?.message ?? teamsError?.message}
+        </p>
+      </PageShell>
     );
   }
 
@@ -67,12 +61,14 @@ export default async function ContractsPage() {
   }));
 
   return (
-    <div className="flex flex-1 flex-col bg-background text-foreground">
-      <SiteHeader />
-      <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-10">
-        <h1 className="mb-6 text-2xl font-semibold">Contracts</h1>
-        <ContractsTable rows={rows} />
-      </main>
-    </div>
+    <PageShell>
+      <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
+        Contract Database
+      </p>
+      <h1 className="mb-7 text-[36px] font-semibold tracking-tight">
+        Contracts
+      </h1>
+      <ContractsTable rows={rows} />
+    </PageShell>
   );
 }

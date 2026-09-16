@@ -1,11 +1,12 @@
 import { notFound } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { SiteHeader } from "@/components/site-header";
-import { PlayerHeader } from "@/components/player-header";
+import { PageShell } from "@/components/page-shell";
+import { PlayerHeader, type PlayerSnapshot } from "@/components/player-header";
 import {
   PlayerSeasonStats,
   type PlayerStatRow,
 } from "@/components/player-season-stats";
+import { deriveStats, toRawStatTotals } from "@/lib/stats";
 
 export default async function PlayerDetailPage({
   params,
@@ -77,11 +78,39 @@ export default async function PlayerDetailPage({
     freeThrowsAttempted: s.free_throws_attempted,
   }));
 
+  const regularSeasonRows = (stats ?? []).filter(
+    (s) => s.season_type === "regular_season"
+  );
+  const latestSeason = regularSeasonRows.length
+    ? Math.max(...regularSeasonRows.map((s) => s.season))
+    : null;
+  const latestSeasonRows = regularSeasonRows.filter(
+    (s) => s.season === latestSeason
+  );
+  // トレードがあった場合はTOT行(team_id=NULL)を優先し、無ければ単独チーム分の行を使う。
+  const snapshotRow =
+    latestSeasonRows.find((s) => s.team_id === null) ?? latestSeasonRows[0];
+
+  const snapshot: PlayerSnapshot | null = snapshotRow
+    ? {
+        ...deriveStats(toRawStatTotals(snapshotRow)),
+        mpg: snapshotRow.games_played
+          ? snapshotRow.minutes_played / snapshotRow.games_played
+          : null,
+      }
+    : null;
+
   return (
-    <div className="flex flex-1 flex-col bg-background text-foreground">
-      <SiteHeader />
-      <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-10">
-        <PlayerHeader player={player} currentTeam={currentTeam ?? null} />
+    <PageShell>
+      <PlayerHeader
+        player={player}
+        currentTeam={currentTeam ?? null}
+        snapshot={snapshot}
+      />
+      <div className="mt-8 border border-line bg-surface p-6">
+        <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
+          Season Stats
+        </p>
         <h2 className="mb-4 text-lg font-semibold">Stats</h2>
         {statsError ? (
           <p className="text-sm text-red-600 dark:text-red-400">
@@ -90,7 +119,7 @@ export default async function PlayerDetailPage({
         ) : (
           <PlayerSeasonStats rows={statRows} />
         )}
-      </main>
-    </div>
+      </div>
+    </PageShell>
   );
 }

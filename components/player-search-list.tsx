@@ -25,29 +25,25 @@ export function PlayerSearchList({ players }: { players: PlayerListItem[] }) {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="選手名で検索"
-        className="mb-6 w-full max-w-sm rounded-md border border-black/[.08] bg-transparent px-3 py-2 text-sm outline-none focus:border-black/[.3] dark:border-white/[.145] dark:focus:border-white/[.4]"
+        className="mb-6 w-full max-w-sm border border-line bg-surface px-3 py-2.5 text-sm outline-none focus:border-blue"
       />
 
-      <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
+      <p className="mb-4 text-sm text-muted">
         {filtered.length}件表示中（全{players.length}件）
       </p>
 
       {filtered.length === 0 ? (
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          該当する選手が見つかりません。
-        </p>
+        <p className="text-sm text-muted">該当する選手が見つかりません。</p>
       ) : (
-        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
           {filtered.map((player) => (
             <li key={player.id}>
               <Link
                 href={`/players/${player.id}`}
-                className="block rounded-lg border border-black/[.08] p-4 transition-colors hover:border-black/[.2] dark:border-white/[.145] dark:hover:border-white/[.3]"
+                className="block border-l-[3px] border-blue bg-[#f3f6fb] p-3.5 transition-colors hover:bg-[#eaf1ff] dark:bg-white/[.04] dark:hover:bg-white/[.07]"
               >
-                <p className="text-base font-semibold">{player.fullName}</p>
-                <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                  {player.position ?? "-"}
-                </p>
+                <p className="text-sm font-extrabold">{player.fullName}</p>
+                <p className="text-xs text-muted">{player.position ?? "-"}</p>
               </Link>
             </li>
           ))}
