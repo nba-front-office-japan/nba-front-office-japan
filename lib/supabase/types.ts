@@ -12,6 +12,45 @@ export type AcquisitionType =
   | "two_way"
   | "other";
 
+// News Collector v1 (Stats Collectorとは独立した機能)
+export type NewsSourceKind = "rss" | "x" | "manual_official";
+export type NewsItemContentType = "article" | "x_post" | "official_statement";
+export type NewsItemStatus = "new" | "processed" | "ignored" | "error";
+export type NewsEventCategory =
+  | "breaking"
+  | "trade"
+  | "free_agency"
+  | "contract"
+  | "injury"
+  | "rumor"
+  | "interview"
+  | "transaction"
+  | "analysis"
+  | "other";
+export type VerificationStatus =
+  | "official"
+  | "confirmed_by_multiple_sources"
+  | "single_source"
+  | "rumor"
+  | "unverified";
+export type EditorialStatus =
+  | "review_needed"
+  | "approved_for_draft"
+  | "drafted"
+  | "published"
+  | "rejected";
+export type EventSourceRelation =
+  | "primary"
+  | "confirmation"
+  | "context"
+  | "conflict";
+export type ArticleType = "breaking" | "standard" | "deep_dive";
+export type ArticleDraftStatus =
+  | "pending_review"
+  | "approved"
+  | "published"
+  | "rejected";
+
 export interface Database {
   public: {
     Tables: {
@@ -248,6 +287,213 @@ export interface Database {
           signed_date?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["contracts"]["Insert"]>;
+        Relationships: [];
+      };
+      news_sources: {
+        Row: {
+          id: string;
+          slug: string;
+          name: string;
+          kind: NewsSourceKind;
+          feed_url: string | null;
+          x_username: string | null;
+          reliability_level: number;
+          is_active: boolean;
+          poll_interval_minutes: number | null;
+          last_polled_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          slug: string;
+          name: string;
+          kind: NewsSourceKind;
+          feed_url?: string | null;
+          x_username?: string | null;
+          reliability_level: number;
+          is_active?: boolean;
+          poll_interval_minutes?: number | null;
+          last_polled_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["news_sources"]["Insert"]>;
+        Relationships: [];
+      };
+      reporters: {
+        Row: {
+          id: string;
+          name: string;
+          outlet: string | null;
+          x_username: string | null;
+          covered_team_codes: string[];
+          specialties: string[];
+          reliability_level: number;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          outlet?: string | null;
+          x_username?: string | null;
+          covered_team_codes?: string[];
+          specialties?: string[];
+          reliability_level: number;
+          is_active?: boolean;
+        };
+        Update: Partial<Database["public"]["Tables"]["reporters"]["Insert"]>;
+        Relationships: [];
+      };
+      news_items: {
+        Row: {
+          id: string;
+          source_id: string;
+          external_id: string | null;
+          canonical_url: string;
+          title: string;
+          summary: string | null;
+          author_name: string | null;
+          published_at: string | null;
+          raw_published_at: string | null;
+          content_type: NewsItemContentType;
+          status: NewsItemStatus;
+          metadata: Record<string, unknown>;
+          content_hash: string;
+          fetched_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          source_id: string;
+          external_id?: string | null;
+          canonical_url: string;
+          title: string;
+          summary?: string | null;
+          author_name?: string | null;
+          published_at?: string | null;
+          raw_published_at?: string | null;
+          content_type: NewsItemContentType;
+          status?: NewsItemStatus;
+          metadata?: Record<string, unknown>;
+          content_hash: string;
+          fetched_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["news_items"]["Insert"]>;
+        Relationships: [];
+      };
+      news_events: {
+        Row: {
+          id: string;
+          event_key: string;
+          headline_en: string;
+          category: NewsEventCategory;
+          verification_status: VerificationStatus;
+          reliability_score: number;
+          importance_score: number;
+          entity_tags: { players: string[]; teams: string[] };
+          editorial_status: EditorialStatus;
+          ai_rationale: Record<string, unknown>;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          event_key: string;
+          headline_en: string;
+          category: NewsEventCategory;
+          verification_status: VerificationStatus;
+          reliability_score: number;
+          importance_score: number;
+          entity_tags?: { players: string[]; teams: string[] };
+          editorial_status?: EditorialStatus;
+          ai_rationale?: Record<string, unknown>;
+        };
+        Update: Partial<Database["public"]["Tables"]["news_events"]["Insert"]>;
+        Relationships: [];
+      };
+      news_event_sources: {
+        Row: {
+          event_id: string;
+          news_item_id: string;
+          relation: EventSourceRelation;
+          created_at: string;
+        };
+        Insert: {
+          event_id: string;
+          news_item_id: string;
+          relation: EventSourceRelation;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["news_event_sources"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      article_drafts: {
+        Row: {
+          id: string;
+          event_id: string;
+          article_type: ArticleType;
+          headline_ja: string;
+          dek_ja: string | null;
+          body_markdown: string;
+          source_attribution_markdown: string;
+          fact_check_json: unknown[];
+          editor_notes: string | null;
+          status: ArticleDraftStatus;
+          published_at: string | null;
+          reviewed_by: string | null;
+          reviewed_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          event_id: string;
+          article_type: ArticleType;
+          headline_ja: string;
+          dek_ja?: string | null;
+          body_markdown: string;
+          source_attribution_markdown: string;
+          fact_check_json?: unknown[];
+          editor_notes?: string | null;
+          status?: ArticleDraftStatus;
+          published_at?: string | null;
+          reviewed_by?: string | null;
+          reviewed_at?: string | null;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["article_drafts"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      news_collector_job_runs: {
+        Row: {
+          id: string;
+          source_id: string;
+          started_at: string;
+          finished_at: string | null;
+          http_status: number | null;
+          items_found: number | null;
+          items_inserted: number | null;
+          is_success: boolean;
+          error_message: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          source_id: string;
+          started_at?: string;
+          finished_at?: string | null;
+          http_status?: number | null;
+          items_found?: number | null;
+          items_inserted?: number | null;
+          is_success: boolean;
+          error_message?: string | null;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["news_collector_job_runs"]["Insert"]
+        >;
         Relationships: [];
       };
     };
