@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import { isLowConfidence } from "@/lib/news/constants";
+import { CATEGORY_OPTIONS, VERIFICATION_STATUS_OPTIONS, isLowConfidence } from "@/lib/news/constants";
+import { buildArticlePrompt } from "@/lib/news/prompt";
 import { LINK_CLASS } from "@/app/admin/_components/action-ui";
 import { EventInfoForm, SourceItemForm, CreateDraftButton } from "./event-forms";
+import { PromptGenerator } from "./prompt-generator";
 
 export const dynamic = "force-dynamic";
 
@@ -97,6 +99,31 @@ export default async function AdminNewsEventDetailPage({
               />
             ))}
           </div>
+        </section>
+
+        <section className="mb-8 border border-line bg-surface p-6">
+          <h2 className="mb-1 text-lg font-semibold">記事作成プロンプト</h2>
+          <p className="mb-4 text-xs text-muted">
+            ChatGPTやClaudeの通常チャットに貼り付けて使う下書き用プロンプトです。生成されたAIの回答は、この画面のAPIには送信されません。内容を確認のうえ、下書き編集画面の本文欄に手動で貼り付けてください。
+          </p>
+          <PromptGenerator
+            prompt={buildArticlePrompt({
+              headlineEn: event.headline_en,
+              category:
+                CATEGORY_OPTIONS.find((o) => o.value === event.category)?.label ??
+                event.category,
+              verificationStatus:
+                VERIFICATION_STATUS_OPTIONS.find(
+                  (o) => o.value === event.verification_status
+                )?.label ?? event.verification_status,
+              sources: (items ?? []).map((item) => ({
+                title: item.title,
+                mediaName: item.author_name ?? sourceNameById.get(item.source_id) ?? "不明",
+                url: item.canonical_url,
+              })),
+              verifiedFactsNotes: event.verified_facts_notes ?? "",
+            })}
+          />
         </section>
 
         <section className="border border-line bg-surface p-6">

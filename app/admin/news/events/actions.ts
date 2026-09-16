@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { canonicalizeUrl } from "@/lib/news/canonical-url";
 import { buildDefaultAttribution } from "@/lib/news/attribution";
+import { VERIFIED_FACTS_NOTES_MAX_LENGTH } from "@/lib/news/constants";
 import type { NewsEventCategory, VerificationStatus } from "@/lib/supabase/types";
 import type { ActionState } from "@/app/admin/_components/action-ui";
 
@@ -20,9 +21,16 @@ export async function updateEventAction(
   ) as VerificationStatus;
   const importanceScore = Number(formData.get("importanceScore") ?? 0);
   const reliabilityScore = Number(formData.get("reliabilityScore") ?? 0);
+  const verifiedFactsNotes = String(formData.get("verifiedFactsNotes") ?? "").trim();
 
   if (!eventId || !headlineEn) {
     return { status: "error", message: "見出しは必須です。" };
+  }
+  if (verifiedFactsNotes.length > VERIFIED_FACTS_NOTES_MAX_LENGTH) {
+    return {
+      status: "error",
+      message: `確認済み事実メモは${VERIFIED_FACTS_NOTES_MAX_LENGTH}文字以内で入力してください。`,
+    };
   }
 
   const supabase = createAdminSupabaseClient();
@@ -34,6 +42,7 @@ export async function updateEventAction(
       verification_status: verificationStatus,
       importance_score: importanceScore,
       reliability_score: reliabilityScore,
+      verified_facts_notes: verifiedFactsNotes || null,
     })
     .eq("id", eventId);
 

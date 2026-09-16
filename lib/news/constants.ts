@@ -59,3 +59,7 @@ export function isLowConfidence(
 export function isRumorOrUnverified(verificationStatus: VerificationStatus): boolean {
   return verificationStatus === "rumor" || verificationStatus === "unverified";
 }
+
+// 確認済み事実メモの最大文字数。入力欄のmaxLengthとサーバー側バリデーションで
+// 同じ値を使う。
+export const VERIFIED_FACTS_NOTES_MAX_LENGTH = 4000;

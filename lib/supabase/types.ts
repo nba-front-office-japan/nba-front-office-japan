@@ -394,6 +394,7 @@ export interface Database {
           entity_tags: { players: string[]; teams: string[] };
           editorial_status: EditorialStatus;
           ai_rationale: Record<string, unknown>;
+          verified_facts_notes: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -408,6 +409,7 @@ export interface Database {
           entity_tags?: { players: string[]; teams: string[] };
           editorial_status?: EditorialStatus;
           ai_rationale?: Record<string, unknown>;
+          verified_facts_notes?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["news_events"]["Insert"]>;
         Relationships: [];

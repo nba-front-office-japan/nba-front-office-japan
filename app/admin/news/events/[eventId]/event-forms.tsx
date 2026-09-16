@@ -9,6 +9,7 @@ import {
 import {
   CATEGORY_OPTIONS,
   VERIFICATION_STATUS_OPTIONS,
+  VERIFIED_FACTS_NOTES_MAX_LENGTH,
 } from "@/lib/news/constants";
 import {
   INITIAL_ACTION_STATE,
@@ -88,6 +89,22 @@ export function EventInfoForm({ event }: { event: NewsEvent }) {
             min={0}
             max={100}
             defaultValue={event.reliability_score}
+            className="border border-line bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-60"
+          />
+        </label>
+        <label className="grid gap-1 text-[11px] font-bold text-muted sm:col-span-2">
+          確認済み事実メモ（非公開・管理画面専用）
+          <span className="text-[11px] font-normal normal-case text-muted">
+            原典の文章を貼らず、確認できた事実を箇条書きで書いてください。
+          </span>
+          <textarea
+            name="verifiedFactsNotes"
+            defaultValue={event.verified_facts_notes ?? ""}
+            maxLength={VERIFIED_FACTS_NOTES_MAX_LENGTH}
+            rows={6}
+            placeholder={
+              "例：\n- ○○選手が××チームと契約に合意（原典: ESPN）\n- 契約年数・金額は原典に記載なし"
+            }
             className="border border-line bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-60"
           />
         </label>
