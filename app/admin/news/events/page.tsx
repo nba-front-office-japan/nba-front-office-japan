@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import { CATEGORY_OPTIONS, VERIFICATION_STATUS_OPTIONS } from "@/lib/news/constants";
+import {
+  CATEGORY_OPTIONS,
+  VERIFICATION_STATUS_OPTIONS,
+  ARTICLE_DRAFT_STATUS_LABEL,
+  ARTICLE_DRAFT_STATUS_BADGE_CLASS,
+} from "@/lib/news/constants";
 import { LINK_CLASS } from "@/app/admin/_components/action-ui";
+import type { ArticleDraftStatus } from "@/lib/supabase/types";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +32,9 @@ export default async function AdminNewsEventsPage() {
   for (const row of eventSources ?? []) {
     sourceCountByEvent.set(row.event_id, (sourceCountByEvent.get(row.event_id) ?? 0) + 1);
   }
-  const draftByEvent = new Map((drafts ?? []).map((d) => [d.event_id, d.status]));
+  const draftByEvent = new Map<string, ArticleDraftStatus>(
+    (drafts ?? []).map((d) => [d.event_id, d.status])
+  );
 
   return (
     <div className="px-4 py-8 sm:px-8">
@@ -80,8 +88,16 @@ export default async function AdminNewsEventsPage() {
                     <td className="px-3 py-2.5">{event.importance_score}</td>
                     <td className="px-3 py-2.5">{event.reliability_score}</td>
                     <td className="px-3 py-2.5">{sourceCountByEvent.get(event.id) ?? 0}</td>
-                    <td className="px-3 py-2.5 text-muted">
-                      {draftByEvent.get(event.id) ?? "未作成"}
+                    <td className="px-3 py-2.5">
+                      {draftByEvent.has(event.id) ? (
+                        <span
+                          className={`inline-block px-2 py-1 text-[11px] font-bold ${ARTICLE_DRAFT_STATUS_BADGE_CLASS[draftByEvent.get(event.id)!]}`}
+                        >
+                          {ARTICLE_DRAFT_STATUS_LABEL[draftByEvent.get(event.id)!]}
+                        </span>
+                      ) : (
+                        <span className="text-muted">未作成</span>
+                      )}
                     </td>
                   </tr>
                 ))

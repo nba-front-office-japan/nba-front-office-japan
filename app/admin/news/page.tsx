@@ -1,9 +1,12 @@
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { isSourceDegraded } from "@/lib/news/health";
+import { deriveProcessingStage } from "@/lib/news/processing-stage";
 import { registerManualOfficialUrlAction } from "./actions";
 import { CollectButton } from "./collect-button";
 import { ItemsSelector, type SelectableNewsItem } from "./items-selector";
 import type { Database } from "@/lib/supabase/types";
+
+const ITEMS_FETCH_LIMIT = 200;
 
 type JobRun = Database["public"]["Tables"]["news_collector_job_runs"]["Row"];
 
@@ -41,7 +44,7 @@ export default async function AdminNewsPage() {
         .from("news_items")
         .select("*")
         .order("fetched_at", { ascending: false })
-        .limit(30),
+        .limit(ITEMS_FETCH_LIMIT),
     ]);
 
   const sourceById = new Map((sources ?? []).map((s) => [s.id, s]));
@@ -53,17 +56,53 @@ export default async function AdminNewsPage() {
     runsBySource.set(run.source_id, list);
   }
 
-  const itemsForSelector: SelectableNewsItem[] = (recentItems ?? []).map((item) => ({
-    id: item.id,
-    title: item.title,
-    canonicalUrl: item.canonical_url,
-    authorName: item.author_name,
-    publishedAtLabel: formatDateTime(item.published_at),
-    fetchedAtLabel: formatDateTime(item.fetched_at),
-    sourceName: sourceById.get(item.source_id)?.name ?? "-",
-    sourceReliability: sourceById.get(item.source_id)?.reliability_level ?? 50,
-    status: item.status,
-  }));
+  const itemIds = (recentItems ?? []).map((item) => item.id);
+  const { data: eventSourceLinks } =
+    itemIds.length > 0
+      ? await supabase
+          .from("news_event_sources")
+          .select("news_item_id, event_id")
+          .in("news_item_id", itemIds)
+      : { data: [] };
+
+  const eventIdByItemId = new Map(
+    (eventSourceLinks ?? []).map((row) => [row.news_item_id, row.event_id])
+  );
+  const eventIds = [...new Set((eventSourceLinks ?? []).map((row) => row.event_id))];
+
+  const [{ data: linkedEvents }, { data: linkedDrafts }] = await Promise.all([
+    eventIds.length > 0
+      ? supabase.from("news_events").select("id, headline_en").in("id", eventIds)
+      : Promise.resolve({ data: [] }),
+    eventIds.length > 0
+      ? supabase.from("article_drafts").select("event_id, status").in("event_id", eventIds)
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  const eventHeadlineById = new Map((linkedEvents ?? []).map((e) => [e.id, e.headline_en]));
+  const draftStatusByEventId = new Map(
+    (linkedDrafts ?? []).map((d) => [d.event_id, d.status])
+  );
+
+  const itemsForSelector: SelectableNewsItem[] = (recentItems ?? []).map((item) => {
+    const eventId = eventIdByItemId.get(item.id) ?? null;
+    const draftStatus = eventId ? draftStatusByEventId.get(eventId) ?? null : null;
+    return {
+      id: item.id,
+      title: item.title,
+      canonicalUrl: item.canonical_url,
+      authorName: item.author_name,
+      publishedAtLabel: formatDateTime(item.published_at),
+      fetchedAtLabel: formatDateTime(item.fetched_at),
+      fetchedAt: item.fetched_at,
+      sourceName: sourceById.get(item.source_id)?.name ?? "-",
+      sourceReliability: sourceById.get(item.source_id)?.reliability_level ?? 50,
+      status: item.status,
+      stage: deriveProcessingStage(item.status, draftStatus),
+      eventId,
+      eventHeadline: eventId ? eventHeadlineById.get(eventId) ?? null : null,
+    };
+  });
 
   return (
     <div className="px-4 py-8 sm:px-8">

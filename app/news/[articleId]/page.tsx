@@ -2,7 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { fetchPublishedArticleById } from "@/lib/news/public-articles";
-import { CATEGORY_OPTIONS, isRumorOrUnverified } from "@/lib/news/constants";
+import {
+  CATEGORY_OPTIONS,
+  isRumorOrUnverified,
+  isSingleSource,
+  SINGLE_SOURCE_BADGE_CLASS,
+} from "@/lib/news/constants";
 import { PageShell } from "@/components/page-shell";
 
 export const dynamic = "force-dynamic";
@@ -48,6 +53,11 @@ export default async function NewsArticlePage({
           {lowConfidence && (
             <span className="inline-block bg-[#fde8e8] px-1.5 py-1 text-[11px] font-extrabold text-[#b0392f] dark:bg-red-950 dark:text-red-300">
               未確定情報（噂・未確認）
+            </span>
+          )}
+          {!lowConfidence && isSingleSource(article.verificationStatus) && (
+            <span className={`inline-block ${SINGLE_SOURCE_BADGE_CLASS}`}>
+              単独ソース
             </span>
           )}
         </div>
