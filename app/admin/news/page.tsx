@@ -1,6 +1,7 @@
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { isSourceDegraded } from "@/lib/news/health";
-import { triggerCollectAction, registerManualOfficialUrlAction } from "./actions";
+import { registerManualOfficialUrlAction } from "./actions";
+import { CollectButton } from "./collect-button";
 import type { Database } from "@/lib/supabase/types";
 
 type JobRun = Database["public"]["Tables"]["news_collector_job_runs"]["Row"];
@@ -68,14 +69,7 @@ export default async function AdminNewsPage() {
         <section className="mb-8 border border-line bg-surface p-6">
           <div className="mb-4 flex items-center justify-between gap-4">
             <h2 className="text-lg font-semibold">収集ソース</h2>
-            <form action={triggerCollectAction}>
-              <button
-                type="submit"
-                className="bg-blue px-4 py-2 text-sm font-bold text-white"
-              >
-                今すぐRSSを収集
-              </button>
-            </form>
+            <CollectButton />
           </div>
 
           <div className="overflow-x-auto">

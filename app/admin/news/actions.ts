@@ -6,10 +6,40 @@ import { collectAllActiveRssSources } from "@/lib/news/collect";
 import { canonicalizeUrl } from "@/lib/news/canonical-url";
 import { computeContentHash } from "@/lib/news/hash";
 
-export async function triggerCollectAction() {
-  const supabase = createAdminSupabaseClient();
-  await collectAllActiveRssSources(supabase);
-  revalidatePath("/admin/news");
+export interface CollectActionState {
+  status: "idle" | "success" | "error";
+  totalFound?: number;
+  totalInserted?: number;
+  message?: string;
+}
+
+export async function triggerCollectAction(): Promise<CollectActionState> {
+  try {
+    const supabase = createAdminSupabaseClient();
+    const results = await collectAllActiveRssSources(supabase);
+    revalidatePath("/admin/news");
+
+    const failed = results.filter((r) => !r.success);
+    if (failed.length > 0) {
+      return {
+        status: "error",
+        message: failed
+          .map((r) => `${r.sourceSlug}: ${r.errorMessage ?? "不明なエラー"}`)
+          .join(" / "),
+      };
+    }
+
+    return {
+      status: "success",
+      totalFound: results.reduce((sum, r) => sum + r.itemsFound, 0),
+      totalInserted: results.reduce((sum, r) => sum + r.itemsInserted, 0),
+    };
+  } catch (err) {
+    return {
+      status: "error",
+      message: err instanceof Error ? err.message : String(err),
+    };
+  }
 }
 
 export async function registerManualOfficialUrlAction(formData: FormData) {
