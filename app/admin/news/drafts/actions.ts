@@ -4,11 +4,15 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { ArticleType } from "@/lib/supabase/types";
+import type { ActionState } from "@/app/admin/_components/action-ui";
 
-export async function createDraftAction(formData: FormData) {
+export async function createDraftAction(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
   const eventId = String(formData.get("eventId") ?? "");
   if (!eventId) {
-    throw new Error("イベントを選択してください。");
+    return { status: "error", message: "イベントを選択してください。" };
   }
 
   const supabase = createAdminSupabaseClient();
@@ -30,7 +34,7 @@ export async function createDraftAction(formData: FormData) {
     .single();
 
   if (eventError || !event) {
-    throw new Error("イベントが見つかりません。");
+    return { status: "error", message: "イベントが見つかりません。" };
   }
 
   const { data: draft, error: draftError } = await supabase
@@ -46,14 +50,20 @@ export async function createDraftAction(formData: FormData) {
     .single();
 
   if (draftError || !draft) {
-    throw new Error(`下書き作成に失敗しました: ${draftError?.message}`);
+    return {
+      status: "error",
+      message: `下書き作成に失敗しました: ${draftError?.message}`,
+    };
   }
 
   revalidatePath("/admin/news/drafts");
-  redirect(`/admin/news/drafts/${draft.id}`);
+  redirect(`/admin/news/drafts/${draft.id}?created=1`);
 }
 
-export async function updateDraftAction(formData: FormData) {
+export async function updateDraftAction(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
   const draftId = String(formData.get("draftId") ?? "");
   const articleType = String(formData.get("articleType") ?? "") as ArticleType;
   const headlineJa = String(formData.get("headlineJa") ?? "").trim();
@@ -65,7 +75,7 @@ export async function updateDraftAction(formData: FormData) {
   const editorNotes = String(formData.get("editorNotes") ?? "").trim();
 
   if (!draftId || !headlineJa) {
-    throw new Error("見出しは必須です。");
+    return { status: "error", message: "見出しは必須です。" };
   }
 
   const supabase = createAdminSupabaseClient();
@@ -82,27 +92,33 @@ export async function updateDraftAction(formData: FormData) {
     .eq("id", draftId);
 
   if (error) {
-    throw new Error(`保存に失敗しました: ${error.message}`);
+    return { status: "error", message: `保存に失敗しました: ${error.message}` };
   }
 
   revalidatePath(`/admin/news/drafts/${draftId}`);
   revalidatePath("/admin/news/drafts");
+  return { status: "success", message: "保存しました" };
 }
 
-export async function publishDraftAction(formData: FormData) {
+export async function publishDraftAction(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
   const draftId = String(formData.get("draftId") ?? "");
-  if (!draftId) throw new Error("下書きIDが不正です。");
+  if (!draftId) {
+    return { status: "error", message: "下書きIDが不正です。" };
+  }
 
   const supabase = createAdminSupabaseClient();
 
   const { data: draft } = await supabase
     .from("article_drafts")
-    .select("body_markdown, source_attribution_markdown")
+    .select("body_markdown")
     .eq("id", draftId)
     .single();
 
   if (!draft || !draft.body_markdown.trim()) {
-    throw new Error("本文が空のままでは公開できません。");
+    return { status: "error", message: "本文が空のままでは公開できません。" };
   }
 
   const { error } = await supabase
@@ -111,18 +127,24 @@ export async function publishDraftAction(formData: FormData) {
     .eq("id", draftId);
 
   if (error) {
-    throw new Error(`公開に失敗しました: ${error.message}`);
+    return { status: "error", message: `公開に失敗しました: ${error.message}` };
   }
 
   revalidatePath(`/admin/news/drafts/${draftId}`);
   revalidatePath("/admin/news/drafts");
   revalidatePath("/news");
   revalidatePath("/");
+  return { status: "success", message: "公開しました" };
 }
 
-export async function rejectDraftAction(formData: FormData) {
+export async function rejectDraftAction(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
   const draftId = String(formData.get("draftId") ?? "");
-  if (!draftId) throw new Error("下書きIDが不正です。");
+  if (!draftId) {
+    return { status: "error", message: "下書きIDが不正です。" };
+  }
 
   const supabase = createAdminSupabaseClient();
   const { error } = await supabase
@@ -131,9 +153,10 @@ export async function rejectDraftAction(formData: FormData) {
     .eq("id", draftId);
 
   if (error) {
-    throw new Error(`却下に失敗しました: ${error.message}`);
+    return { status: "error", message: `却下に失敗しました: ${error.message}` };
   }
 
   revalidatePath(`/admin/news/drafts/${draftId}`);
   revalidatePath("/admin/news/drafts");
+  return { status: "success", message: "却下しました" };
 }

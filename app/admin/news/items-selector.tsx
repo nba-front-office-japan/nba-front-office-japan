@@ -1,11 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import { createEventFromItemsAction } from "./actions";
 import {
   CATEGORY_OPTIONS,
   VERIFICATION_STATUS_OPTIONS,
 } from "@/lib/news/constants";
+import {
+  INITIAL_ACTION_STATE,
+  PRIMARY_BUTTON_CLASS,
+  StatusMessage,
+} from "@/app/admin/_components/action-ui";
 
 export interface SelectableNewsItem {
   id: string;
@@ -28,6 +33,10 @@ const STATUS_LABEL: Record<string, string> = {
 
 export function ItemsSelector({ items }: { items: SelectableNewsItem[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [state, formAction, isPending] = useActionState(
+    createEventFromItemsAction,
+    INITIAL_ACTION_STATE
+  );
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -80,6 +89,7 @@ export function ItemsSelector({ items }: { items: SelectableNewsItem[] }) {
                       type="checkbox"
                       checked={selected.has(item.id)}
                       onChange={() => toggle(item.id)}
+                      disabled={isPending}
                       aria-label={`${item.title}を選択`}
                     />
                   </td>
@@ -110,84 +120,84 @@ export function ItemsSelector({ items }: { items: SelectableNewsItem[] }) {
 
       {selectedItems.length > 0 && (
         <form
-          action={createEventFromItemsAction}
+          action={formAction}
           className="mt-4 grid grid-cols-1 gap-3 border border-line bg-[#eaf1ff] p-4 dark:bg-white/[.06] sm:grid-cols-2"
         >
           {selectedItems.map((item) => (
             <input key={item.id} type="hidden" name="itemIds" value={item.id} />
           ))}
-          <p className="text-sm font-bold sm:col-span-2">
-            {selectedItems.length}件の記事からイベントを作成
-          </p>
-          <label className="grid gap-1 text-[11px] font-bold text-muted sm:col-span-2">
-            内部見出し（英語・管理用、必須）
-            <input
-              type="text"
-              name="headlineEn"
-              required
-              defaultValue={defaultHeadline}
-              key={defaultHeadline}
-              className="border border-line bg-surface px-3 py-2 text-sm text-foreground"
-            />
-          </label>
-          <label className="grid gap-1 text-[11px] font-bold text-muted">
-            カテゴリ
-            <select
-              name="category"
-              defaultValue="other"
-              className="border border-line bg-surface px-3 py-2 text-sm text-foreground"
-            >
-              {CATEGORY_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="grid gap-1 text-[11px] font-bold text-muted">
-            検証状態
-            <select
-              name="verificationStatus"
-              defaultValue="single_source"
-              className="border border-line bg-surface px-3 py-2 text-sm text-foreground"
-            >
-              {VERIFICATION_STATUS_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="grid gap-1 text-[11px] font-bold text-muted">
-            重要度（0-100）
-            <input
-              type="number"
-              name="importanceScore"
-              min={0}
-              max={100}
-              defaultValue={50}
-              className="border border-line bg-surface px-3 py-2 text-sm text-foreground"
-            />
-          </label>
-          <label className="grid gap-1 text-[11px] font-bold text-muted">
-            信頼度（0-100・目安：選択ソースの平均）
-            <input
-              type="number"
-              name="reliabilityScore"
-              min={0}
-              max={100}
-              defaultValue={defaultReliability}
-              key={defaultReliability}
-              className="border border-line bg-surface px-3 py-2 text-sm text-foreground"
-            />
-          </label>
-          <div className="sm:col-span-2">
-            <button
-              type="submit"
-              className="bg-blue px-4 py-2 text-sm font-bold text-white"
-            >
-              選択した記事からイベントを作成
+          <fieldset disabled={isPending} className="contents">
+            <p className="text-sm font-bold sm:col-span-2">
+              {selectedItems.length}件の記事からイベントを作成
+            </p>
+            <label className="grid gap-1 text-[11px] font-bold text-muted sm:col-span-2">
+              内部見出し（英語・管理用、必須）
+              <input
+                type="text"
+                name="headlineEn"
+                required
+                defaultValue={defaultHeadline}
+                key={defaultHeadline}
+                className="border border-line bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-60"
+              />
+            </label>
+            <label className="grid gap-1 text-[11px] font-bold text-muted">
+              カテゴリ
+              <select
+                name="category"
+                defaultValue="other"
+                className="border border-line bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-60"
+              >
+                {CATEGORY_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="grid gap-1 text-[11px] font-bold text-muted">
+              検証状態
+              <select
+                name="verificationStatus"
+                defaultValue="single_source"
+                className="border border-line bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-60"
+              >
+                {VERIFICATION_STATUS_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="grid gap-1 text-[11px] font-bold text-muted">
+              重要度（0-100）
+              <input
+                type="number"
+                name="importanceScore"
+                min={0}
+                max={100}
+                defaultValue={50}
+                className="border border-line bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-60"
+              />
+            </label>
+            <label className="grid gap-1 text-[11px] font-bold text-muted">
+              信頼度（0-100・目安：選択ソースの平均）
+              <input
+                type="number"
+                name="reliabilityScore"
+                min={0}
+                max={100}
+                defaultValue={defaultReliability}
+                key={defaultReliability}
+                className="border border-line bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-60"
+              />
+            </label>
+          </fieldset>
+          <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
+            <button type="submit" disabled={isPending} className={PRIMARY_BUTTON_CLASS}>
+              {isPending ? "イベントを作成中…" : "選択した記事からイベントを作成"}
             </button>
+            {!isPending && <StatusMessage state={state} />}
           </div>
         </form>
       )}

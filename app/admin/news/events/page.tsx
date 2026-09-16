@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { CATEGORY_OPTIONS, VERIFICATION_STATUS_OPTIONS } from "@/lib/news/constants";
+import { LINK_CLASS } from "@/app/admin/_components/action-ui";
 
 export const dynamic = "force-dynamic";
 
@@ -65,10 +66,7 @@ export default async function AdminNewsEventsPage() {
                 (events ?? []).map((event) => (
                   <tr key={event.id} className="border-b border-line/60">
                     <td className="max-w-[280px] px-3 py-2.5">
-                      <Link
-                        href={`/admin/news/events/${event.id}`}
-                        className="font-semibold text-blue hover:underline"
-                      >
+                      <Link href={`/admin/news/events/${event.id}`} className={LINK_CLASS}>
                         {event.headline_en}
                       </Link>
                     </td>

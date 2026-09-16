@@ -11,6 +11,7 @@ import type {
   NewsEventCategory,
   VerificationStatus,
 } from "@/lib/supabase/types";
+import type { ActionState } from "@/app/admin/_components/action-ui";
 
 export interface CollectActionState {
   status: "idle" | "success" | "error";
@@ -102,7 +103,10 @@ function generateEventKey(): string {
   return `evt-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export async function createEventFromItemsAction(formData: FormData) {
+export async function createEventFromItemsAction(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
   const itemIds = formData.getAll("itemIds").map(String).filter(Boolean);
   const headlineEn = String(formData.get("headlineEn") ?? "").trim();
   const category = String(formData.get("category") ?? "") as NewsEventCategory;
@@ -113,10 +117,10 @@ export async function createEventFromItemsAction(formData: FormData) {
   const reliabilityScore = Number(formData.get("reliabilityScore") ?? 50);
 
   if (itemIds.length === 0) {
-    throw new Error("記事を1件以上選択してください。");
+    return { status: "error", message: "記事を1件以上選択してください。" };
   }
   if (!headlineEn) {
-    throw new Error("内部見出し（英語）は必須です。");
+    return { status: "error", message: "内部見出し（英語）は必須です。" };
   }
 
   const supabase = createAdminSupabaseClient();
@@ -135,7 +139,10 @@ export async function createEventFromItemsAction(formData: FormData) {
     .single();
 
   if (eventError || !event) {
-    throw new Error(`イベント作成に失敗しました: ${eventError?.message}`);
+    return {
+      status: "error",
+      message: `イベント作成に失敗しました: ${eventError?.message}`,
+    };
   }
 
   const eventSourceRows = itemIds.map((newsItemId, index) => ({
@@ -149,12 +156,15 @@ export async function createEventFromItemsAction(formData: FormData) {
     .insert(eventSourceRows);
 
   if (linkError) {
-    throw new Error(`ソースの紐付けに失敗しました: ${linkError.message}`);
+    return {
+      status: "error",
+      message: `ソースの紐付けに失敗しました: ${linkError.message}`,
+    };
   }
 
   await supabase.from("news_items").update({ status: "processed" }).in("id", itemIds);
 
   revalidatePath("/admin/news");
   revalidatePath("/admin/news/events");
-  redirect(`/admin/news/events/${event.id}`);
+  redirect(`/admin/news/events/${event.id}?created=1`);
 }

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { ARTICLE_DRAFT_STATUS_LABEL } from "@/lib/news/constants";
-import { createDraftAction } from "./actions";
+import { CreateDraftForm } from "./create-draft-form";
+import { LINK_CLASS } from "@/app/admin/_components/action-ui";
 
 export const dynamic = "force-dynamic";
 
@@ -50,28 +51,7 @@ export default async function AdminNewsDraftsPage() {
               下書き未作成のイベントがありません。先に「イベント」画面でイベントを作成してください。
             </p>
           ) : (
-            <form action={createDraftAction} className="flex flex-wrap items-end gap-3">
-              <label className="grid gap-1 text-[11px] font-bold text-muted">
-                イベント
-                <select
-                  name="eventId"
-                  required
-                  className="min-w-[280px] border border-line bg-surface px-3 py-2 text-sm text-foreground"
-                >
-                  {eventsWithoutDraft.map((e) => (
-                    <option key={e.id} value={e.id}>
-                      {e.headline_en}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <button
-                type="submit"
-                className="bg-blue px-4 py-2 text-sm font-bold text-white"
-              >
-                下書きを作成
-              </button>
-            </form>
+            <CreateDraftForm events={eventsWithoutDraft} />
           )}
         </section>
 
@@ -99,10 +79,7 @@ export default async function AdminNewsDraftsPage() {
                   (drafts ?? []).map((draft) => (
                     <tr key={draft.id} className="border-b border-line/60">
                       <td className="max-w-[240px] px-3 py-2.5">
-                        <Link
-                          href={`/admin/news/drafts/${draft.id}`}
-                          className="font-semibold text-blue hover:underline"
-                        >
+                        <Link href={`/admin/news/drafts/${draft.id}`} className={LINK_CLASS}>
                           {draft.headline_ja}
                         </Link>
                       </td>

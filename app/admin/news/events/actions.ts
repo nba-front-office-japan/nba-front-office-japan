@@ -6,8 +6,12 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { canonicalizeUrl } from "@/lib/news/canonical-url";
 import { buildDefaultAttribution } from "@/lib/news/attribution";
 import type { NewsEventCategory, VerificationStatus } from "@/lib/supabase/types";
+import type { ActionState } from "@/app/admin/_components/action-ui";
 
-export async function updateEventAction(formData: FormData) {
+export async function updateEventAction(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
   const eventId = String(formData.get("eventId") ?? "");
   const headlineEn = String(formData.get("headlineEn") ?? "").trim();
   const category = String(formData.get("category") ?? "") as NewsEventCategory;
@@ -18,7 +22,7 @@ export async function updateEventAction(formData: FormData) {
   const reliabilityScore = Number(formData.get("reliabilityScore") ?? 0);
 
   if (!eventId || !headlineEn) {
-    throw new Error("見出しは必須です。");
+    return { status: "error", message: "見出しは必須です。" };
   }
 
   const supabase = createAdminSupabaseClient();
@@ -34,14 +38,18 @@ export async function updateEventAction(formData: FormData) {
     .eq("id", eventId);
 
   if (error) {
-    throw new Error(`更新に失敗しました: ${error.message}`);
+    return { status: "error", message: `更新に失敗しました: ${error.message}` };
   }
 
   revalidatePath(`/admin/news/events/${eventId}`);
   revalidatePath("/admin/news/events");
+  return { status: "success", message: "保存しました" };
 }
 
-export async function updateSourceItemAction(formData: FormData) {
+export async function updateSourceItemAction(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
   const itemId = String(formData.get("itemId") ?? "");
   const eventId = String(formData.get("eventId") ?? "");
   const title = String(formData.get("title") ?? "").trim();
@@ -49,7 +57,7 @@ export async function updateSourceItemAction(formData: FormData) {
   const authorName = String(formData.get("authorName") ?? "").trim();
 
   if (!itemId || !title || !url) {
-    throw new Error("タイトルとURLは必須です。");
+    return { status: "error", message: "タイトルとURLは必須です。" };
   }
 
   const supabase = createAdminSupabaseClient();
@@ -63,16 +71,23 @@ export async function updateSourceItemAction(formData: FormData) {
     .eq("id", itemId);
 
   if (error) {
-    throw new Error(`原典情報の更新に失敗しました: ${error.message}`);
+    return {
+      status: "error",
+      message: `原典情報の更新に失敗しました: ${error.message}`,
+    };
   }
 
   revalidatePath(`/admin/news/events/${eventId}`);
+  return { status: "success", message: "保存しました" };
 }
 
-export async function createDraftFromEventAction(formData: FormData) {
+export async function createDraftFromEventAction(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
   const eventId = String(formData.get("eventId") ?? "");
   if (!eventId) {
-    throw new Error("イベントIDが不正です。");
+    return { status: "error", message: "イベントIDが不正です。" };
   }
 
   const supabase = createAdminSupabaseClient();
@@ -94,7 +109,7 @@ export async function createDraftFromEventAction(formData: FormData) {
     .single();
 
   if (eventError || !event) {
-    throw new Error("イベントが見つかりません。");
+    return { status: "error", message: "イベントが見つかりません。" };
   }
 
   const { data: eventSources } = await supabase
@@ -140,9 +155,12 @@ export async function createDraftFromEventAction(formData: FormData) {
     .single();
 
   if (draftError || !draft) {
-    throw new Error(`下書き作成に失敗しました: ${draftError?.message}`);
+    return {
+      status: "error",
+      message: `下書き作成に失敗しました: ${draftError?.message}`,
+    };
   }
 
   revalidatePath(`/admin/news/events/${eventId}`);
-  redirect(`/admin/news/drafts/${draft.id}`);
+  redirect(`/admin/news/drafts/${draft.id}?created=1`);
 }

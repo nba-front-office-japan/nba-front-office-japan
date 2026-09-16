@@ -1,20 +1,19 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import {
-  ARTICLE_TYPE_OPTIONS,
-  ARTICLE_DRAFT_STATUS_LABEL,
-  isLowConfidence,
-} from "@/lib/news/constants";
-import { updateDraftAction, rejectDraftAction } from "../actions";
+import { ARTICLE_DRAFT_STATUS_LABEL, isLowConfidence } from "@/lib/news/constants";
+import { LINK_CLASS } from "@/app/admin/_components/action-ui";
+import { DraftEditForm, RejectButton } from "./draft-forms";
 import { PublishButton } from "./publish-button";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminNewsDraftDetailPage({
   params,
+  searchParams,
 }: PageProps<"/admin/news/drafts/[draftId]">) {
   const { draftId } = await params;
+  const { created } = await searchParams;
   const supabase = createAdminSupabaseClient();
 
   const { data: draft, error } = await supabase
@@ -54,7 +53,7 @@ export default async function AdminNewsDraftDetailPage({
   return (
     <div className="px-4 py-8 sm:px-8">
       <div className="mx-auto max-w-4xl">
-        <Link href="/admin/news/drafts" className="mb-4 inline-block text-sm text-blue">
+        <Link href="/admin/news/drafts" className={`mb-4 inline-block text-sm ${LINK_CLASS}`}>
           ← 下書き一覧に戻る
         </Link>
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -63,6 +62,16 @@ export default async function AdminNewsDraftDetailPage({
             {ARTICLE_DRAFT_STATUS_LABEL[draft.status]}
           </span>
         </div>
+
+        {created === "1" && (
+          <p
+            role="status"
+            aria-live="polite"
+            className="mb-4 border border-[#218c68] bg-[#e9f7f1] px-4 py-3 text-sm font-bold text-[#186b4f] dark:bg-white/[.06]"
+          >
+            下書きを作成しました
+          </p>
+        )}
 
         {event && isLowConfidence(event.verification_status, event.reliability_score) && (
           <p className="mb-4 border border-[#f3b83f] bg-[#fff8e8] px-4 py-3 text-sm font-bold text-[#8a5a00] dark:bg-white/[.06]">
@@ -82,7 +91,7 @@ export default async function AdminNewsDraftDetailPage({
                     href={item.canonical_url}
                     target="_blank"
                     rel="noreferrer noopener"
-                    className="font-semibold text-blue hover:underline"
+                    className={LINK_CLASS}
                   >
                     {item.title}
                   </a>
@@ -98,91 +107,12 @@ export default async function AdminNewsDraftDetailPage({
 
         <section className="mb-8 border border-line bg-surface p-6">
           <h2 className="mb-4 text-lg font-semibold">本文</h2>
-          <form action={updateDraftAction} className="grid grid-cols-1 gap-3">
-            <input type="hidden" name="draftId" value={draft.id} />
-            <label className="grid gap-1 text-[11px] font-bold text-muted">
-              記事種別
-              <select
-                name="articleType"
-                defaultValue={draft.article_type}
-                className="max-w-[200px] border border-line bg-surface px-3 py-2 text-sm text-foreground"
-              >
-                {ARTICLE_TYPE_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="grid gap-1 text-[11px] font-bold text-muted">
-              見出し
-              <input
-                type="text"
-                name="headlineJa"
-                defaultValue={draft.headline_ja}
-                required
-                className="border border-line bg-surface px-3 py-2 text-sm text-foreground"
-              />
-            </label>
-            <label className="grid gap-1 text-[11px] font-bold text-muted">
-              サブ見出し（任意）
-              <input
-                type="text"
-                name="dekJa"
-                defaultValue={draft.dek_ja ?? ""}
-                className="border border-line bg-surface px-3 py-2 text-sm text-foreground"
-              />
-            </label>
-            <label className="grid gap-1 text-[11px] font-bold text-muted">
-              本文（Markdown。RSS原文の転載はしないでください）
-              <textarea
-                name="bodyMarkdown"
-                defaultValue={draft.body_markdown}
-                rows={12}
-                required
-                className="border border-line bg-surface px-3 py-2 font-mono text-sm text-foreground"
-              />
-            </label>
-            <label className="grid gap-1 text-[11px] font-bold text-muted">
-              出典表記（任意の補足。原典リンクは上のセクションで自動表示されます）
-              <textarea
-                name="sourceAttributionMarkdown"
-                defaultValue={draft.source_attribution_markdown}
-                rows={4}
-                className="border border-line bg-surface px-3 py-2 font-mono text-sm text-foreground"
-              />
-            </label>
-            <label className="grid gap-1 text-[11px] font-bold text-muted">
-              編集メモ（内部用・非公開）
-              <textarea
-                name="editorNotes"
-                defaultValue={draft.editor_notes ?? ""}
-                rows={2}
-                className="border border-line bg-surface px-3 py-2 text-sm text-foreground"
-              />
-            </label>
-            <div>
-              <button
-                type="submit"
-                className="bg-blue px-4 py-2 text-sm font-bold text-white"
-              >
-                保存
-              </button>
-            </div>
-          </form>
+          <DraftEditForm draft={draft} />
         </section>
 
         <section className="flex flex-wrap items-center gap-4 border border-line bg-surface p-6">
           <PublishButton draftId={draft.id} />
-          <form action={rejectDraftAction}>
-            <input type="hidden" name="draftId" value={draft.id} />
-            <button
-              type="submit"
-              className="border border-line px-4 py-2 text-sm font-bold text-muted hover:text-foreground"
-            >
-              却下する
-            </button>
-          </form>
+          <RejectButton draftId={draft.id} />
         </section>
       </div>
     </div>

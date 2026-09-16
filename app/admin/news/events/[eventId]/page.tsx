@@ -1,23 +1,18 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import {
-  CATEGORY_OPTIONS,
-  VERIFICATION_STATUS_OPTIONS,
-  isLowConfidence,
-} from "@/lib/news/constants";
-import {
-  updateEventAction,
-  updateSourceItemAction,
-  createDraftFromEventAction,
-} from "../actions";
+import { isLowConfidence } from "@/lib/news/constants";
+import { LINK_CLASS } from "@/app/admin/_components/action-ui";
+import { EventInfoForm, SourceItemForm, CreateDraftButton } from "./event-forms";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminNewsEventDetailPage({
   params,
+  searchParams,
 }: PageProps<"/admin/news/events/[eventId]">) {
   const { eventId } = await params;
+  const { created } = await searchParams;
   const supabase = createAdminSupabaseClient();
 
   const { data: event, error: eventError } = await supabase
@@ -61,10 +56,20 @@ export default async function AdminNewsEventDetailPage({
   return (
     <div className="px-4 py-8 sm:px-8">
       <div className="mx-auto max-w-4xl">
-        <Link href="/admin/news/events" className="mb-4 inline-block text-sm text-blue">
+        <Link href="/admin/news/events" className={`mb-4 inline-block text-sm ${LINK_CLASS}`}>
           ← イベント一覧に戻る
         </Link>
         <h1 className="mb-6 text-2xl font-semibold">イベント詳細</h1>
+
+        {created === "1" && (
+          <p
+            role="status"
+            aria-live="polite"
+            className="mb-4 border border-[#218c68] bg-[#e9f7f1] px-4 py-3 text-sm font-bold text-[#186b4f] dark:bg-white/[.06]"
+          >
+            イベントを作成しました
+          </p>
+        )}
 
         {isLowConfidence(event.verification_status, event.reliability_score) && (
           <p className="mb-4 border border-[#f3b83f] bg-[#fff8e8] px-4 py-3 text-sm font-bold text-[#8a5a00] dark:bg-white/[.06]">
@@ -74,134 +79,22 @@ export default async function AdminNewsEventDetailPage({
 
         <section className="mb-8 border border-line bg-surface p-6">
           <h2 className="mb-4 text-lg font-semibold">イベント情報</h2>
-          <form
-            action={updateEventAction}
-            className="grid grid-cols-1 gap-3 sm:grid-cols-2"
-          >
-            <input type="hidden" name="eventId" value={event.id} />
-            <label className="grid gap-1 text-[11px] font-bold text-muted sm:col-span-2">
-              内部見出し（英語）
-              <input
-                type="text"
-                name="headlineEn"
-                defaultValue={event.headline_en}
-                required
-                className="border border-line bg-surface px-3 py-2 text-sm text-foreground"
-              />
-            </label>
-            <label className="grid gap-1 text-[11px] font-bold text-muted">
-              カテゴリ
-              <select
-                name="category"
-                defaultValue={event.category}
-                className="border border-line bg-surface px-3 py-2 text-sm text-foreground"
-              >
-                {CATEGORY_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="grid gap-1 text-[11px] font-bold text-muted">
-              検証状態
-              <select
-                name="verificationStatus"
-                defaultValue={event.verification_status}
-                className="border border-line bg-surface px-3 py-2 text-sm text-foreground"
-              >
-                {VERIFICATION_STATUS_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="grid gap-1 text-[11px] font-bold text-muted">
-              重要度（0-100）
-              <input
-                type="number"
-                name="importanceScore"
-                min={0}
-                max={100}
-                defaultValue={event.importance_score}
-                className="border border-line bg-surface px-3 py-2 text-sm text-foreground"
-              />
-            </label>
-            <label className="grid gap-1 text-[11px] font-bold text-muted">
-              信頼度（0-100）
-              <input
-                type="number"
-                name="reliabilityScore"
-                min={0}
-                max={100}
-                defaultValue={event.reliability_score}
-                className="border border-line bg-surface px-3 py-2 text-sm text-foreground"
-              />
-            </label>
-            <div className="sm:col-span-2">
-              <button
-                type="submit"
-                className="bg-blue px-4 py-2 text-sm font-bold text-white"
-              >
-                保存
-              </button>
-            </div>
-          </form>
+          <EventInfoForm event={event} />
         </section>
 
         <section className="mb-8 border border-line bg-surface p-6">
           <h2 className="mb-4 text-lg font-semibold">原典ソース（{(items ?? []).length}件）</h2>
           <div className="space-y-4">
             {(items ?? []).map((item) => (
-              <form
+              <SourceItemForm
                 key={item.id}
-                action={updateSourceItemAction}
-                className="grid grid-cols-1 gap-2 border border-line p-4 sm:grid-cols-2"
-              >
-                <input type="hidden" name="itemId" value={item.id} />
-                <input type="hidden" name="eventId" value={event.id} />
-                <p className="text-[11px] font-bold text-muted sm:col-span-2">
-                  {relationByItemId.get(item.id) === "primary" ? "主要ソース" : "確認ソース"}
-                </p>
-                <label className="grid gap-1 text-[11px] font-bold text-muted sm:col-span-2">
-                  タイトル
-                  <input
-                    type="text"
-                    name="title"
-                    defaultValue={item.title}
-                    required
-                    className="border border-line bg-surface px-3 py-2 text-sm text-foreground"
-                  />
-                </label>
-                <label className="grid gap-1 text-[11px] font-bold text-muted sm:col-span-2">
-                  原典URL
-                  <input
-                    type="url"
-                    name="url"
-                    defaultValue={item.canonical_url}
-                    required
-                    className="border border-line bg-surface px-3 py-2 text-sm text-foreground"
-                  />
-                </label>
-                <label className="grid gap-1 text-[11px] font-bold text-muted">
-                  媒体名・発表元
-                  <input
-                    type="text"
-                    name="authorName"
-                    defaultValue={item.author_name ?? sourceNameById.get(item.source_id) ?? ""}
-                    className="border border-line bg-surface px-3 py-2 text-sm text-foreground"
-                  />
-                </label>
-                <div className="flex items-end">
-                  <button
-                    type="submit"
-                    className="border border-line bg-surface px-4 py-2 text-sm font-bold hover:bg-[#f6f9ff]"
-                  >
-                    このソースを保存
-                  </button>
-                </div>
-              </form>
+                item={item}
+                eventId={event.id}
+                relationLabel={
+                  relationByItemId.get(item.id) === "primary" ? "主要ソース" : "確認ソース"
+                }
+                defaultAuthorName={item.author_name ?? sourceNameById.get(item.source_id) ?? ""}
+              />
             ))}
           </div>
         </section>
@@ -211,20 +104,12 @@ export default async function AdminNewsEventDetailPage({
           {draft ? (
             <Link
               href={`/admin/news/drafts/${draft.id}`}
-              className="inline-block bg-blue px-4 py-2 text-sm font-bold text-white"
+              className={`inline-block ${LINK_CLASS}`}
             >
               下書きを編集する（状態: {draft.status}）
             </Link>
           ) : (
-            <form action={createDraftFromEventAction}>
-              <input type="hidden" name="eventId" value={event.id} />
-              <button
-                type="submit"
-                className="bg-blue px-4 py-2 text-sm font-bold text-white"
-              >
-                下書きを作成する
-              </button>
-            </form>
+            <CreateDraftButton eventId={event.id} />
           )}
         </section>
       </div>
