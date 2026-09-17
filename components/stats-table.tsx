@@ -2,7 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import type { Database } from "@/lib/supabase/types";
-import { deriveStats, formatStat } from "@/lib/stats";
+import { deriveStats, formatStat, formatPct } from "@/lib/stats";
 
 type SeasonType =
   Database["public"]["Tables"]["player_stats"]["Row"]["season_type"];
@@ -37,23 +37,39 @@ interface DerivedRow extends StatRow {
   ppg: number | null;
   rpg: number | null;
   apg: number | null;
+  mpg: number | null;
+  orbPg: number | null;
+  drbPg: number | null;
+  stlPg: number | null;
+  blkPg: number | null;
+  tovPg: number | null;
+  pfPg: number | null;
   fgPct: number | null;
   threePct: number | null;
-  tsPct: number | null;
+  ftPct: number | null;
 }
 
 export type SortKey =
   | "playerName"
-  | "teamLabel"
+  | "position"
   | "gamesPlayed"
+  | "mpg"
   | "ppg"
+  | "orbPg"
+  | "drbPg"
   | "rpg"
   | "apg"
+  | "stlPg"
+  | "blkPg"
   | "fgPct"
   | "threePct"
-  | "tsPct";
+  | "ftPct"
+  | "tovPg"
+  | "pfPg"
+  | "teamLabel";
 
-// 選手名の次に主要スタッツ(PPG等)を並べ、モバイル幅でも先に見えるようにする。
+// POS/G/MPG/PTS PG/ORB PG/DRB PG/TRB PG/AST PG/STL PG/BLK PG/FG%/3P%/FT%/TOV PG/PF PGの順で表示する。
+// 選手名を先頭に、補足情報としてチームを末尾に添える。
 const COLUMNS: {
   key: SortKey;
   label: string;
@@ -66,27 +82,27 @@ const COLUMNS: {
     render: (row) => row.playerName,
     cellClassName: "font-medium",
   },
-  { key: "ppg", label: "PPG", render: (row) => formatStat(row.ppg) },
-  { key: "rpg", label: "RPG", render: (row) => formatStat(row.rpg) },
-  { key: "apg", label: "APG", render: (row) => formatStat(row.apg) },
+  { key: "position", label: "POS", render: (row) => row.position ?? "-" },
+  { key: "gamesPlayed", label: "G", render: (row) => row.gamesPlayed },
+  { key: "mpg", label: "MPG", render: (row) => formatStat(row.mpg) },
+  { key: "ppg", label: "PTS PG", render: (row) => formatStat(row.ppg) },
+  { key: "orbPg", label: "ORB PG", render: (row) => formatStat(row.orbPg) },
+  { key: "drbPg", label: "DRB PG", render: (row) => formatStat(row.drbPg) },
+  { key: "rpg", label: "TRB PG", render: (row) => formatStat(row.rpg) },
+  { key: "apg", label: "AST PG", render: (row) => formatStat(row.apg) },
+  { key: "stlPg", label: "STL PG", render: (row) => formatStat(row.stlPg) },
+  { key: "blkPg", label: "BLK PG", render: (row) => formatStat(row.blkPg) },
+  { key: "fgPct", label: "FG%", render: (row) => formatPct(row.fgPct) },
+  { key: "threePct", label: "3P%", render: (row) => formatPct(row.threePct) },
+  { key: "ftPct", label: "FT%", render: (row) => formatPct(row.ftPct) },
+  { key: "tovPg", label: "TOV PG", render: (row) => formatStat(row.tovPg) },
+  { key: "pfPg", label: "PF PG", render: (row) => formatStat(row.pfPg) },
   {
     key: "teamLabel",
     label: "チーム",
     render: (row) => row.teamLabel,
     cellClassName: "text-muted",
   },
-  {
-    key: "gamesPlayed",
-    label: "試合数",
-    render: (row) => row.gamesPlayed,
-  },
-  { key: "fgPct", label: "FG%", render: (row) => formatStat(row.fgPct) },
-  {
-    key: "threePct",
-    label: "3P%",
-    render: (row) => formatStat(row.threePct),
-  },
-  { key: "tsPct", label: "TS%", render: (row) => formatStat(row.tsPct) },
 ];
 
 const POSITIONS = ["PG", "SG", "SF", "PF", "C"];
@@ -236,7 +252,7 @@ export function StatsTable({
       <p className="mb-2 text-xs text-muted sm:hidden">→ 横にスクロールできます</p>
 
       <div className="overflow-x-auto border border-line bg-surface">
-        <table className="w-full min-w-[640px] border-collapse text-sm">
+        <table className="w-full min-w-[1180px] border-collapse text-sm">
           <thead>
             <tr className="border-b border-line">
               {COLUMNS.map((col) => (

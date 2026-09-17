@@ -85,15 +85,66 @@ export function formatPct(value: number | null, digits = 1): string {
   return value === null ? "-" : `${value.toFixed(digits)}%`;
 }
 
-// 選手個人の「シーズン全体」の成績行を選ぶ（移籍していればTOT行(team_id=NULL)を
-// 優先し、無ければ単独チーム分の行を使う）。チームページ・選手詳細ページ双方で使う。
-export function pickPrimarySeasonRow<T extends { team_id: string | null }>(
-  rows: T[]
-): T | undefined {
-  return rows.find((r) => r.team_id === null) ?? rows[0];
+const ZERO_RAW_STAT_TOTALS: RawStatTotals = {
+  gamesPlayed: 0,
+  minutesPlayed: 0,
+  points: 0,
+  reboundsOffensive: 0,
+  reboundsDefensive: 0,
+  reboundsTotal: 0,
+  assists: 0,
+  steals: 0,
+  blocks: 0,
+  turnovers: 0,
+  personalFouls: 0,
+  fieldGoalsMade: 0,
+  fieldGoalsAttempted: 0,
+  threePointersMade: 0,
+  threePointersAttempted: 0,
+  freeThrowsMade: 0,
+  freeThrowsAttempted: 0,
+};
+
+// 複数行(チーム別の部分成績)を合算する。MPG・各種PG・FG%等はこの合算値から
+// 都度算出するため、ここでは合計値(G, MIN, FGM, FGA, ...)を足すだけでよい。
+export function aggregateRawStatTotals(rows: RawStatTotals[]): RawStatTotals {
+  return rows.reduce<RawStatTotals>(
+    (acc, r) => ({
+      gamesPlayed: acc.gamesPlayed + r.gamesPlayed,
+      minutesPlayed: acc.minutesPlayed + r.minutesPlayed,
+      points: acc.points + r.points,
+      reboundsOffensive: acc.reboundsOffensive + r.reboundsOffensive,
+      reboundsDefensive: acc.reboundsDefensive + r.reboundsDefensive,
+      reboundsTotal: acc.reboundsTotal + r.reboundsTotal,
+      assists: acc.assists + r.assists,
+      steals: acc.steals + r.steals,
+      blocks: acc.blocks + r.blocks,
+      turnovers: acc.turnovers + r.turnovers,
+      personalFouls: acc.personalFouls + r.personalFouls,
+      fieldGoalsMade: acc.fieldGoalsMade + r.fieldGoalsMade,
+      fieldGoalsAttempted: acc.fieldGoalsAttempted + r.fieldGoalsAttempted,
+      threePointersMade: acc.threePointersMade + r.threePointersMade,
+      threePointersAttempted: acc.threePointersAttempted + r.threePointersAttempted,
+      freeThrowsMade: acc.freeThrowsMade + r.freeThrowsMade,
+      freeThrowsAttempted: acc.freeThrowsAttempted + r.freeThrowsAttempted,
+    }),
+    ZERO_RAW_STAT_TOTALS
+  );
 }
 
 type PlayerStatsRow = Database["public"]["Tables"]["player_stats"]["Row"];
+
+// 選手1人の「シーズン全体」の成績を求める。移籍していればチーム別行を合算する
+// （どれか1チーム行を任意に選ぶ処理はしない）。TOT行(team_id=NULL)が既にあれば
+// それを合算済みの値として優先する。行が無ければnull。
+export function aggregatePlayerSeasonStats(
+  rows: PlayerStatsRow[]
+): RawStatTotals | null {
+  if (rows.length === 0) return null;
+  const totRow = rows.find((r) => r.team_id === null);
+  if (totRow) return toRawStatTotals(totRow);
+  return aggregateRawStatTotals(rows.map(toRawStatTotals));
+}
 
 // player_statsテーブルの行(スネークケース)をRawStatTotals(キャメルケース)に変換する。
 export function toRawStatTotals(row: PlayerStatsRow): RawStatTotals {

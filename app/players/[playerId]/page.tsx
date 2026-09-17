@@ -6,7 +6,7 @@ import {
   PlayerSeasonStats,
   type PlayerStatRow,
 } from "@/components/player-season-stats";
-import { deriveStats, toRawStatTotals, pickPrimarySeasonRow } from "@/lib/stats";
+import { deriveStats, aggregatePlayerSeasonStats } from "@/lib/stats";
 
 const CURRENT_SEASON = 2026;
 const PRIOR_SEASON = 2025;
@@ -86,14 +86,15 @@ export default async function PlayerDetailPage({
     freeThrowsAttempted: s.free_throws_attempted,
   }));
 
-  // 2025-26 レギュラーシーズン成績（移籍していればTOT行を優先）。
+  // 2025-26 レギュラーシーズン成績（移籍していれば全チーム分を合算する。
+  // どれか1チーム行を任意に選ぶ処理はしない）。
   const priorSeasonRegularRows = (stats ?? []).filter(
     (s) => s.season === PRIOR_SEASON && s.season_type === "regular_season"
   );
-  const snapshotRow = pickPrimarySeasonRow(priorSeasonRegularRows);
+  const seasonTotals = aggregatePlayerSeasonStats(priorSeasonRegularRows);
 
-  const snapshot: PlayerSnapshot | null = snapshotRow
-    ? { gamesPlayed: snapshotRow.games_played, ...deriveStats(toRawStatTotals(snapshotRow)) }
+  const snapshot: PlayerSnapshot | null = seasonTotals
+    ? { gamesPlayed: seasonTotals.gamesPlayed, ...deriveStats(seasonTotals) }
     : null;
 
   return (

@@ -7,7 +7,7 @@ import { TeamDirectory } from "@/components/team-directory";
 import { TeamTabs } from "@/components/team-tabs";
 import { TeamRoster, type RosterRow } from "@/components/team-roster";
 import { StatsTable, type StatRow } from "@/components/stats-table";
-import { deriveStats, formatStat, toRawStatTotals, pickPrimarySeasonRow } from "@/lib/stats";
+import { deriveStats, formatStat, toRawStatTotals, aggregatePlayerSeasonStats } from "@/lib/stats";
 import type { Database } from "@/lib/supabase/types";
 
 type PlayerStatsRow = Database["public"]["Tables"]["player_stats"]["Row"];
@@ -184,8 +184,8 @@ export default async function TeamDetailPage({
 
     const rosterRows: RosterRow[] = (players ?? []).map((player) => {
       const rows = priorStatsByPlayer.get(player.id) ?? [];
-      const primary = pickPrimarySeasonRow(rows);
-      const derived = primary ? deriveStats(toRawStatTotals(primary)) : null;
+      const seasonTotals = aggregatePlayerSeasonStats(rows);
+      const derived = seasonTotals ? deriveStats(seasonTotals) : null;
       return {
         id: player.id,
         fullName: player.full_name_ja ?? player.full_name,
@@ -206,9 +206,9 @@ export default async function TeamDetailPage({
     const teamApg = withStats.reduce((sum, r) => sum + (r.apg ?? 0), 0);
 
     const threePctValues = [...priorStatsByPlayer.values()]
-      .map((rows) => pickPrimarySeasonRow(rows))
-      .filter((row): row is PlayerStatsRow => Boolean(row))
-      .map((row) => deriveStats(toRawStatTotals(row)).threePct)
+      .map((rows) => aggregatePlayerSeasonStats(rows))
+      .filter((totals): totals is NonNullable<typeof totals> => Boolean(totals))
+      .map((totals) => deriveStats(totals).threePct)
       .filter((v): v is number => v !== null);
     const avgThreePct = threePctValues.length
       ? threePctValues.reduce((a, b) => a + b, 0) / threePctValues.length
