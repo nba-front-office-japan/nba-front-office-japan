@@ -79,8 +79,12 @@ const COLUMNS: {
   {
     key: "playerName",
     label: "選手名",
-    render: (row) => row.playerName,
-    cellClassName: "font-medium",
+    render: (row) => (
+      <span title={row.playerName} className="block truncate">
+        {row.playerName}
+      </span>
+    ),
+    cellClassName: "font-medium max-w-[140px]",
   },
   { key: "position", label: "POS", render: (row) => row.position ?? "-" },
   { key: "gamesPlayed", label: "G", render: (row) => row.gamesPlayed },
@@ -252,14 +256,14 @@ export function StatsTable({
       <p className="mb-2 text-xs text-muted sm:hidden">→ 横にスクロールできます</p>
 
       <div className="overflow-x-auto border border-line bg-surface">
-        <table className="w-full min-w-[1180px] border-collapse text-sm">
+        <table className="w-full min-w-[900px] border-collapse text-[13px]">
           <thead>
             <tr className="border-b border-line">
               {COLUMNS.map((col) => (
                 <th
                   key={col.key}
                   onClick={() => handleSort(col.key)}
-                  className="cursor-pointer select-none whitespace-nowrap px-3 py-2.5 text-left text-[11px] font-bold text-muted hover:text-foreground"
+                  className="cursor-pointer select-none whitespace-nowrap px-1.5 py-2.5 text-left text-[11px] font-bold text-muted hover:text-foreground"
                 >
                   {col.label}
                   {sortKey === col.key
@@ -287,7 +291,7 @@ export function StatsTable({
                   {COLUMNS.map((col) => (
                     <td
                       key={col.key}
-                      className={`whitespace-nowrap px-3 py-3 font-semibold ${col.cellClassName ?? ""}`}
+                      className={`whitespace-nowrap px-1.5 py-3 font-semibold ${col.cellClassName ?? ""}`}
                     >
                       {col.render(row)}
                     </td>
