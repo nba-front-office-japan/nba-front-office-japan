@@ -13,6 +13,18 @@ export type AcquisitionType =
   | "other";
 export type RosterStatus = "active" | "two_way" | "inactive";
 
+// 2025-26 NBAアワード（個人賞・オールNBA等）
+export type AwardKey =
+  | "mvp"
+  | "defensive_player_of_the_year"
+  | "rookie_of_the_year"
+  | "sixth_man_of_the_year"
+  | "most_improved_player"
+  | "clutch_player_of_the_year"
+  | "all_nba"
+  | "all_defensive"
+  | "all_rookie";
+
 // News Collector v1 (Stats Collectorとは独立した機能)
 export type NewsSourceKind = "rss" | "x" | "manual_official";
 export type NewsItemContentType = "article" | "x_post" | "official_statement";
@@ -170,6 +182,32 @@ export interface Database {
         };
         Update: Partial<
           Database["public"]["Tables"]["player_season_rosters"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      season_player_awards: {
+        Row: {
+          id: string;
+          season: number;
+          player_id: string;
+          team_id: string | null;
+          award_key: AwardKey;
+          selection_team: number | null;
+          display_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          season: number;
+          player_id: string;
+          team_id?: string | null;
+          award_key: AwardKey;
+          selection_team?: number | null;
+          display_order?: number;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["season_player_awards"]["Insert"]
         >;
         Relationships: [];
       };

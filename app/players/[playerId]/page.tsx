@@ -7,6 +7,7 @@ import {
   type PlayerStatRow,
 } from "@/components/player-season-stats";
 import { deriveStats, aggregatePlayerSeasonStats } from "@/lib/stats";
+import { AWARDS_SEASON, getAwardLabel } from "@/lib/awards/constants";
 
 const CURRENT_SEASON = 2026;
 const PRIOR_SEASON = 2025;
@@ -97,6 +98,18 @@ export default async function PlayerDetailPage({
     ? { gamesPlayed: seasonTotals.gamesPlayed, ...deriveStats(seasonTotals) }
     : null;
 
+  // 2025-26 アワード（受賞・選出がある場合のみ表示。成績スナップショットとは別枠）。
+  const { data: awards } = await supabase
+    .from("season_player_awards")
+    .select("*")
+    .eq("player_id", playerId)
+    .eq("season", AWARDS_SEASON)
+    .order("display_order");
+
+  const awardLabels = (awards ?? []).map((a) =>
+    getAwardLabel(a.award_key, a.selection_team)
+  );
+
   return (
     <PageShell>
       <PlayerHeader
@@ -105,6 +118,21 @@ export default async function PlayerDetailPage({
         currentTeamPending={!currentRoster}
         snapshot={snapshot}
       />
+      {awardLabels.length > 0 && (
+        <div className="mt-8 border border-line bg-surface p-6">
+          <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
+            Awards
+          </p>
+          <h2 className="mb-4 text-lg font-semibold">2025-26 Awards</h2>
+          <ul className="space-y-2">
+            {awardLabels.map((label) => (
+              <li key={label} className="border-l-[3px] border-gold pl-3 text-sm font-bold">
+                {label}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       <div className="mt-8 border border-line bg-surface p-6">
         <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
           Season Stats
