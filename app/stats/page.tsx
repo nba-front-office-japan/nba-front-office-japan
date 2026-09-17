@@ -82,13 +82,21 @@ export default async function StatsPage({
       teamLabel: s.team_id ? teamAbbrById.get(s.team_id) ?? "-" : "TOT",
       seasonType: s.season_type,
       gamesPlayed: s.games_played,
+      minutesPlayed: s.minutes_played,
       points: s.points,
+      reboundsOffensive: s.rebounds_offensive,
+      reboundsDefensive: s.rebounds_defensive,
       reboundsTotal: s.rebounds_total,
       assists: s.assists,
+      steals: s.steals,
+      blocks: s.blocks,
+      turnovers: s.turnovers,
+      personalFouls: s.personal_fouls,
       fieldGoalsMade: s.field_goals_made,
       fieldGoalsAttempted: s.field_goals_attempted,
       threePointersMade: s.three_pointers_made,
       threePointersAttempted: s.three_pointers_attempted,
+      freeThrowsMade: s.free_throws_made,
       freeThrowsAttempted: s.free_throws_attempted,
     };
   });
@@ -96,13 +104,17 @@ export default async function StatsPage({
   return (
     <PageShell>
       <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
-        Data Explorer · 2026 Season
+        Data Explorer · 2025-26 Season
       </p>
       <h1 className="mb-2 text-[36px] font-semibold tracking-tight">
         Stats Lab
       </h1>
-      <p className="mb-7 text-sm text-muted">
+      <p className="mb-2 text-sm text-muted">
         収録選手の基本スタッツを、シーズン・ポジション・出場試合数で検索する。
+      </p>
+      <p className="mb-7 border border-line bg-[#eaf1ff] px-4 py-3 text-xs leading-6 text-[#264c8a] dark:bg-white/[.06]">
+        Stats
+        Labは2025-26レギュラーシーズン・プレーオフの確定成績のみを対象にしています。2026-27シーズンの成績はまだ収録していません。
       </p>
       <StatsTable rows={rows} initialSortKey={initialSortKey} />
     </PageShell>

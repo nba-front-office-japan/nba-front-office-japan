@@ -6,7 +6,10 @@ import {
   PlayerSeasonStats,
   type PlayerStatRow,
 } from "@/components/player-season-stats";
-import { deriveStats, toRawStatTotals } from "@/lib/stats";
+import { deriveStats, toRawStatTotals, pickPrimarySeasonRow } from "@/lib/stats";
+
+const CURRENT_SEASON = 2026;
+const PRIOR_SEASON = 2025;
 
 export default async function PlayerDetailPage({
   params,
@@ -24,20 +27,17 @@ export default async function PlayerDetailPage({
     notFound();
   }
 
-  const { data: history } = await supabase
-    .from("player_team_history")
+  // 2026-27の現在所属（player_team_historyの日付範囲モデルとは別の、
+  // シーズン単位の単純な所属テーブル）。行が無ければ「ロスター準備中」。
+  const { data: currentRoster } = await supabase
+    .from("player_season_rosters")
     .select("team_id")
     .eq("player_id", playerId)
-    .is("end_date", null)
-    .limit(1)
+    .eq("season", CURRENT_SEASON)
     .maybeSingle();
 
-  const { data: currentTeam } = history
-    ? await supabase
-        .from("teams")
-        .select("*")
-        .eq("id", history.team_id)
-        .single()
+  const { data: currentTeam } = currentRoster
+    ? await supabase.from("teams").select("*").eq("id", currentRoster.team_id).single()
     : { data: null };
 
   const { data: stats, error: statsError } = await supabase
@@ -68,36 +68,32 @@ export default async function PlayerDetailPage({
     teamLabel: s.team_id ? teamAbbrById.get(s.team_id) ?? "-" : "TOT",
     seasonType: s.season_type,
     gamesPlayed: s.games_played,
+    minutesPlayed: s.minutes_played,
     points: s.points,
+    reboundsOffensive: s.rebounds_offensive,
+    reboundsDefensive: s.rebounds_defensive,
     reboundsTotal: s.rebounds_total,
     assists: s.assists,
+    steals: s.steals,
+    blocks: s.blocks,
+    turnovers: s.turnovers,
+    personalFouls: s.personal_fouls,
     fieldGoalsMade: s.field_goals_made,
     fieldGoalsAttempted: s.field_goals_attempted,
     threePointersMade: s.three_pointers_made,
     threePointersAttempted: s.three_pointers_attempted,
+    freeThrowsMade: s.free_throws_made,
     freeThrowsAttempted: s.free_throws_attempted,
   }));
 
-  const regularSeasonRows = (stats ?? []).filter(
-    (s) => s.season_type === "regular_season"
+  // 2025-26 レギュラーシーズン成績（移籍していればTOT行を優先）。
+  const priorSeasonRegularRows = (stats ?? []).filter(
+    (s) => s.season === PRIOR_SEASON && s.season_type === "regular_season"
   );
-  const latestSeason = regularSeasonRows.length
-    ? Math.max(...regularSeasonRows.map((s) => s.season))
-    : null;
-  const latestSeasonRows = regularSeasonRows.filter(
-    (s) => s.season === latestSeason
-  );
-  // トレードがあった場合はTOT行(team_id=NULL)を優先し、無ければ単独チーム分の行を使う。
-  const snapshotRow =
-    latestSeasonRows.find((s) => s.team_id === null) ?? latestSeasonRows[0];
+  const snapshotRow = pickPrimarySeasonRow(priorSeasonRegularRows);
 
   const snapshot: PlayerSnapshot | null = snapshotRow
-    ? {
-        ...deriveStats(toRawStatTotals(snapshotRow)),
-        mpg: snapshotRow.games_played
-          ? snapshotRow.minutes_played / snapshotRow.games_played
-          : null,
-      }
+    ? { gamesPlayed: snapshotRow.games_played, ...deriveStats(toRawStatTotals(snapshotRow)) }
     : null;
 
   return (
@@ -105,13 +101,14 @@ export default async function PlayerDetailPage({
       <PlayerHeader
         player={player}
         currentTeam={currentTeam ?? null}
+        currentTeamPending={!currentRoster}
         snapshot={snapshot}
       />
       <div className="mt-8 border border-line bg-surface p-6">
         <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
           Season Stats
         </p>
-        <h2 className="mb-4 text-lg font-semibold">Stats</h2>
+        <h2 className="mb-4 text-lg font-semibold">シーズン別成績（全期間）</h2>
         {statsError ? (
           <p className="text-sm text-red-600 dark:text-red-400">
             スタッツデータの取得に失敗しました: {statsError.message}

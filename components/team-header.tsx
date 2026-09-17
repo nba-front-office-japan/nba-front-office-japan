@@ -8,16 +8,18 @@ export function TeamHeader({
   playerCount,
   teamPpg,
   team3pPct,
+  seasonLabel = "2025-26",
 }: {
   team: Team;
   playerCount: number;
   teamPpg: number | null;
   team3pPct: number | null;
+  seasonLabel?: string;
 }) {
   return (
     <div className="-mx-4 bg-navy px-4 py-8 text-white sm:-mx-7 sm:px-7 sm:py-[29px]">
       <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-[#84b0ff]">
-        Team Database · 2026 Season
+        Team Database · {seasonLabel} Season
       </p>
       <h1 className="text-[28px] font-semibold tracking-tight sm:text-[36px]">
         {team.name}

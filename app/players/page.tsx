@@ -9,16 +9,12 @@ import {
 export default async function PlayersPage() {
   const supabase = createServerSupabaseClient();
   const { data: players, error } = await fetchAllRows((from, to) =>
-    supabase
-      .from("players")
-      .select("id, full_name, position")
-      .order("last_name")
-      .range(from, to)
+    supabase.from("players").select("*").order("last_name").range(from, to)
   );
 
   const items: PlayerListItem[] = (players ?? []).map((p) => ({
     id: p.id,
-    fullName: p.full_name,
+    fullName: p.full_name_ja ?? p.full_name,
     position: p.position,
   }));
 

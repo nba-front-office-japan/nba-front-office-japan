@@ -11,6 +11,7 @@ export type AcquisitionType =
   | "ten_day"
   | "two_way"
   | "other";
+export type RosterStatus = "active" | "two_way" | "inactive";
 
 // News Collector v1 (Stats Collectorとは独立した機能)
 export type NewsSourceKind = "rss" | "x" | "manual_official";
@@ -51,6 +52,11 @@ export type ArticleDraftStatus =
   | "published"
   | "rejected";
 
+// NBAデータ更新フロー（ロスター・基本スタッツのCSV/Excel取り込み）
+export type DataImportKind = "player_team_history" | "player_stats";
+export type DataImportStatus = "blocked" | "applied" | "failed";
+export type DataImportBackupTable = "player_stats" | "player_team_history";
+
 export interface Database {
   public: {
     Tables: {
@@ -86,6 +92,7 @@ export interface Database {
           first_name: string;
           last_name: string;
           full_name: string;
+          full_name_ja: string | null;
           birth_date: string | null;
           height_cm: number | null;
           weight_kg: number | null;
@@ -103,6 +110,7 @@ export interface Database {
           id?: string;
           first_name: string;
           last_name: string;
+          full_name_ja?: string | null;
           birth_date?: string | null;
           height_cm?: number | null;
           weight_kg?: number | null;
@@ -140,6 +148,28 @@ export interface Database {
         };
         Update: Partial<
           Database["public"]["Tables"]["player_team_history"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      player_season_rosters: {
+        Row: {
+          id: string;
+          player_id: string;
+          team_id: string;
+          season: number;
+          roster_status: RosterStatus;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          player_id: string;
+          team_id: string;
+          season: number;
+          roster_status?: RosterStatus;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["player_season_rosters"]["Insert"]
         >;
         Relationships: [];
       };
@@ -498,8 +528,75 @@ export interface Database {
         >;
         Relationships: [];
       };
+      data_import_runs: {
+        Row: {
+          id: string;
+          kind: DataImportKind;
+          season: number;
+          file_name: string | null;
+          status: DataImportStatus;
+          rows_total: number;
+          rows_added: number;
+          rows_updated: number;
+          rows_skipped: number;
+          rows_needs_review: number;
+          error_summary: string | null;
+          performed_by: string | null;
+          performed_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          kind: DataImportKind;
+          season: number;
+          file_name?: string | null;
+          status: DataImportStatus;
+          rows_total?: number;
+          rows_added?: number;
+          rows_updated?: number;
+          rows_skipped?: number;
+          rows_needs_review?: number;
+          error_summary?: string | null;
+          performed_by?: string | null;
+          performed_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["data_import_runs"]["Insert"]>;
+        Relationships: [];
+      };
+      data_import_backups: {
+        Row: {
+          id: string;
+          import_run_id: string;
+          table_name: DataImportBackupTable;
+          season: number;
+          row_count: number;
+          backup_data: unknown;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          import_run_id: string;
+          table_name: DataImportBackupTable;
+          season: number;
+          row_count: number;
+          backup_data: unknown;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["data_import_backups"]["Insert"]
+        >;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      apply_player_team_history_import: {
+        Args: { p_operations: unknown };
+        Returns: unknown;
+      };
+      apply_player_stats_import: {
+        Args: { p_operations: unknown };
+        Returns: unknown;
+      };
+    };
   };
 }
