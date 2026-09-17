@@ -68,8 +68,7 @@ export type SortKey =
   | "pfPg"
   | "teamLabel";
 
-// POS/G/MPG/PTS PG/ORB PG/DRB PG/TRB PG/AST PG/STL PG/BLK PG/FG%/3P%/FT%/TOV PG/PF PGの順で表示する。
-// 選手名を先頭に、補足情報としてチームを末尾に添える。
+// 選手名・チームを先頭に、POS/G/MP/PTS/ORB/DRB/TRB/AST/STL/BLK/FG%/3P%/FT%/TOV/PFの順で表示する。
 const COLUMNS: {
   key: SortKey;
   label: string;
@@ -86,30 +85,32 @@ const COLUMNS: {
     ),
     cellClassName: "font-medium max-w-[140px]",
   },
-  { key: "position", label: "POS", render: (row) => row.position ?? "-" },
-  { key: "gamesPlayed", label: "G", render: (row) => row.gamesPlayed },
-  { key: "mpg", label: "MPG", render: (row) => formatStat(row.mpg) },
-  { key: "ppg", label: "PTS PG", render: (row) => formatStat(row.ppg) },
-  { key: "orbPg", label: "ORB PG", render: (row) => formatStat(row.orbPg) },
-  { key: "drbPg", label: "DRB PG", render: (row) => formatStat(row.drbPg) },
-  { key: "rpg", label: "TRB PG", render: (row) => formatStat(row.rpg) },
-  { key: "apg", label: "AST PG", render: (row) => formatStat(row.apg) },
-  { key: "stlPg", label: "STL PG", render: (row) => formatStat(row.stlPg) },
-  { key: "blkPg", label: "BLK PG", render: (row) => formatStat(row.blkPg) },
-  { key: "fgPct", label: "FG%", render: (row) => formatPct(row.fgPct) },
-  { key: "threePct", label: "3P%", render: (row) => formatPct(row.threePct) },
-  { key: "ftPct", label: "FT%", render: (row) => formatPct(row.ftPct) },
-  { key: "tovPg", label: "TOV PG", render: (row) => formatStat(row.tovPg) },
-  { key: "pfPg", label: "PF PG", render: (row) => formatStat(row.pfPg) },
   {
     key: "teamLabel",
     label: "チーム",
     render: (row) => row.teamLabel,
     cellClassName: "text-muted",
   },
+  { key: "position", label: "POS", render: (row) => row.position ?? "-" },
+  { key: "gamesPlayed", label: "G", render: (row) => row.gamesPlayed },
+  { key: "mpg", label: "MP", render: (row) => formatStat(row.mpg) },
+  { key: "ppg", label: "PTS", render: (row) => formatStat(row.ppg) },
+  { key: "orbPg", label: "ORB", render: (row) => formatStat(row.orbPg) },
+  { key: "drbPg", label: "DRB", render: (row) => formatStat(row.drbPg) },
+  { key: "rpg", label: "TRB", render: (row) => formatStat(row.rpg) },
+  { key: "apg", label: "AST", render: (row) => formatStat(row.apg) },
+  { key: "stlPg", label: "STL", render: (row) => formatStat(row.stlPg) },
+  { key: "blkPg", label: "BLK", render: (row) => formatStat(row.blkPg) },
+  { key: "fgPct", label: "FG%", render: (row) => formatPct(row.fgPct) },
+  { key: "threePct", label: "3P%", render: (row) => formatPct(row.threePct) },
+  { key: "ftPct", label: "FT%", render: (row) => formatPct(row.ftPct) },
+  { key: "tovPg", label: "TOV", render: (row) => formatStat(row.tovPg) },
+  { key: "pfPg", label: "PF", render: (row) => formatStat(row.pfPg) },
 ];
 
-const POSITIONS = ["PG", "SG", "SF", "PF", "C"];
+// players.positionに実際に登録されている値（balldontlie API由来、G/F/Cおよび複合表記）。
+// PG/SG/SF/PFのような細分類は現データに存在しないため使用しない。
+const POSITIONS = ["G", "F", "C", "G-F", "F-C", "F-G", "C-F"];
 const MIN_GAMES_OPTIONS = [0, 20, 50];
 
 function deriveRow(row: StatRow): DerivedRow {
@@ -253,6 +254,9 @@ export function StatsTable({
         </label>
       </div>
 
+      <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
+        1試合平均
+      </p>
       <p className="mb-2 text-xs text-muted sm:hidden">→ 横にスクロールできます</p>
 
       <div className="overflow-x-auto border border-line bg-surface">
