@@ -8,6 +8,7 @@ import type { Database } from "@/lib/supabase/types";
 type PlayerStatsRow = Database["public"]["Tables"]["player_stats"]["Row"];
 
 const STATS_LAB_SEASON = 2025;
+const CURRENT_ROSTER_SEASON = 2026;
 
 const SORT_KEYS: readonly SortKey[] = [
   "playerName",
@@ -71,15 +72,25 @@ export default async function StatsPage({
   const [
     { data: players, error: playersError },
     { data: teams, error: teamsError },
+    { data: currentRosterRows },
   ] = await Promise.all([
     fetchAllRows((from, to) =>
       supabase
         .from("players")
-        .select("id, full_name, full_name_ja, position")
+        .select("id, full_name, full_name_ja")
         .range(from, to)
     ),
     fetchAllRows((from, to) =>
       supabase.from("teams").select("id, abbreviation").range(from, to)
+    ),
+    // position列は本機能のマイグレーション実行前は存在しないため、失敗しても
+    // ページ全体は落とさず「—」表示にフォールバックする(他ページの既存パターンと同様)。
+    fetchAllRows((from, to) =>
+      supabase
+        .from("player_season_rosters")
+        .select("player_id, position")
+        .eq("season", CURRENT_ROSTER_SEASON)
+        .range(from, to)
     ),
   ]);
 
@@ -97,6 +108,12 @@ export default async function StatsPage({
 
   const playerById = new Map(players.map((p) => [p.id, p]));
   const teamAbbrById = new Map(teams.map((t) => [t.id, t.abbreviation]));
+  // POS表示・絞り込みは2026-27ロスター(NBA_2026_2027ロスター.xlsx由来)のPosだけを
+  // 基準にする。旧player_stats/players側のG/F/C等の分類は使わない。
+  // ロスター未登録の選手はnull(表示側で「—」)のままにし、推測・補完はしない。
+  const currentPositionByPlayerId = new Map(
+    currentRosterRows.map((r) => [r.player_id, r.position])
+  );
 
   const isStatsLabRegularSeason = (s: PlayerStatsRow) =>
     s.season === STATS_LAB_SEASON && s.season_type === "regular_season";
@@ -121,7 +138,7 @@ export default async function StatsPage({
       return {
         id: playerId,
         playerName: player?.full_name_ja ?? player?.full_name ?? "不明な選手",
-        position: player?.position ?? null,
+        position: currentPositionByPlayerId.get(playerId) ?? null,
         season: STATS_LAB_SEASON,
         teamLabel: labelForSeasonGroup(rows, teamAbbrById),
         seasonType: "regular_season",
@@ -136,7 +153,7 @@ export default async function StatsPage({
     return {
       id: s.id,
       playerName: player?.full_name_ja ?? player?.full_name ?? "不明な選手",
-      position: player?.position ?? null,
+      position: currentPositionByPlayerId.get(s.player_id) ?? null,
       season: s.season,
       teamLabel: s.team_id ? teamAbbrById.get(s.team_id) ?? "-" : "TOT",
       seasonType: s.season_type,

@@ -75,7 +75,7 @@ const COLUMNS: {
     render: (row) => row.teamLabel,
     cellClassName: "text-muted",
   },
-  { key: "position", label: "POS", render: (row) => row.position ?? "-" },
+  { key: "position", label: "POS", render: (row) => row.position ?? "—" },
   { key: "gamesPlayed", label: "G", render: (row) => row.gamesPlayed },
   { key: "mpg", label: "MP", render: (row) => formatStat(row.mpg) },
   { key: "ppg", label: "PTS", render: (row) => formatStat(row.ppg) },
@@ -92,7 +92,8 @@ const COLUMNS: {
   { key: "pfPg", label: "PF", render: (row) => formatStat(row.pfPg) },
 ];
 
-const POSITIONS = ["G", "F", "C", "G-F", "F-C", "F-G", "C-F"];
+// 2026-27ロスター(NBA_2026_2027ロスター.xlsx)のPosに実際に登録されている値。
+const POSITIONS = ["PG", "SG", "SF", "PF", "C", "G", "F", "GF", "FC"];
 const MIN_GAMES_OPTIONS = [0, 20, 50];
 
 function deriveRow(row: PlayerDirectoryRow): DerivedRow {

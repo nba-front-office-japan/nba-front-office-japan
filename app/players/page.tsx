@@ -11,6 +11,7 @@ import type { Database } from "@/lib/supabase/types";
 type PlayerStatsRow = Database["public"]["Tables"]["player_stats"]["Row"];
 
 const ROSTER_SEASON = 2025;
+const CURRENT_ROSTER_SEASON = 2026;
 
 // 移籍していればチーム別行を合算する。表示は単独チームならその略称、
 // 複数チームなら「{n}TM」（Stats Labと同じ表記）。
@@ -56,26 +57,38 @@ export default async function PlayersPage() {
 
   const playerIds = [...rowsByPlayer.keys()];
 
-  const [{ data: players, error: playersError }, { data: teams, error: teamsError }] =
-    await Promise.all([
-      (async () => {
-        const all: Database["public"]["Tables"]["players"]["Row"][] = [];
-        const chunkSize = 200;
-        for (let i = 0; i < playerIds.length; i += chunkSize) {
-          const chunk = playerIds.slice(i, i + chunkSize);
-          const { data, error: e } = await supabase
-            .from("players")
-            .select("*")
-            .in("id", chunk);
-          if (e) return { data: null, error: e };
-          all.push(...(data ?? []));
-        }
-        return { data: all, error: null };
-      })(),
-      fetchAllRows((from, to) =>
-        supabase.from("teams").select("*").order("abbreviation").range(from, to)
-      ),
-    ]);
+  const [
+    { data: players, error: playersError },
+    { data: teams, error: teamsError },
+    { data: currentRosterRows },
+  ] = await Promise.all([
+    (async () => {
+      const all: Database["public"]["Tables"]["players"]["Row"][] = [];
+      const chunkSize = 200;
+      for (let i = 0; i < playerIds.length; i += chunkSize) {
+        const chunk = playerIds.slice(i, i + chunkSize);
+        const { data, error: e } = await supabase
+          .from("players")
+          .select("*")
+          .in("id", chunk);
+        if (e) return { data: null, error: e };
+        all.push(...(data ?? []));
+      }
+      return { data: all, error: null };
+    })(),
+    fetchAllRows((from, to) =>
+      supabase.from("teams").select("*").order("abbreviation").range(from, to)
+    ),
+    // position列は本機能のマイグレーション実行前は存在しないため、失敗しても
+    // ページ全体は落とさず「—」表示にフォールバックする(他ページの既存パターンと同様)。
+    fetchAllRows((from, to) =>
+      supabase
+        .from("player_season_rosters")
+        .select("player_id, position")
+        .eq("season", CURRENT_ROSTER_SEASON)
+        .range(from, to)
+    ),
+  ]);
 
   if (playersError || teamsError) {
     return (
@@ -91,6 +104,11 @@ export default async function PlayersPage() {
 
   const playerById = new Map((players ?? []).map((p) => [p.id, p]));
   const teamAbbrById = new Map((teams ?? []).map((t) => [t.id, t.abbreviation]));
+  // POS表示・絞り込みは2026-27ロスター(NBA_2026_2027ロスター.xlsx由来)のPosだけを
+  // 基準にする。ロスター未登録の選手はnull(表示側で「—」)のままにし、推測・補完はしない。
+  const currentPositionByPlayerId = new Map(
+    currentRosterRows.map((r) => [r.player_id, r.position])
+  );
 
   const directoryRows: PlayerDirectoryRow[] = playerIds.map((playerId) => {
     const rows = rowsByPlayer.get(playerId) ?? [];
@@ -101,7 +119,7 @@ export default async function PlayersPage() {
       playerName: player?.full_name_ja ?? player?.full_name ?? "不明な選手",
       englishName: player?.full_name ?? "",
       teamLabel: labelForSeasonGroup(rows, teamAbbrById),
-      position: player?.position ?? null,
+      position: currentPositionByPlayerId.get(playerId) ?? null,
       ...totals!,
     };
   });

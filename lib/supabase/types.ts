@@ -170,6 +170,7 @@ export interface Database {
           team_id: string;
           season: number;
           roster_status: RosterStatus;
+          position: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -179,9 +180,27 @@ export interface Database {
           team_id: string;
           season: number;
           roster_status?: RosterStatus;
+          position?: string | null;
         };
         Update: Partial<
           Database["public"]["Tables"]["player_season_rosters"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      player_name_aliases: {
+        Row: {
+          id: string;
+          player_id: string;
+          alias_full_name: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          player_id: string;
+          alias_full_name: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["player_name_aliases"]["Insert"]
         >;
         Relationships: [];
       };
