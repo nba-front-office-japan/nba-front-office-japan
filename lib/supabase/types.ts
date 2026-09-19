@@ -171,6 +171,7 @@ export interface Database {
           season: number;
           roster_status: RosterStatus;
           position: string | null;
+          years_of_service: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -181,6 +182,7 @@ export interface Database {
           season: number;
           roster_status?: RosterStatus;
           position?: string | null;
+          years_of_service?: number | null;
         };
         Update: Partial<
           Database["public"]["Tables"]["player_season_rosters"]["Insert"]

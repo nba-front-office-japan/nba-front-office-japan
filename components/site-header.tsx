@@ -7,9 +7,10 @@ const navItems = [
   { href: "/", label: "HOME" },
   { href: "/news", label: "NEWS" },
   { href: "/teams", label: "TEAMS" },
-  { href: "/players", label: "PLAYERS" },
+  { href: "/players", label: "選手名鑑 2026" },
   { href: "/stats", label: "STATS LAB" },
   { href: "/awards", label: "AWARDS" },
+  { href: "/draft", label: "DRAFT" },
   { href: "/contracts", label: "CONTRACTS" },
   { href: "/premium", label: "PREMIUM" },
 ];
