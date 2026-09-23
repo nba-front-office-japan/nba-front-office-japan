@@ -114,6 +114,7 @@ export interface Database {
           draft_pick: number | null;
           nationality: string | null;
           nba_person_id: number | null;
+          pre_draft_team: string | null;
           is_active: boolean;
           created_at: string;
           updated_at: string;
@@ -132,6 +133,7 @@ export interface Database {
           draft_pick?: number | null;
           nationality?: string | null;
           nba_person_id?: number | null;
+          pre_draft_team?: string | null;
           is_active?: boolean;
         };
         Update: Partial<Database["public"]["Tables"]["players"]["Insert"]>;
@@ -172,6 +174,7 @@ export interface Database {
           roster_status: RosterStatus;
           position: string | null;
           years_of_service: number | null;
+          jersey_number: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -183,6 +186,7 @@ export interface Database {
           roster_status?: RosterStatus;
           position?: string | null;
           years_of_service?: number | null;
+          jersey_number?: number | null;
         };
         Update: Partial<
           Database["public"]["Tables"]["player_season_rosters"]["Insert"]
@@ -203,6 +207,66 @@ export interface Database {
         };
         Update: Partial<
           Database["public"]["Tables"]["player_name_aliases"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      team_profiles: {
+        Row: {
+          id: string;
+          team_id: string;
+          home_arena: string | null;
+          g_league_affiliate: string | null;
+          owner_name: string | null;
+          team_president_name: string | null;
+          general_manager_name: string | null;
+          basketball_ops_lead_name: string | null;
+          head_coach_name: string | null;
+          last_verified_date: string | null;
+          source: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          home_arena?: string | null;
+          g_league_affiliate?: string | null;
+          owner_name?: string | null;
+          team_president_name?: string | null;
+          general_manager_name?: string | null;
+          basketball_ops_lead_name?: string | null;
+          head_coach_name?: string | null;
+          last_verified_date?: string | null;
+          source?: string | null;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["team_profiles"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      team_staff_members: {
+        Row: {
+          id: string;
+          team_id: string;
+          role: "assistant_coach";
+          name: string;
+          display_order: number;
+          last_verified_date: string | null;
+          source: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          role: "assistant_coach";
+          name: string;
+          display_order?: number;
+          last_verified_date?: string | null;
+          source?: string | null;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["team_staff_members"]["Insert"]
         >;
         Relationships: [];
       };

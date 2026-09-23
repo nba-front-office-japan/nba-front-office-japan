@@ -3,21 +3,34 @@ import Link from "next/link";
 export interface ProfileRow {
   id: string;
   name: string;
+  nameEn: string | null;
   position: string | null;
-  heightCm: number | null;
-  weightKg: number | null;
+  jerseyNumber: number | null;
   birthDate: string | null;
   age: number | null;
+  preDraftTeam: string | null;
+  nationality: string | null;
   yearsOfService: number | null;
   draftText: string | null;
 }
 
-const COLUMNS = ["選手名", "#", "POS", "身長", "体重", "生年月日", "年齢", "経験年数", "出身校", "獲得経緯"];
+const COLUMNS = [
+  "選手名",
+  "POS",
+  "背番号",
+  "生年月日",
+  "年齢（2026年10月1日時点）",
+  "最終在籍校／直前所属",
+  "国籍",
+  "経験年数",
+  "ドラフト情報",
+];
 
-// 背番号(#)・出身校は、元のロスター表(NBA_2026_2027ロスター.xlsx)には存在するが
-// Supabaseへは未取り込みのため、現時点では値を持たない(「—」表示)。推測・外部取得は行わない。
-// 経験年数(YOS)はplayer_season_rosters.years_of_serviceから表示する。0はルーキーを示す
-// 有効な値なのでnullとは区別し、nullのときだけ「—」にする。
+// 背番号・経験年数は0が有効な値のため、nullのときだけ「—」にする。
+function orDash(value: string | number | null): string | number {
+  return value === null || value === "" ? "—" : value;
+}
+
 export function TeamRosterProfileTable({ rows }: { rows: ProfileRow[] }) {
   if (rows.length === 0) {
     return <p className="text-sm text-muted">ロスターデータがありません。</p>;
@@ -25,7 +38,7 @@ export function TeamRosterProfileTable({ rows }: { rows: ProfileRow[] }) {
 
   return (
     <div className="overflow-x-auto border border-line bg-surface">
-      <table className="w-full min-w-[820px] border-collapse text-[13px]">
+      <table className="w-full min-w-[960px] border-collapse text-[13px]">
         <thead>
           <tr className="border-b border-line">
             {COLUMNS.map((label) => (
@@ -45,22 +58,18 @@ export function TeamRosterProfileTable({ rows }: { rows: ProfileRow[] }) {
                 <Link href={`/players/${row.id}`} className="hover:text-blue">
                   {row.name}
                 </Link>
+                {row.nameEn && row.nameEn !== row.name && (
+                  <div className="text-xs font-normal text-muted">{row.nameEn}</div>
+                )}
               </td>
-              <td className="whitespace-nowrap px-2 py-3 text-muted">—</td>
-              <td className="whitespace-nowrap px-2 py-3">{row.position ?? "—"}</td>
-              <td className="whitespace-nowrap px-2 py-3">
-                {row.heightCm !== null ? `${row.heightCm} cm` : "—"}
-              </td>
-              <td className="whitespace-nowrap px-2 py-3">
-                {row.weightKg !== null ? `${row.weightKg} kg` : "—"}
-              </td>
-              <td className="whitespace-nowrap px-2 py-3">{row.birthDate ?? "—"}</td>
-              <td className="whitespace-nowrap px-2 py-3">{row.age ?? "—"}</td>
-              <td className="whitespace-nowrap px-2 py-3">
-                {row.yearsOfService !== null ? row.yearsOfService : "—"}
-              </td>
-              <td className="whitespace-nowrap px-2 py-3 text-muted">—</td>
-              <td className="whitespace-nowrap px-2 py-3">{row.draftText ?? "—"}</td>
+              <td className="whitespace-nowrap px-2 py-3">{orDash(row.position)}</td>
+              <td className="whitespace-nowrap px-2 py-3">{orDash(row.jerseyNumber)}</td>
+              <td className="whitespace-nowrap px-2 py-3">{orDash(row.birthDate)}</td>
+              <td className="whitespace-nowrap px-2 py-3">{orDash(row.age)}</td>
+              <td className="whitespace-nowrap px-2 py-3">{orDash(row.preDraftTeam)}</td>
+              <td className="whitespace-nowrap px-2 py-3">{orDash(row.nationality)}</td>
+              <td className="whitespace-nowrap px-2 py-3">{orDash(row.yearsOfService)}</td>
+              <td className="whitespace-nowrap px-2 py-3">{orDash(row.draftText)}</td>
             </tr>
           ))}
         </tbody>

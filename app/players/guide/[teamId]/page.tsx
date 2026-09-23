@@ -19,16 +19,17 @@ type PlayerStatsRow = Database["public"]["Tables"]["player_stats"]["Row"];
 const CURRENT_ROSTER_SEASON = 2026;
 const PRIOR_SEASON = 2025;
 
+// 2026-27シーズンの年齢基準日(2026年10月1日)。年齢はDBに保存せず生年月日から計算する。
+const AGE_REFERENCE = { year: 2026, month: 10, day: 1 };
+
 function calcAge(birthDate: string | null): number | null {
   if (!birthDate) return null;
-  const birth = new Date(birthDate);
-  if (Number.isNaN(birth.getTime())) return null;
-  const now = new Date();
-  let age = now.getFullYear() - birth.getFullYear();
-  const hasHadBirthdayThisYear =
-    now.getMonth() > birth.getMonth() ||
-    (now.getMonth() === birth.getMonth() && now.getDate() >= birth.getDate());
-  if (!hasHadBirthdayThisYear) age -= 1;
+  const [y, m, d] = birthDate.split("-").map(Number);
+  if (!y || !m || !d) return null;
+  let age = AGE_REFERENCE.year - y;
+  if (m > AGE_REFERENCE.month || (m === AGE_REFERENCE.month && d > AGE_REFERENCE.day)) {
+    age -= 1;
+  }
   return age;
 }
 
@@ -134,15 +135,20 @@ export default async function PlayerGuideTeamPage({
   const yosByPlayerId = new Map(
     rosterAssignments.map((r) => [r.player_id, r.years_of_service ?? null])
   );
+  const jerseyByPlayerId = new Map(
+    rosterAssignments.map((r) => [r.player_id, r.jersey_number ?? null])
+  );
 
   const profileRows: ProfileRow[] = (players ?? []).map((player) => ({
     id: player.id,
     name: player.full_name_ja ?? player.full_name,
+    nameEn: player.full_name,
     position: positionByPlayerId.get(player.id) ?? null,
-    heightCm: player.height_cm,
-    weightKg: player.weight_kg,
+    jerseyNumber: jerseyByPlayerId.get(player.id) ?? null,
     birthDate: player.birth_date,
     age: calcAge(player.birth_date),
+    preDraftTeam: player.pre_draft_team ?? null,
+    nationality: player.nationality ?? null,
     yearsOfService: yosByPlayerId.get(player.id) ?? null,
     draftText: formatDraftText(player),
   }));
