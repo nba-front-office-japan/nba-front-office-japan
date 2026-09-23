@@ -147,10 +147,15 @@ export default async function PlayerGuideTeamPage({
     jerseyNumber: jerseyByPlayerId.get(player.id) ?? null,
     birthDate: player.birth_date,
     age: calcAge(player.birth_date),
+    heightCm: player.height_cm,
+    weightKg: player.weight_kg,
     preDraftTeam: player.pre_draft_team ?? null,
     nationality: player.nationality ?? null,
     yearsOfService: yosByPlayerId.get(player.id) ?? null,
     draftText: formatDraftText(player),
+    draftSort: player.draft_year
+      ? player.draft_year * 100000 + (player.draft_round ?? 0) * 1000 + (player.draft_pick ?? 0)
+      : null,
   }));
   profileRows.sort((a, b) => a.name.localeCompare(b.name, "ja"));
 
