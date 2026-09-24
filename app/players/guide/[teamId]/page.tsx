@@ -11,9 +11,9 @@ import {
   type TeamStatsRow,
 } from "@/components/team-roster-stats-table";
 import { deriveStats, aggregatePlayerSeasonStats } from "@/lib/stats";
+import { formatDraftInfo, draftSortValue } from "@/lib/draft-format";
 import type { Database } from "@/lib/supabase/types";
 
-type PlayerRow = Database["public"]["Tables"]["players"]["Row"];
 type PlayerStatsRow = Database["public"]["Tables"]["player_stats"]["Row"];
 
 const CURRENT_ROSTER_SEASON = 2026;
@@ -31,13 +31,6 @@ function calcAge(birthDate: string | null): number | null {
     age -= 1;
   }
   return age;
-}
-
-function formatDraftText(player: PlayerRow): string | null {
-  if (!player.draft_year) return null;
-  const round = player.draft_round ?? "?";
-  const pick = player.draft_pick ?? "?";
-  return `${player.draft_year}年 ${round}巡目 ${pick}位`;
 }
 
 export default async function PlayerGuideTeamPage({
@@ -152,10 +145,8 @@ export default async function PlayerGuideTeamPage({
     preDraftTeam: player.pre_draft_team ?? null,
     nationality: player.nationality ?? null,
     yearsOfService: yosByPlayerId.get(player.id) ?? null,
-    draftText: formatDraftText(player),
-    draftSort: player.draft_year
-      ? player.draft_year * 100000 + (player.draft_round ?? 0) * 1000 + (player.draft_pick ?? 0)
-      : null,
+    draftText: formatDraftInfo(player),
+    draftSort: draftSortValue(player),
   }));
   profileRows.sort((a, b) => a.name.localeCompare(b.name, "ja"));
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Database } from "@/lib/supabase/types";
 import { formatStat, formatPct } from "@/lib/stats";
+import { formatDraftInfo } from "@/lib/draft-format";
 
 type Player = Database["public"]["Tables"]["players"]["Row"];
 type Team = Database["public"]["Tables"]["teams"]["Row"];
@@ -23,10 +24,7 @@ export interface PlayerSnapshot {
 }
 
 function formatDraft(player: Player): string {
-  if (!player.draft_year) return "-";
-  const round = player.draft_round ?? "-";
-  const pick = player.draft_pick ?? "-";
-  return `${player.draft_year}年 ${round}巡目 ${pick}位`;
+  return formatDraftInfo(player, "-") ?? "-";
 }
 
 export function PlayerHeader({

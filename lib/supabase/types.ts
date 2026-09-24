@@ -112,6 +112,7 @@ export interface Database {
           draft_year: number | null;
           draft_round: number | null;
           draft_pick: number | null;
+          draft_status: "drafted" | "undrafted" | null;
           nationality: string | null;
           nba_person_id: number | null;
           pre_draft_team: string | null;
@@ -131,6 +132,7 @@ export interface Database {
           draft_year?: number | null;
           draft_round?: number | null;
           draft_pick?: number | null;
+          draft_status?: "drafted" | "undrafted" | null;
           nationality?: string | null;
           nba_person_id?: number | null;
           pre_draft_team?: string | null;
