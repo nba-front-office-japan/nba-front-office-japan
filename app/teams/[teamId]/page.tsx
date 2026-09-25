@@ -1,9 +1,8 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { PageShell } from "@/components/page-shell";
 import { TeamHeader } from "@/components/team-header";
-import { TeamDirectory } from "@/components/team-directory";
+import { TeamViewNav } from "@/components/team-view-nav";
 import { TeamTabs } from "@/components/team-tabs";
 import { TeamRoster, type RosterRow } from "@/components/team-roster";
 import { StatsTable, type StatRow } from "@/components/stats-table";
@@ -91,9 +90,11 @@ export default async function TeamDetailPage({
   searchParams,
 }: PageProps<"/teams/[teamId]">) {
   const { teamId } = await params;
-  const { season: seasonParam, view: viewParam } = await searchParams;
+  const { season: seasonParam, view: viewParam, tab: tabParam } = await searchParams;
   const selectedSeason = seasonParam === String(CURRENT_SEASON) ? CURRENT_SEASON : PRIOR_SEASON;
   const isProfileView = viewParam === "profile";
+  const initialTab =
+    tabParam === "roster" ? "Roster" : tabParam === "stats" ? "Stats" : "Overview";
 
   const supabase = createServerSupabaseClient();
 
@@ -109,38 +110,6 @@ export default async function TeamDetailPage({
 
   const { data: allTeams } = await supabase.from("teams").select("*").order("name");
   const teamAbbrById = new Map((allTeams ?? []).map((t) => [t.id, t.abbreviation]));
-
-  const modeToggle = (
-    <div className="mb-6 flex flex-wrap gap-2">
-      <Link
-        href={`/teams/${teamId}?view=profile`}
-        className={`px-4 py-2 text-sm font-bold transition-colors ${
-          isProfileView
-            ? "bg-blue text-white"
-            : "border border-line text-muted hover:text-foreground"
-        }`}
-      >
-        Team Profile
-      </Link>
-      {[
-        { season: PRIOR_SEASON, label: "2025-26" },
-        { season: CURRENT_SEASON, label: "2026-27" },
-      ].map((opt) => (
-        <Link
-          key={opt.season}
-          href={`/teams/${teamId}?season=${opt.season}`}
-          className={`px-4 py-2 text-sm font-bold transition-colors ${
-            !isProfileView && selectedSeason === opt.season
-              ? "bg-blue text-white"
-              : "border border-line text-muted hover:text-foreground"
-          }`}
-        >
-          {opt.label}
-        </Link>
-      ))}
-    </div>
-  );
-  const seasonToggle = modeToggle;
 
   // ==========================================================================
   // Team Profile（選手名鑑・TEAMS成績とは別の、フロント・コーチングスタッフ情報)
@@ -169,12 +138,11 @@ export default async function TeamDetailPage({
           team3pPct={null}
           variant="profile"
         />
-        <div className="section mt-8 border border-line bg-surface p-6">
-          <TeamDirectory teams={allTeams ?? []} activeTeamId={teamId} />
-        </div>
         <div className="mt-8">
-          {modeToggle}
-          <TeamProfileView team={team} profile={profile ?? null} assistantCoaches={staff ?? []} />
+          <TeamViewNav teamId={teamId} />
+          <div className="mt-6">
+            <TeamProfileView team={team} profile={profile ?? null} assistantCoaches={staff ?? []} />
+          </div>
         </div>
       </PageShell>
     );
@@ -200,11 +168,7 @@ export default async function TeamDetailPage({
             team3pPct={null}
             seasonLabel="2026-27"
           />
-          <div className="section mt-8 border border-line bg-surface p-6">
-            <TeamDirectory teams={allTeams ?? []} activeTeamId={teamId} />
-          </div>
           <div className="mt-8">
-            {seasonToggle}
             <div className="border border-line bg-surface p-10 text-center">
               <p className="text-lg font-bold">ロスター準備中</p>
               <p className="mt-2 text-sm text-muted">
@@ -279,11 +243,7 @@ export default async function TeamDetailPage({
           team3pPct={avgThreePct}
           seasonLabel="2026-27"
         />
-        <div className="section mt-8 border border-line bg-surface p-6">
-          <TeamDirectory teams={allTeams ?? []} activeTeamId={teamId} />
-        </div>
         <div className="mt-8">
-          {seasonToggle}
           <p className="mb-4 text-xs text-muted">
             ロスター最終更新日: {formatDateTime(lastUpdated)}
           </p>
@@ -399,18 +359,15 @@ export default async function TeamDetailPage({
         team3pPct={avgThreePct}
       />
 
-      <div className="section mt-8 border border-line bg-surface p-6">
-        <TeamDirectory teams={allTeams ?? []} activeTeamId={teamId} />
-      </div>
-
       <div className="mt-8">
-        {seasonToggle}
         {playersError ? (
           <p className="text-sm text-red-600 dark:text-red-400">
             在籍選手データの取得に失敗しました: {playersError.message}
           </p>
         ) : (
           <TeamTabs
+            initialTab={initialTab}
+            profileHref={`/teams/${teamId}?view=profile`}
             overview={
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]">
                 <div className="border border-line bg-surface p-6">
