@@ -18,7 +18,8 @@ const CONFERENCE_LABEL: Record<string, string> = {
   West: "Western Conference",
 };
 
-// チーム名クリックで選手名鑑Profile(/players/guide/[teamId])へ進むだけの一覧。
+// チーム名クリックで選手名鑑Profile(/players/guide/[teamId])へ進む一覧。
+// チーム名の下の導線は「プロフィール / スタッツ / チームプロフィール(/teams/[teamId]?view=profile)」。
 // 選手名・チームPPG・3P%・今季成績などは出さない。
 export function PlayerTeamDirectory({ teams }: { teams: TeamListItem[] }) {
   const conferences: ("East" | "West")[] = ["East", "West"];
@@ -60,19 +61,20 @@ export function PlayerTeamDirectory({ teams }: { teams: TeamListItem[] }) {
                           </span>
                           <span>{team.name}</span>
                         </Link>
-                        <div className="ml-10 mt-1 flex gap-4">
-                          <Link
-                            href={`/players/guide/${team.id}`}
-                            className="py-1 text-xs font-semibold text-blue hover:underline"
-                          >
-                            Profile
-                          </Link>
-                          <Link
-                            href={`/players/guide/${team.id}?view=stats`}
-                            className="py-1 text-xs font-semibold text-blue hover:underline"
-                          >
-                            Stats
-                          </Link>
+                        <div className="ml-10 mt-1 flex flex-wrap gap-x-4 gap-y-0.5">
+                          {[
+                            { label: "プロフィール", href: `/players/guide/${team.id}` },
+                            { label: "スタッツ", href: `/players/guide/${team.id}?view=stats` },
+                            { label: "チームプロフィール", href: `/teams/${team.id}?view=profile` },
+                          ].map((link) => (
+                            <Link
+                              key={link.label}
+                              href={link.href}
+                              className="inline-flex min-h-9 items-center text-xs font-semibold text-blue hover:underline"
+                            >
+                              {link.label}
+                            </Link>
+                          ))}
                         </div>
                       </div>
                     ))}
