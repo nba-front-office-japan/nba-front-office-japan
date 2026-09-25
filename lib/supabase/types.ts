@@ -12,6 +12,10 @@ export type AcquisitionType =
   | "two_way"
   | "other";
 export type RosterStatus = "active" | "two_way" | "inactive";
+export type TeamStaffRoleTitle =
+  | "Assistant Coach"
+  | "Lead Assistant Coach"
+  | "Associate Head Coach";
 
 // 2025-26 NBAアワード（個人賞・オールNBA等）
 export type AwardKey =
@@ -214,32 +218,38 @@ export interface Database {
       };
       team_profiles: {
         Row: {
-          id: string;
           team_id: string;
-          home_arena: string | null;
+          arena_name_ja: string | null;
+          arena_name_en: string | null;
           g_league_affiliate: string | null;
           owner_name: string | null;
+          governor_name: string | null;
           team_president_name: string | null;
-          general_manager_name: string | null;
-          basketball_ops_lead_name: string | null;
+          team_president_role: string | null;
+          basketball_operations_name: string | null;
+          basketball_operations_role: string | null;
+          gm_name: string | null;
           head_coach_name: string | null;
-          last_verified_date: string | null;
-          source: string | null;
+          last_verified: string | null;
+          source_url: string | null;
           created_at: string;
           updated_at: string;
         };
         Insert: {
-          id?: string;
           team_id: string;
-          home_arena?: string | null;
+          arena_name_ja?: string | null;
+          arena_name_en?: string | null;
           g_league_affiliate?: string | null;
           owner_name?: string | null;
+          governor_name?: string | null;
           team_president_name?: string | null;
-          general_manager_name?: string | null;
-          basketball_ops_lead_name?: string | null;
+          team_president_role?: string | null;
+          basketball_operations_name?: string | null;
+          basketball_operations_role?: string | null;
+          gm_name?: string | null;
           head_coach_name?: string | null;
-          last_verified_date?: string | null;
-          source?: string | null;
+          last_verified?: string | null;
+          source_url?: string | null;
         };
         Update: Partial<
           Database["public"]["Tables"]["team_profiles"]["Insert"]
@@ -250,22 +260,22 @@ export interface Database {
         Row: {
           id: string;
           team_id: string;
-          role: "assistant_coach";
           name: string;
+          role_title: TeamStaffRoleTitle;
           display_order: number;
-          last_verified_date: string | null;
-          source: string | null;
+          last_verified: string | null;
+          source_url: string | null;
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id?: string;
           team_id: string;
-          role: "assistant_coach";
           name: string;
-          display_order?: number;
-          last_verified_date?: string | null;
-          source?: string | null;
+          role_title: TeamStaffRoleTitle;
+          display_order: number;
+          last_verified?: string | null;
+          source_url?: string | null;
         };
         Update: Partial<
           Database["public"]["Tables"]["team_staff_members"]["Insert"]

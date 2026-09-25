@@ -7,6 +7,7 @@ import { TeamDirectory } from "@/components/team-directory";
 import { TeamTabs } from "@/components/team-tabs";
 import { TeamRoster, type RosterRow } from "@/components/team-roster";
 import { StatsTable, type StatRow } from "@/components/stats-table";
+import { TeamProfileView } from "@/components/team-profile-view";
 import { deriveStats, formatStat, toRawStatTotals, aggregatePlayerSeasonStats } from "@/lib/stats";
 import type { Database } from "@/lib/supabase/types";
 
@@ -90,8 +91,9 @@ export default async function TeamDetailPage({
   searchParams,
 }: PageProps<"/teams/[teamId]">) {
   const { teamId } = await params;
-  const { season: seasonParam } = await searchParams;
+  const { season: seasonParam, view: viewParam } = await searchParams;
   const selectedSeason = seasonParam === String(CURRENT_SEASON) ? CURRENT_SEASON : PRIOR_SEASON;
+  const isProfileView = viewParam === "profile";
 
   const supabase = createServerSupabaseClient();
 
@@ -108,8 +110,18 @@ export default async function TeamDetailPage({
   const { data: allTeams } = await supabase.from("teams").select("*").order("name");
   const teamAbbrById = new Map((allTeams ?? []).map((t) => [t.id, t.abbreviation]));
 
-  const seasonToggle = (
-    <div className="mb-6 flex gap-2">
+  const modeToggle = (
+    <div className="mb-6 flex flex-wrap gap-2">
+      <Link
+        href={`/teams/${teamId}?view=profile`}
+        className={`px-4 py-2 text-sm font-bold transition-colors ${
+          isProfileView
+            ? "bg-blue text-white"
+            : "border border-line text-muted hover:text-foreground"
+        }`}
+      >
+        Team Profile
+      </Link>
       {[
         { season: PRIOR_SEASON, label: "2025-26" },
         { season: CURRENT_SEASON, label: "2026-27" },
@@ -118,7 +130,7 @@ export default async function TeamDetailPage({
           key={opt.season}
           href={`/teams/${teamId}?season=${opt.season}`}
           className={`px-4 py-2 text-sm font-bold transition-colors ${
-            selectedSeason === opt.season
+            !isProfileView && selectedSeason === opt.season
               ? "bg-blue text-white"
               : "border border-line text-muted hover:text-foreground"
           }`}
@@ -128,6 +140,45 @@ export default async function TeamDetailPage({
       ))}
     </div>
   );
+  const seasonToggle = modeToggle;
+
+  // ==========================================================================
+  // Team Profile（選手名鑑・TEAMS成績とは別の、フロント・コーチングスタッフ情報)
+  // team_profiles/team_staff_membersが未作成・未取込の間は取得エラー/行なしになるため、
+  // その場合は「情報準備中」として扱う(TeamProfileView側で表示を切り替える)。
+  // ==========================================================================
+  if (isProfileView) {
+    const { data: profile } = await supabase
+      .from("team_profiles")
+      .select("*")
+      .eq("team_id", teamId)
+      .maybeSingle();
+
+    const { data: staff } = await supabase
+      .from("team_staff_members")
+      .select("*")
+      .eq("team_id", teamId)
+      .order("display_order");
+
+    return (
+      <PageShell>
+        <TeamHeader
+          team={team}
+          playerCount={0}
+          teamPpg={null}
+          team3pPct={null}
+          variant="profile"
+        />
+        <div className="section mt-8 border border-line bg-surface p-6">
+          <TeamDirectory teams={allTeams ?? []} activeTeamId={teamId} />
+        </div>
+        <div className="mt-8">
+          {modeToggle}
+          <TeamProfileView team={team} profile={profile ?? null} assistantCoaches={staff ?? []} />
+        </div>
+      </PageShell>
+    );
+  }
 
   // ==========================================================================
   // 2026-27シーズン（現在ロスター。player_season_rostersが未整備の間は「準備中」）
