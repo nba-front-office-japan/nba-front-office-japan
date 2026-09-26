@@ -68,6 +68,7 @@ export default async function PlayerDetailPage({
     season: s.season,
     teamLabel: s.team_id ? teamAbbrById.get(s.team_id) ?? "-" : "TOT",
     seasonType: s.season_type,
+    isTotal: s.team_id === null,
     gamesPlayed: s.games_played,
     minutesPlayed: s.minutes_played,
     points: s.points,

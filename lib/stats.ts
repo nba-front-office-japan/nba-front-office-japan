@@ -168,3 +168,9 @@ export function toRawStatTotals(row: PlayerStatsRow): RawStatTotals {
     freeThrowsAttempted: row.free_throws_attempted,
   };
 }
+
+// 開始年(2003)から表示用のシーズン表記(2003-04)を作る。
+export function formatSeasonLabel(season: number): string {
+  const next = String((season + 1) % 100).padStart(2, "0");
+  return `${season}-${next}`;
+}
