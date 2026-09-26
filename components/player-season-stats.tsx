@@ -109,6 +109,13 @@ export function PlayerSeasonStats({ rows }: { rows: PlayerStatRow[] }) {
         ))}
       </div>
 
+      {/* 過去のプレーオフ成績は2026-27ロスター在籍選手分のみ取り込んでいるため、収録範囲を明記する */}
+      {seasonType === "playoffs" && (
+        <p className="mb-3 border-l-[3px] border-gold pl-3 text-xs text-muted">
+          プレーオフ成績は、2026-27シーズンのロスター在籍選手について2003-04シーズン以降の記録を収録しています。それ以外の選手・シーズンは一部未収録です。
+        </p>
+      )}
+
       <p className="mb-2 text-xs text-muted sm:hidden">→ 横にスクロールできます</p>
 
       <div className="overflow-x-auto border border-line bg-surface">
@@ -134,7 +141,9 @@ export function PlayerSeasonStats({ rows }: { rows: PlayerStatRow[] }) {
                   colSpan={columnCount}
                   className="px-2 py-6 text-center text-sm text-muted"
                 >
-                  データがありません。
+                  {seasonType === "playoffs"
+                    ? "収録済みのプレーオフ成績はありません。"
+                    : "データがありません。"}
                 </td>
               </tr>
             ) : (
