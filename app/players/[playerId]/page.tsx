@@ -1,16 +1,14 @@
 import { notFound } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { PageShell } from "@/components/page-shell";
-import { PlayerHeader, type PlayerSnapshot } from "@/components/player-header";
+import { PlayerHeader } from "@/components/player-header";
 import {
   PlayerSeasonStats,
   type PlayerStatRow,
 } from "@/components/player-season-stats";
-import { deriveStats, aggregatePlayerSeasonStats } from "@/lib/stats";
 import { AWARDS_SEASON, getAwardLabel } from "@/lib/awards/constants";
 
 const CURRENT_SEASON = 2026;
-const PRIOR_SEASON = 2025;
 
 export default async function PlayerDetailPage({
   params,
@@ -88,18 +86,7 @@ export default async function PlayerDetailPage({
     freeThrowsAttempted: s.free_throws_attempted,
   }));
 
-  // 2025-26 レギュラーシーズン成績（移籍していれば全チーム分を合算する。
-  // どれか1チーム行を任意に選ぶ処理はしない）。
-  const priorSeasonRegularRows = (stats ?? []).filter(
-    (s) => s.season === PRIOR_SEASON && s.season_type === "regular_season"
-  );
-  const seasonTotals = aggregatePlayerSeasonStats(priorSeasonRegularRows);
-
-  const snapshot: PlayerSnapshot | null = seasonTotals
-    ? { gamesPlayed: seasonTotals.gamesPlayed, ...deriveStats(seasonTotals) }
-    : null;
-
-  // 2025-26 アワード（受賞・選出がある場合のみ表示。成績スナップショットとは別枠）。
+  // 2025-26 アワード（受賞・選出がある場合のみ表示）。
   const { data: awards } = await supabase
     .from("season_player_awards")
     .select("*")
@@ -117,7 +104,6 @@ export default async function PlayerDetailPage({
         player={player}
         currentTeam={currentTeam ?? null}
         currentTeamPending={!currentRoster}
-        snapshot={snapshot}
       />
       {awardLabels.length > 0 && (
         <div className="mt-8 border border-line bg-surface p-6">
