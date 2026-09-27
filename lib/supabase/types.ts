@@ -298,6 +298,68 @@ export interface Database {
         >;
         Relationships: [];
       };
+      team_valuation_editions: {
+        Row: {
+          id: string;
+          source_key: "cnbc" | "forbes" | "sportico";
+          edition_year: number;
+          source_name: string;
+          title: string;
+          published_on: string;
+          source_url: string;
+          value_definition: string | null;
+          financials_season: number | null;
+          stated_average_value_usd: number | null;
+          last_verified: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          source_key: "cnbc" | "forbes" | "sportico";
+          edition_year: number;
+          source_name: string;
+          title: string;
+          published_on: string;
+          source_url: string;
+          value_definition?: string | null;
+          financials_season?: number | null;
+          stated_average_value_usd?: number | null;
+          last_verified: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["team_valuation_editions"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      team_valuations: {
+        Row: {
+          id: string;
+          edition_id: string;
+          team_id: string;
+          rank: number;
+          value_usd: number;
+          revenue_usd: number | null;
+          ebitda_usd: number | null;
+          change_pct: number | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          edition_id: string;
+          team_id: string;
+          rank: number;
+          value_usd: number;
+          revenue_usd?: number | null;
+          ebitda_usd?: number | null;
+          change_pct?: number | null;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["team_valuations"]["Insert"]
+        >;
+        Relationships: [];
+      };
       team_staff_members: {
         Row: {
           id: string;

@@ -8,6 +8,7 @@ import { TeamRoster, type RosterRow } from "@/components/team-roster";
 import { StatsTable, type StatRow } from "@/components/stats-table";
 import { TeamProfileView } from "@/components/team-profile-view";
 import { deriveStats, formatStat, toRawStatTotals, aggregatePlayerSeasonStats } from "@/lib/stats";
+import { fetchLatestValuationEdition } from "@/lib/valuations";
 import type { Database } from "@/lib/supabase/types";
 
 type PlayerStatsRow = Database["public"]["Tables"]["player_stats"]["Row"];
@@ -135,6 +136,23 @@ export default async function TeamDetailPage({
       .eq("team_id", teamId)
       .maybeSingle();
 
+    // 資産価値(推計値)は公開日が最も新しい年版だけを出す
+    const { data: valuationEdition } = await fetchLatestValuationEdition(supabase);
+    const { data: teamValuation } = valuationEdition
+      ? await supabase
+          .from("team_valuations")
+          .select("*")
+          .eq("edition_id", valuationEdition.id)
+          .eq("team_id", teamId)
+          .maybeSingle()
+      : { data: null };
+    const { count: valuationTeamCount } = valuationEdition
+      ? await supabase
+          .from("team_valuations")
+          .select("id", { count: "exact", head: true })
+          .eq("edition_id", valuationEdition.id)
+      : { count: null };
+
     return (
       <PageShell>
         <TeamHeader
@@ -151,6 +169,15 @@ export default async function TeamDetailPage({
               team={team}
               profile={profile ?? null}
               arena={arena ?? null}
+              valuation={
+                valuationEdition
+                  ? {
+                      edition: valuationEdition,
+                      row: teamValuation ?? null,
+                      teamCount: valuationTeamCount ?? null,
+                    }
+                  : null
+              }
               assistantCoaches={staff ?? []}
             />
           </div>

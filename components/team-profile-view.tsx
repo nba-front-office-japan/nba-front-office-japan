@@ -1,10 +1,24 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import type { Database } from "@/lib/supabase/types";
+import {
+  formatValueOku,
+  valuationEditionLabel,
+  type TeamValuation,
+  type ValuationEdition,
+} from "@/lib/valuations";
 
 type Team = Database["public"]["Tables"]["teams"]["Row"];
 type TeamProfileRow = Database["public"]["Tables"]["team_profiles"]["Row"];
 type TeamArenaRow = Database["public"]["Tables"]["team_arenas"]["Row"];
 type StaffRow = Database["public"]["Tables"]["team_staff_members"]["Row"];
+
+// 最新の年版と、そのチームの資産価値(推計値)。年版が無ければ null。
+export interface TeamValuationSummary {
+  edition: ValuationEdition;
+  row: TeamValuation | null;
+  teamCount: number | null;
+}
 
 // team_profiles が存在しない(テーブル未作成・行が無い)場合だけ「情報準備中」。
 // team_profiles はあるが値が空(NULL)の項目は「公式未公表」と表示する。
@@ -76,16 +90,14 @@ function InfoRow({
   value,
   sub,
   muted = false,
-  className = "",
 }: {
   label: string;
   value: ReactNode;
   sub?: ReactNode;
   muted?: boolean;
-  className?: string;
 }) {
   return (
-    <div className={`min-w-0 bg-surface p-4 ${className}`}>
+    <div className="min-w-0 bg-surface p-4">
       <span className="mb-1.5 block text-[11px] text-muted">{label}</span>
       <b
         className={`block break-words text-[15px] ${
@@ -105,17 +117,15 @@ function ProfileRow({
   value,
   sub,
   profileMissing,
-  className,
 }: {
   label: string;
   value: string | null | undefined;
   sub?: string | null;
   profileMissing: boolean;
-  className?: string;
 }) {
-  if (profileMissing) return <InfoRow label={label} value={PREPARING} muted className={className} />;
-  if (!present(value)) return <InfoRow label={label} value={NOT_PUBLISHED} muted className={className} />;
-  return <InfoRow label={label} value={value} sub={present(sub) ? sub : null} className={className} />;
+  if (profileMissing) return <InfoRow label={label} value={PREPARING} muted />;
+  if (!present(value)) return <InfoRow label={label} value={NOT_PUBLISHED} muted />;
+  return <InfoRow label={label} value={value} sub={present(sub) ? sub : null} />;
 }
 
 // "2024-08-28" → "2024年8月"。日付文字列をそのまま分解し、タイムゾーンの影響を受けないようにする。
@@ -285,15 +295,43 @@ function HomeArenaSection({
   );
 }
 
+// 資産価値(推計値)。ランキングページへのリンクを添える。
+function ValuationRow({ valuation }: { valuation: TeamValuationSummary | null }) {
+  if (!valuation) return <InfoRow label="資産価値（推計）" value={PREPARING} muted />;
+  const label = `資産価値（${valuationEditionLabel(valuation.edition)}）`;
+  const rankingLink = (
+    <Link href="/teams/valuations" className="text-blue underline-offset-2 hover:underline">
+      ランキングを見る
+    </Link>
+  );
+  if (!valuation.row) {
+    return <InfoRow label={label} value={PREPARING} muted sub={rankingLink} />;
+  }
+  return (
+    <InfoRow
+      label={label}
+      value={`${formatValueOku(valuation.row.value_usd)}億ドル`}
+      sub={
+        <>
+          {valuation.teamCount ? `${valuation.teamCount}チーム中` : ""}
+          {valuation.row.rank}位 · {rankingLink}
+        </>
+      }
+    />
+  );
+}
+
 export function TeamProfileView({
   team,
   profile,
   arena,
+  valuation,
   assistantCoaches,
 }: {
   team: Team;
   profile: TeamProfileRow | null;
   arena: TeamArenaRow | null;
+  valuation: TeamValuationSummary | null;
   assistantCoaches: StaffRow[];
 }) {
   const profileMissing = profile === null;
@@ -312,13 +350,8 @@ export function TeamProfileView({
             value={team.founded_year ? `${team.founded_year}年` : NOT_PUBLISHED}
             muted={!team.founded_year}
           />
-          {/* 基本情報は5項目のため、最後の項目を広げて格子の空きマスを作らない */}
-          <ProfileRow
-            label="Gリーグ提携先"
-            value={profile?.g_league_affiliate}
-            profileMissing={profileMissing}
-            className="sm:col-span-2"
-          />
+          <ProfileRow label="Gリーグ提携先" value={profile?.g_league_affiliate} profileMissing={profileMissing} />
+          <ValuationRow valuation={valuation} />
         </div>
       </SectionCard>
 
