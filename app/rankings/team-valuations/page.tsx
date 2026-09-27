@@ -34,6 +34,13 @@ function SummaryCard({
 function PageHeading({ kicker }: { kicker: string }) {
   return (
     <>
+      <nav aria-label="パンくずリスト" className="mb-4 text-xs text-muted">
+        <Link href="/rankings" className="hover:text-blue">
+          ランキング
+        </Link>
+        <span aria-hidden className="mx-1.5">›</span>
+        <span aria-current="page">チーム資産価値</span>
+      </nav>
       <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">{kicker}</p>
       <h1 className="mb-3 text-[36px] font-semibold tracking-tight">チーム資産価値ランキング</h1>
       <p className="mb-5 text-sm text-muted">NBA全30チームの資産価値（推計値）を順位で並べたページです。</p>
@@ -49,7 +56,7 @@ export default async function TeamValuationsPage() {
   if (editionError || !edition) {
     return (
       <PageShell>
-        <PageHeading kicker="Team Valuations" />
+        <PageHeading kicker="Rankings" />
         <p className="text-sm text-muted">
           {editionError ? `資産価値データの取得に失敗しました: ${editionError.message}` : "情報準備中"}
         </p>
@@ -94,7 +101,7 @@ export default async function TeamValuationsPage() {
 
   return (
     <PageShell>
-      <PageHeading kicker={`Team Valuations · ${edition.source_name} ${edition.edition_year}`} />
+      <PageHeading kicker={`Rankings · ${edition.source_name} ${edition.edition_year}`} />
 
       <p className="mb-6 border-l-[3px] border-gold pl-3 text-xs leading-relaxed text-muted">
         <span className="font-bold text-foreground">推計値：</span>

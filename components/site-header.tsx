@@ -11,6 +11,7 @@ const navItems = [
   { href: "/stats", label: "STATS LAB" },
   { href: "/awards", label: "AWARDS" },
   { href: "/draft", label: "DRAFT" },
+  { href: "/rankings", label: "ランキング" },
   { href: "/contracts", label: "CONTRACTS" },
   { href: "/premium", label: "PREMIUM" },
 ];

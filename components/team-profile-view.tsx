@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import type { Database } from "@/lib/supabase/types";
+import { rankingHref } from "@/lib/rankings";
 import {
   formatValueOku,
   valuationEditionLabel,
@@ -300,7 +301,7 @@ function ValuationRow({ valuation }: { valuation: TeamValuationSummary | null })
   if (!valuation) return <InfoRow label="資産価値（推計）" value={PREPARING} muted />;
   const label = `資産価値（${valuationEditionLabel(valuation.edition)}）`;
   const rankingLink = (
-    <Link href="/teams/valuations" className="text-blue underline-offset-2 hover:underline">
+    <Link href={rankingHref("team-valuations")} className="text-blue underline-offset-2 hover:underline">
       ランキングを見る
     </Link>
   );
