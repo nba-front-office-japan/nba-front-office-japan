@@ -39,7 +39,8 @@ export default async function NewsArticlePage({
 
   const lowConfidence = isRumorOrUnverified(article.verificationStatus);
   const paragraphs = article.bodyMarkdown
-    .split(/\n{2,}/)
+    // Windows の CRLF 改行でも、空行を段落区切りとして扱う。
+    .split(/\r?\n[ \t]*\r?\n/)
     .map((p) => p.trim())
     .filter(Boolean);
 
