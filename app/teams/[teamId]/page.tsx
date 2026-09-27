@@ -129,6 +129,12 @@ export default async function TeamDetailPage({
       .eq("team_id", teamId)
       .order("display_order");
 
+    const { data: arena } = await supabase
+      .from("team_arenas")
+      .select("*")
+      .eq("team_id", teamId)
+      .maybeSingle();
+
     return (
       <PageShell>
         <TeamHeader
@@ -141,7 +147,12 @@ export default async function TeamDetailPage({
         <div className="mt-8">
           <TeamViewNav teamId={teamId} />
           <div className="mt-6">
-            <TeamProfileView team={team} profile={profile ?? null} assistantCoaches={staff ?? []} />
+            <TeamProfileView
+              team={team}
+              profile={profile ?? null}
+              arena={arena ?? null}
+              assistantCoaches={staff ?? []}
+            />
           </div>
         </div>
       </PageShell>

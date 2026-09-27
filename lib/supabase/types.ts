@@ -256,6 +256,48 @@ export interface Database {
         >;
         Relationships: [];
       };
+      team_arenas: {
+        Row: {
+          team_id: string;
+          address: string | null;
+          city: string | null;
+          state_region: string | null;
+          postal_code: string | null;
+          country: string | null;
+          opened_year: number | null;
+          official_url: string | null;
+          last_verified: string | null;
+          source_url: string | null;
+          capacity_basketball: number | null;
+          capacity_source_name: string | null;
+          capacity_source_url: string | null;
+          capacity_as_of: string | null;
+          capacity_last_verified: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          team_id: string;
+          address?: string | null;
+          city?: string | null;
+          state_region?: string | null;
+          postal_code?: string | null;
+          country?: string | null;
+          opened_year?: number | null;
+          official_url?: string | null;
+          last_verified?: string | null;
+          source_url?: string | null;
+          capacity_basketball?: number | null;
+          capacity_source_name?: string | null;
+          capacity_source_url?: string | null;
+          capacity_as_of?: string | null;
+          capacity_last_verified?: string | null;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["team_arenas"]["Insert"]
+        >;
+        Relationships: [];
+      };
       team_staff_members: {
         Row: {
           id: string;
