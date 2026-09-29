@@ -1,6 +1,7 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import { PageShell } from "@/components/page-shell";
+import { ROSTER_SEASON, seasonLabel } from "@/lib/seasons";
 import {
   PlayerTeamDirectory,
   type TeamListItem,
@@ -16,7 +17,7 @@ export default async function PlayersPage() {
   if (error) {
     return (
       <PageShell>
-        <h1 className="mb-6 text-2xl font-semibold">選手名鑑 2026-27</h1>
+        <h1 className="mb-6 text-2xl font-semibold">選手名鑑 {seasonLabel(ROSTER_SEASON)}</h1>
         <p className="text-sm text-red-600 dark:text-red-400">
           チームデータの取得に失敗しました: {error.message}
         </p>
@@ -35,13 +36,13 @@ export default async function PlayersPage() {
   return (
     <PageShell>
       <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
-        Player Database · 2026-27 Season
+        Player Database · {seasonLabel(ROSTER_SEASON)} Season
       </p>
       <h1 className="mb-2 text-[36px] font-semibold tracking-tight">
-        選手名鑑 2026-27
+        選手名鑑 {seasonLabel(ROSTER_SEASON)}
       </h1>
       <p className="mb-7 text-sm text-muted">
-        30チーム・6ディビジョン別の一覧です。チーム名から選手名鑑Profileへ進めます。
+        30チーム・6ディビジョン別の一覧です。チーム名から選手名鑑のProfileへ、その下のリンクからStats・Team Profileへ進めます。
       </p>
       <PlayerTeamDirectory teams={teamList} />
     </PageShell>

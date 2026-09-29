@@ -14,14 +14,18 @@ import {
 import { TeamProfileView } from "@/components/team-profile-view";
 import { deriveStats, aggregatePlayerSeasonStats } from "@/lib/stats";
 import { formatDraftInfo, draftSortValue } from "@/lib/draft-format";
-import { ageAt, AGE_REFERENCE_2026_27 } from "@/lib/age";
+import { ageAt } from "@/lib/age";
+import { ROSTER_SEASON, STATS_SEASON, seasonLabel, ageReferenceFor } from "@/lib/seasons";
 import { fetchTeamProfileData } from "@/lib/team-profile-data";
 import type { Database } from "@/lib/supabase/types";
 
 type PlayerStatsRow = Database["public"]["Tables"]["player_stats"]["Row"];
 
-const CURRENT_ROSTER_SEASON = 2026;
-const PRIOR_SEASON = 2025;
+// ロスターはロスターシーズン、Statsは成績シーズン(ロスターの選手の直近の成績)を読む
+const CURRENT_ROSTER_SEASON = ROSTER_SEASON;
+const PRIOR_SEASON = STATS_SEASON;
+const ROSTER_LABEL = seasonLabel(CURRENT_ROSTER_SEASON);
+const STATS_LABEL = seasonLabel(PRIOR_SEASON);
 
 type GuideView = "profile" | "stats" | "team-profile";
 
@@ -78,7 +82,7 @@ export default async function PlayerGuideTeamPage({
   const header = (
     <>
       <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
-        選手名鑑 2026-27 · {team.abbreviation}
+        選手名鑑 {ROSTER_LABEL} · {team.abbreviation}
       </p>
       <h1 className="mb-3 text-[32px] font-semibold tracking-tight sm:text-[36px]">
         {team.name}
@@ -88,7 +92,7 @@ export default async function PlayerGuideTeamPage({
           href={`/teams/${teamId}`}
           className="font-semibold text-foreground underline underline-offset-4 hover:no-underline"
         >
-          2025-26チーム記録（Overview・プロフィール・Stats）→
+          {STATS_LABEL}チーム記録（Overview・Profile・Stats）→
         </Link>
       </p>
     </>
@@ -125,7 +129,7 @@ export default async function PlayerGuideTeamPage({
         <div className="border border-line bg-surface p-10 text-center">
           <p className="text-lg font-bold">ロスター準備中</p>
           <p className="mt-2 text-sm text-muted">
-            2026-27シーズンのロスター情報はまだ登録されていません。
+            {ROSTER_LABEL}シーズンのロスター情報はまだ登録されていません。
           </p>
         </div>
       </PageShell>
@@ -166,7 +170,7 @@ export default async function PlayerGuideTeamPage({
     position: positionByPlayerId.get(player.id) ?? null,
     jerseyNumber: jerseyByPlayerId.get(player.id) ?? null,
     birthDate: player.birth_date,
-    age: ageAt(player.birth_date, AGE_REFERENCE_2026_27),
+    age: ageAt(player.birth_date, ageReferenceFor(CURRENT_ROSTER_SEASON)),
     heightCm: player.height_cm,
     weightKg: player.weight_kg,
     preDraftTeam: player.pre_draft_team ?? null,
@@ -188,7 +192,7 @@ export default async function PlayerGuideTeamPage({
       stats: totals ? deriveStats(totals) : null,
     };
   });
-  // デフォルトはPTS降順。2025-26成績がない選手はロスターから除外せず、末尾にまとめる。
+  // デフォルトはPTS降順。成績シーズンの成績がない選手はロスターから除外せず、末尾にまとめる。
   teamStatsRows.sort((a, b) => {
     const aHasStats = a.stats !== null;
     const bHasStats = b.stats !== null;
@@ -207,10 +211,10 @@ export default async function PlayerGuideTeamPage({
       ) : (
         <div>
           <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
-            2025-26 ROSTER STATS
+            {STATS_LABEL} ROSTER STATS
           </p>
           <p className="mb-4 border-l-[3px] border-gold pl-3 text-xs font-bold text-foreground">
-            2026-27開幕時ロスターに含まれる選手の2025-26レギュラーシーズン成績です。2025-26のチーム成績ではありません。
+            {ROSTER_LABEL}ロスターに含まれる選手の{STATS_LABEL}レギュラーシーズン成績です。{STATS_LABEL}のチーム成績ではありません。
           </p>
           <TeamRosterStatsTable rows={teamStatsRows} />
         </div>

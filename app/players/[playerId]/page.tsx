@@ -8,16 +8,17 @@ import {
   type PlayerStatRow,
 } from "@/components/player-season-stats";
 import { AWARDS_SEASON, getAwardLabel } from "@/lib/awards/constants";
+import { ROSTER_SEASON } from "@/lib/seasons";
 
-const CURRENT_SEASON = 2026;
+const CURRENT_SEASON = ROSTER_SEASON;
 
-// 選手ページは「プロフィール」(基本情報・受賞歴)と「スタッツ」(シーズン別成績)を ?view= で切り替える。
+// 選手ページは Profile(基本情報・受賞歴)と Stats(シーズン別成績)を ?view= で切り替える。
 // 上部の選手情報(PlayerHeader)はどちらの表示でも出す。
 type PlayerView = "profile" | "stats";
 
 const VIEW_OPTIONS: { view: PlayerView; label: string }[] = [
-  { view: "profile", label: "プロフィール" },
-  { view: "stats", label: "スタッツ" },
+  { view: "profile", label: "Profile" },
+  { view: "stats", label: "Stats" },
 ];
 
 export default async function PlayerDetailPage({
@@ -156,7 +157,7 @@ export default async function PlayerDetailPage({
             href={`/players/${playerId}?view=stats`}
             className="mx-1 font-semibold text-blue underline-offset-2 hover:underline"
           >
-            スタッツ
+            Stats
           </Link>
           で確認できます。
         </p>

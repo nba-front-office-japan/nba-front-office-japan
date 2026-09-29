@@ -5,10 +5,7 @@ export interface AgeReference {
   day: number;
 }
 
-// 2025-26 シーズンの基準日(2025年10月1日)。2025-26 チーム記録(/teams/[teamId])で使う。
-export const AGE_REFERENCE_2025_26: AgeReference = { year: 2025, month: 10, day: 1 };
-// 2026-27 シーズンの基準日(2026年10月1日)。選手名鑑 2026(/players/guide/[teamId])で使う。
-export const AGE_REFERENCE_2026_27: AgeReference = { year: 2026, month: 10, day: 1 };
+// シーズンごとの基準日(10月1日)は lib/seasons.ts の ageReferenceFor(season) で作る。
 
 // "YYYY-MM-DD" の生年月日から、基準日時点の満年齢を返す。生年月日が無い・不正なら null。
 export function ageAt(birthDate: string | null, reference: AgeReference): number | null {

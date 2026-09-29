@@ -8,13 +8,13 @@ export function TeamHeader({
   playerCount,
   teamPpg,
   team3pPct,
-  seasonLabel = "2025-26",
+  seasonLabel,
 }: {
   team: Team;
   playerCount: number;
   teamPpg: number | null;
   team3pPct: number | null;
-  seasonLabel?: string;
+  seasonLabel: string;
 }) {
   return (
     // チームカラー背景(.team-theme)の上に載るため、文字・罫線は配色トークン(白系)で指定する

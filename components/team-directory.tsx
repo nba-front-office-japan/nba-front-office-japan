@@ -13,6 +13,7 @@ const CONFERENCE_LABEL: Record<string, string> = {
   West: "Western Conference",
 };
 
+// チーム名はチームページ(Overview)へ。その下の Profile / Stats は該当タブを直接開く。
 export function TeamDirectory({
   teams,
   activeTeamId,
@@ -58,24 +59,41 @@ export function TeamDirectory({
                     {divisionTeams.map((team) => {
                       const isActive = team.id === activeTeamId;
                       return (
-                        <Link
-                          key={team.id}
-                          href={`/teams/${team.id}`}
-                          className={`flex items-center gap-2.5 border-t border-line py-2.5 text-sm font-bold ${
-                            isActive ? "text-blue" : "hover:text-blue"
-                          }`}
-                        >
-                          <span
-                            className={`inline-grid h-[30px] w-[30px] flex-none place-items-center rounded-full text-[10px] tracking-wide ${
-                              isActive
-                                ? "bg-blue text-white"
-                                : "bg-[#eaf1ff] text-[#2457b7]"
+                        <div key={team.id} className="border-t border-line py-2.5">
+                          <Link
+                            href={`/teams/${team.id}`}
+                            className={`flex items-center gap-2.5 text-sm font-bold ${
+                              isActive ? "text-blue" : "hover:text-blue"
                             }`}
                           >
-                            {team.abbreviation}
-                          </span>
-                          <span>{team.name}</span>
-                        </Link>
+                            <span
+                              className={`inline-grid h-[30px] w-[30px] flex-none place-items-center rounded-full text-[10px] tracking-wide ${
+                                isActive
+                                  ? "bg-blue text-white"
+                                  : "bg-[#eaf1ff] text-[#2457b7]"
+                              }`}
+                            >
+                              {team.abbreviation}
+                            </span>
+                            <span>{team.name}</span>
+                          </Link>
+                          {/* チームページの Profile / Stats タブを直接開く(?tab= は /teams/[teamId] が受け付ける値) */}
+                          <div className="ml-10 mt-1.5 flex gap-2">
+                            {[
+                              { label: "Profile", href: `/teams/${team.id}?tab=profile` },
+                              { label: "Stats", href: `/teams/${team.id}?tab=stats` },
+                            ].map((link) => (
+                              <Link
+                                key={link.label}
+                                href={link.href}
+                                aria-label={`${team.name} ${link.label}`}
+                                className="inline-flex min-h-9 min-w-[72px] items-center justify-center border border-line px-3 text-xs font-bold text-blue hover:border-blue"
+                              >
+                                {link.label}
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
                       );
                     })}
                   </div>

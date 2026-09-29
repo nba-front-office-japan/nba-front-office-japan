@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ROSTER_SEASON, seasonLabel } from "@/lib/seasons";
 
 const navItems = [
   { href: "/", label: "HOME" },
@@ -9,7 +10,7 @@ const navItems = [
   { href: "/teams", label: "TEAMS" },
   { href: "/stats", label: "PLAYERS" },
   { href: "/awards", label: "AWARDS" },
-  { href: "/players", label: "選手名鑑 2026-27" },
+  { href: "/players", label: `選手名鑑 ${seasonLabel(ROSTER_SEASON)}` },
   { href: "/draft", label: "DRAFT" },
   { href: "/contracts", label: "CONTRACTS" },
   { href: "/rankings", label: "ランキング" },

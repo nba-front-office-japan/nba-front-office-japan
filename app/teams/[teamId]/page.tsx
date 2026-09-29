@@ -11,16 +11,20 @@ import {
 } from "@/components/team-roster-profile-table";
 import { deriveStats, formatStat, toRawStatTotals } from "@/lib/stats";
 import { formatDraftInfo, draftSortValue } from "@/lib/draft-format";
-import { ageAt, AGE_REFERENCE_2025_26 } from "@/lib/age";
+import { ageAt } from "@/lib/age";
+import { STATS_SEASON, ROSTER_SEASON, seasonLabel, ageReferenceFor, ageReferenceText } from "@/lib/seasons";
 import { teamThemeBackground } from "@/lib/team-colors";
 import type { Database } from "@/lib/supabase/types";
 
-// /teams/[teamId] は「2025-26シーズンのチーム記録」(Overview / プロフィール / Stats)。
-// 2026-27のロスターと Team Profile は選手名鑑 2026-27(/players/guide/[teamId])に置く。
+// /teams/[teamId] は「成績シーズン(STATS_SEASON)のチーム記録」(Overview / Profile / Stats)。
+// ロスターシーズンの選手一覧と Team Profile は選手名鑑(/players/guide/[teamId])に置く。
+// タブは ?tab=profile / ?tab=stats で直接開ける(Teams一覧のリンクもこのURLを使う)。
 
 type PlayerStatsRow = Database["public"]["Tables"]["player_stats"]["Row"];
 
-const RECORD_SEASON = 2025;
+const RECORD_SEASON = STATS_SEASON;
+const RECORD_LABEL = seasonLabel(RECORD_SEASON);
+const AGE_REFERENCE = ageReferenceFor(RECORD_SEASON);
 
 // 移籍があった選手は、このチーム在籍分の行(team_id一致)を優先し、
 // 無ければTOT行(team_id=NULL)にフォールバックする。
@@ -86,9 +90,9 @@ export default async function TeamDetailPage({
   }
 
   const initialTab =
-    // ?tab=roster は公開済みURLの互換のため、プロフィールタブとして扱う
+    // ?tab=roster は公開済みURLの互換のため、Profileタブとして扱う
     tabParam === "profile" || tabParam === "roster"
-      ? "プロフィール"
+      ? "Profile"
       : tabParam === "stats"
         ? "Stats"
         : "Overview";
@@ -111,7 +115,7 @@ export default async function TeamDetailPage({
   const { data: allTeams } = await supabase.from("teams").select("*").order("name");
   const teamAbbrById = new Map((allTeams ?? []).map((t) => [t.id, t.abbreviation]));
 
-  // 2025-26シーズンの記録(実績のある選手を player_stats から復元して表示)
+  // 成績シーズンの記録(実績のある選手を player_stats から復元して表示)
   const { data: seasonStats } = await supabase
     .from("player_stats")
     .select("*")
@@ -150,7 +154,7 @@ export default async function TeamDetailPage({
     const derived = statRow ? deriveStats(toRawStatTotals(statRow)) : null;
     return {
       fullName: player.full_name_ja ?? player.full_name,
-      age: ageAt(player.birth_date, AGE_REFERENCE_2025_26),
+      age: ageAt(player.birth_date, AGE_REFERENCE),
       ppg: derived?.ppg ?? null,
       rpg: derived?.rpg ?? null,
       apg: derived?.apg ?? null,
@@ -177,7 +181,7 @@ export default async function TeamDetailPage({
     ? agesKnown.reduce((a, b) => a + b, 0) / agesKnown.length
     : null;
 
-  // プロフィール: 2025-26にこのチームでプレーした選手のプロフィール一覧(出場試合数の多い順)
+  // Profile: 成績シーズンにこのチームでプレーした選手のプロフィール一覧(出場試合数の多い順)
   const rosterProfileRows: ProfileRow[] = (players ?? []).map((player) => ({
     id: player.id,
     name: player.full_name_ja ?? player.full_name,
@@ -185,7 +189,7 @@ export default async function TeamDetailPage({
     position: player.position,
     jerseyNumber: null,
     birthDate: player.birth_date,
-    age: ageAt(player.birth_date, AGE_REFERENCE_2025_26),
+    age: ageAt(player.birth_date, AGE_REFERENCE),
     heightCm: player.height_cm,
     weightKg: player.weight_kg,
     preDraftTeam: player.pre_draft_team ?? null,
@@ -207,6 +211,7 @@ export default async function TeamDetailPage({
     <PageShell teamColor={teamColor}>
       <TeamHeader
         team={team}
+        seasonLabel={RECORD_LABEL}
         playerCount={playerSummaries.length}
         teamPpg={withStats.length ? teamPpg : null}
         team3pPct={avgThreePct}
@@ -217,7 +222,7 @@ export default async function TeamDetailPage({
           href={`/players/guide/${teamId}`}
           className="font-semibold text-foreground underline underline-offset-4 hover:no-underline"
         >
-          選手名鑑 2026-27（2026-27ロスター・Team Profile）→
+          選手名鑑 {seasonLabel(ROSTER_SEASON)}（{seasonLabel(ROSTER_SEASON)}ロスター・Team Profile）→
         </Link>
       </p>
 
@@ -233,7 +238,7 @@ export default async function TeamDetailPage({
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]">
                 <div className="border border-line bg-surface p-6">
                   <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
-                    2025-26 Team Snapshot
+                    {RECORD_LABEL} Team Snapshot
                   </p>
                   <h2 className="mb-4 text-xl font-semibold">{team.name}</h2>
                   <div className="grid grid-cols-1 gap-px bg-line sm:grid-cols-3">
@@ -266,7 +271,7 @@ export default async function TeamDetailPage({
                   </p>
                   <h2 className="mb-2 text-lg font-semibold">収録データ</h2>
                   <p className="text-sm text-muted">
-                    2025-26レギュラーシーズンの成績から復元した、このチームの記録です。プロフィールは2025-26にこのチームでプレーした選手のプロフィール、Statsは2025-26の選手成績です。年齢は2025年10月1日時点。
+                    {RECORD_LABEL}レギュラーシーズンの成績から復元した、このチームの記録です。Profileは{RECORD_LABEL}にこのチームでプレーした選手のプロフィール、Statsは{RECORD_LABEL}の選手成績です。年齢は{ageReferenceText(RECORD_SEASON)}時点。
                   </p>
                 </div>
               </div>
@@ -274,11 +279,11 @@ export default async function TeamDetailPage({
             profile={
               <div className="border border-line bg-surface p-6">
                 <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
-                  Profile · 2025-26
+                  Profile · {RECORD_LABEL}
                 </p>
                 <h2 className="mb-1 text-lg font-semibold">選手プロフィール</h2>
                 <p className="mb-4 text-xs text-muted">
-                  2025-26レギュラーシーズンにこのチームで出場した選手です（シーズン途中の移籍選手を含む）。出場試合はこのチームでの試合数。POSは現在の登録値、年齢は2025年10月1日時点です。
+                  {RECORD_LABEL}レギュラーシーズンにこのチームで出場した選手です（シーズン途中の移籍選手を含む）。出場試合はこのチームでの試合数。POSは現在の登録値、年齢は{ageReferenceText(RECORD_SEASON)}時点です。
                 </p>
                 <TeamRosterProfileTable rows={rosterProfileRows} variant="season" />
               </div>

@@ -19,7 +19,7 @@ const CONFERENCE_LABEL: Record<string, string> = {
 };
 
 // チーム名クリックで選手名鑑Profile(/players/guide/[teamId])へ進む一覧。
-// チーム名の下の導線は「プロフィール / スタッツ / チームプロフィール(/players/guide/[teamId]?view=team-profile)」。
+// チーム名の下の導線は「Profile / Stats / Team Profile(/players/guide/[teamId]?view=team-profile)」。
 // 選手名・チームPPG・3P%・今季成績などは出さない。
 export function PlayerTeamDirectory({ teams }: { teams: TeamListItem[] }) {
   const conferences: ("East" | "West")[] = ["East", "West"];
@@ -63,9 +63,9 @@ export function PlayerTeamDirectory({ teams }: { teams: TeamListItem[] }) {
                         </Link>
                         <div className="ml-10 mt-1 flex flex-wrap gap-x-4 gap-y-0.5">
                           {[
-                            { label: "プロフィール", href: `/players/guide/${team.id}` },
-                            { label: "スタッツ", href: `/players/guide/${team.id}?view=stats` },
-                            { label: "チームプロフィール", href: `/players/guide/${team.id}?view=team-profile` },
+                            { label: "Profile", href: `/players/guide/${team.id}` },
+                            { label: "Stats", href: `/players/guide/${team.id}?view=stats` },
+                            { label: "Team Profile", href: `/players/guide/${team.id}?view=team-profile` },
                           ].map((link) => (
                             <Link
                               key={link.label}

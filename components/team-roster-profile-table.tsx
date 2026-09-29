@@ -19,12 +19,12 @@ export interface ProfileRow {
   draftText: string | null;
   // ドラフト年・巡目・順位を並べ替え用の1つの数値にしたもの(年が新しいほど大きい)。
   draftSort: number | null;
-  // そのチームでの出場試合数(2025-26 チーム記録のプロフィールでのみ使う)
+  // そのチームでの出場試合数(チーム記録のProfileでのみ使う)
   gamesPlayed?: number | null;
 }
 
-// current: 選手名鑑 2026-27(2026-27 ロスター。背番号・経験年数あり)
-// season:  2025-26 チーム記録のプロフィール(当時の背番号・経験年数はDBに無いため出さず、そのチームでの出場試合数を出す)
+// current: 選手名鑑(ロスターシーズンの選手一覧。背番号・経験年数あり)
+// season:  チーム記録のProfile(成績シーズンの在籍選手。当時の背番号・経験年数はDBに無いため出さず、そのチームでの出場試合数を出す)
 export type ProfileTableVariant = "current" | "season";
 
 type SortKey =
@@ -211,17 +211,17 @@ export function TeamRosterProfileTable({
                 {row.nameEn && row.nameEn !== row.name && (
                   <div className="text-xs font-normal text-muted">{row.nameEn}</div>
                 )}
-                {/* 2025-26 チーム記録では、選手ページのプロフィール・スタッツへ直接移動できるようにする */}
+                {/* チーム記録では、選手ページの Profile・Stats へ直接移動できるようにする */}
                 {variant === "season" && (
                   <div className="mt-1 text-[11px] font-semibold">
                     <Link href={`/players/${row.id}`} className="text-blue hover:underline">
-                      プロフィール
+                      Profile
                     </Link>
                     <span aria-hidden className="mx-1.5 text-muted">
                       |
                     </span>
                     <Link href={`/players/${row.id}?view=stats`} className="text-blue hover:underline">
-                      スタッツ
+                      Stats
                     </Link>
                   </div>
                 )}

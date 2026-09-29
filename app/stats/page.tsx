@@ -4,11 +4,13 @@ import { PageShell } from "@/components/page-shell";
 import { StatsTable, type StatRow, type SortKey } from "@/components/stats-table";
 import { aggregatePlayerSeasonStats } from "@/lib/stats";
 import type { Database } from "@/lib/supabase/types";
+import { STATS_SEASON, ROSTER_SEASON, seasonLabel } from "@/lib/seasons";
 
 type PlayerStatsRow = Database["public"]["Tables"]["player_stats"]["Row"];
 
-const STATS_LAB_SEASON = 2025;
-const CURRENT_ROSTER_SEASON = 2026;
+const STATS_LAB_SEASON = STATS_SEASON;
+const CURRENT_ROSTER_SEASON = ROSTER_SEASON;
+const STATS_LABEL = seasonLabel(STATS_LAB_SEASON);
 
 const SORT_KEYS: readonly SortKey[] = [
   "playerName",
@@ -182,7 +184,7 @@ export default async function StatsPage({
   return (
     <PageShell>
       <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
-        Data Explorer · 2025-26 Season
+        Data Explorer · {STATS_LABEL} Season
       </p>
       <h1 className="mb-2 text-[36px] font-semibold tracking-tight">
         Stats Lab
@@ -191,8 +193,9 @@ export default async function StatsPage({
         収録選手の基本スタッツを、シーズン・ポジション・出場試合数で検索する。
       </p>
       <p className="mb-7 border border-line bg-[#eaf1ff] px-4 py-3 text-xs leading-6 text-[#264c8a] dark:bg-white/[.06]">
-        Stats
-        Labは2025-26レギュラーシーズン・プレーオフの確定成績のみを対象にしています。2026-27シーズンの成績はまだ収録していません。
+        Stats Labは{STATS_LABEL}レギュラーシーズン・プレーオフの成績を対象にしています。
+        {CURRENT_ROSTER_SEASON > STATS_LAB_SEASON &&
+          `${seasonLabel(CURRENT_ROSTER_SEASON)}シーズンの成績はまだ収録していません。`}
       </p>
       <StatsTable rows={rows} initialSortKey={initialSortKey} />
     </PageShell>
