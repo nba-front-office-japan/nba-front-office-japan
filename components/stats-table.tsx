@@ -47,6 +47,7 @@ interface DerivedRow extends StatRow {
   fgPct: number | null;
   threePct: number | null;
   ftPct: number | null;
+  tsPct: number | null;
 }
 
 export type SortKey =
@@ -64,11 +65,12 @@ export type SortKey =
   | "fgPct"
   | "threePct"
   | "ftPct"
+  | "tsPct"
   | "tovPg"
   | "pfPg"
   | "teamLabel";
 
-// 選手名・チームを先頭に、POS/G/MP/PTS/ORB/DRB/TRB/AST/STL/BLK/FG%/3P%/FT%/TOV/PFの順で表示する。
+// 選手名・チームを先頭に、POS/G/MP/PTS/ORB/DRB/TRB/AST/STL/BLK/FG%/3P%/FT%/TS%/TOV/PFの順で表示する。
 const COLUMNS: {
   key: SortKey;
   label: string;
@@ -104,6 +106,7 @@ const COLUMNS: {
   { key: "fgPct", label: "FG%", render: (row) => formatPct(row.fgPct) },
   { key: "threePct", label: "3P%", render: (row) => formatPct(row.threePct) },
   { key: "ftPct", label: "FT%", render: (row) => formatPct(row.ftPct) },
+  { key: "tsPct", label: "TS%", render: (row) => formatPct(row.tsPct) },
   { key: "tovPg", label: "TOV", render: (row) => formatStat(row.tovPg) },
   { key: "pfPg", label: "PF", render: (row) => formatStat(row.pfPg) },
 ];
@@ -120,9 +123,12 @@ function deriveRow(row: StatRow): DerivedRow {
 export function StatsTable({
   rows,
   initialSortKey,
+  initialMinGames = 0,
 }: {
   rows: StatRow[];
   initialSortKey?: SortKey;
+  // 最低出場試合数の初期値(MIN_GAMES_OPTIONS の値のみ。それ以外は0=Allとして扱う)
+  initialMinGames?: number;
 }) {
   const [seasonType, setSeasonType] = useState<SeasonType>("regular_season");
   const [sortKey, setSortKey] = useState<SortKey>(initialSortKey ?? "ppg");
@@ -138,7 +144,9 @@ export function StatsTable({
   const hasSeasonFilter = seasons.length > 1;
 
   const [position, setPosition] = useState<string>("All");
-  const [minGames, setMinGames] = useState(0);
+  const [minGames, setMinGames] = useState(
+    MIN_GAMES_OPTIONS.includes(initialMinGames) ? initialMinGames : 0
+  );
   const [season, setSeason] = useState<number | "All">(
     seasons.length > 0 ? seasons[0] : "All"
   );

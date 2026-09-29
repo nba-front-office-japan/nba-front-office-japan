@@ -8,9 +8,13 @@ import { STATS_SEASON, ROSTER_SEASON, seasonLabel } from "@/lib/seasons";
 
 type PlayerStatsRow = Database["public"]["Tables"]["player_stats"]["Row"];
 
-const STATS_LAB_SEASON = STATS_SEASON;
+const PLAYER_STATS_SEASON = STATS_SEASON;
 const CURRENT_ROSTER_SEASON = ROSTER_SEASON;
-const STATS_LABEL = seasonLabel(STATS_LAB_SEASON);
+const STATS_LABEL = seasonLabel(PLAYER_STATS_SEASON);
+
+// ?sort= で受け付ける並べ替えキー(ホームの「人気検索」のリンクもこの値を使う)。
+// StatsTable の列を増やしたら、ここにも追加する。
+const MIN_GAMES_VALUES = [20, 50] as const;
 
 const SORT_KEYS: readonly SortKey[] = [
   "playerName",
@@ -27,6 +31,7 @@ const SORT_KEYS: readonly SortKey[] = [
   "fgPct",
   "threePct",
   "ftPct",
+  "tsPct",
   "tovPg",
   "pfPg",
   "teamLabel",
@@ -50,6 +55,9 @@ export default async function StatsPage({
   const params = await searchParams;
   const sortParam = Array.isArray(params.sort) ? params.sort[0] : params.sort;
   const initialSortKey = SORT_KEYS.find((key) => key === sortParam);
+  // ?minGames= は最低出場試合数(20/50のみ有効。表の MINIMUM GAMES の選択肢と同じ)
+  const minGamesParam = Array.isArray(params.minGames) ? params.minGames[0] : params.minGames;
+  const initialMinGames = MIN_GAMES_VALUES.find((g) => String(g) === minGamesParam) ?? 0;
 
   const supabase = createServerSupabaseClient();
 
@@ -60,7 +68,7 @@ export default async function StatsPage({
   if (error) {
     return (
       <PageShell>
-        <h1 className="mb-6 text-2xl font-semibold">Stats Lab</h1>
+        <h1 className="mb-6 text-2xl font-semibold">選手スタッツ</h1>
         <p className="text-sm text-red-600 dark:text-red-400">
           スタッツデータの取得に失敗しました: {error.message}
         </p>
@@ -99,7 +107,7 @@ export default async function StatsPage({
   if (playersError || teamsError) {
     return (
       <PageShell>
-        <h1 className="mb-6 text-2xl font-semibold">Stats Lab</h1>
+        <h1 className="mb-6 text-2xl font-semibold">選手スタッツ</h1>
         <p className="text-sm text-red-600 dark:text-red-400">
           選手・チームデータの取得に失敗しました:{" "}
           {playersError?.message ?? teamsError?.message}
@@ -117,13 +125,13 @@ export default async function StatsPage({
     currentRosterRows.map((r) => [r.player_id, r.position])
   );
 
-  const isStatsLabRegularSeason = (s: PlayerStatsRow) =>
-    s.season === STATS_LAB_SEASON && s.season_type === "regular_season";
+  const isPlayerStatsRegularSeason = (s: PlayerStatsRow) =>
+    s.season === PLAYER_STATS_SEASON && s.season_type === "regular_season";
 
   const regularSeasonRowsByPlayer = new Map<string, PlayerStatsRow[]>();
   const otherRows: PlayerStatsRow[] = [];
   for (const s of stats) {
-    if (isStatsLabRegularSeason(s)) {
+    if (isPlayerStatsRegularSeason(s)) {
       const list = regularSeasonRowsByPlayer.get(s.player_id) ?? [];
       list.push(s);
       regularSeasonRowsByPlayer.set(s.player_id, list);
@@ -141,7 +149,7 @@ export default async function StatsPage({
         id: playerId,
         playerName: player?.full_name_ja ?? player?.full_name ?? "不明な選手",
         position: currentPositionByPlayerId.get(playerId) ?? null,
-        season: STATS_LAB_SEASON,
+        season: PLAYER_STATS_SEASON,
         teamLabel: labelForSeasonGroup(rows, teamAbbrById),
         seasonType: "regular_season",
         ...totals!,
@@ -184,20 +192,21 @@ export default async function StatsPage({
   return (
     <PageShell>
       <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
-        Data Explorer · {STATS_LABEL} Season
+        Player Stats · {STATS_LABEL} Season
       </p>
+      {/* 現在は選手スタッツの一覧・並べ替え。比較・独自指標などの分析機能を追加したら「Stats Lab」等の表記を検討する */}
       <h1 className="mb-2 text-[36px] font-semibold tracking-tight">
-        Stats Lab
+        選手スタッツ
       </h1>
       <p className="mb-2 text-sm text-muted">
         収録選手の基本スタッツを、シーズン・ポジション・出場試合数で検索する。
       </p>
       <p className="mb-7 border border-line bg-[#eaf1ff] px-4 py-3 text-xs leading-6 text-[#264c8a] dark:bg-white/[.06]">
-        Stats Labは{STATS_LABEL}レギュラーシーズン・プレーオフの成績を対象にしています。
-        {CURRENT_ROSTER_SEASON > STATS_LAB_SEASON &&
+        選手スタッツは{STATS_LABEL}レギュラーシーズン・プレーオフの成績を対象にしています。
+        {CURRENT_ROSTER_SEASON > PLAYER_STATS_SEASON &&
           `${seasonLabel(CURRENT_ROSTER_SEASON)}シーズンの成績はまだ収録していません。`}
       </p>
-      <StatsTable rows={rows} initialSortKey={initialSortKey} />
+      <StatsTable rows={rows} initialSortKey={initialSortKey} initialMinGames={initialMinGames} />
     </PageShell>
   );
 }

@@ -7,10 +7,21 @@ import { PageShell } from "@/components/page-shell";
 
 const MARQUEE_ABBREVIATIONS = ["GSW", "LAL", "BOS", "OKC"];
 
+// ホームの見出し・ボタンの文言。現在は選手スタッツとニュースの掲載なので「Lab」「分析」は使わない。
+// 比較・絞り込み・独自指標などの分析機能を追加したら、ここを
+// 「Stats Lab を試す →」「Stats Lab」「Featured Analysis」「今日の分析」などに差し替える。
+const HOME_COPY = {
+  statsCta: "選手スタッツを見る →",
+  statsKicker: "Player Stats",
+  featuredKicker: "Featured News",
+  featuredTitle: "注目ニュース",
+};
+
 const STATS_PICKS = [
   { label: "得点ランキング", sort: "ppg" },
   { label: "3Pランキング", sort: "threePct" },
-  { label: "TS%", sort: "tsPct" },
+  // TS%は試投数の少ない選手が上位に来やすいため、20試合以上に絞る
+  { label: "TS%", sort: "tsPct", minGames: 20 },
   { label: "アシスト", sort: "apg" },
 ];
 
@@ -48,7 +59,7 @@ export default async function Home() {
             href="/stats"
             className="mt-5 inline-block bg-gold px-4 py-3 text-sm font-extrabold text-[#182238]"
           >
-            Stats Lab を試す →
+            {HOME_COPY.statsCta}
           </Link>
           <div className="mt-6 border-l-4 border-gold pl-4">
             <p className="text-xs text-slate-400">DATA UPDATE</p>
@@ -63,9 +74,9 @@ export default async function Home() {
 
         <div className="border border-line bg-surface p-6">
           <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
-            Featured Analysis
+            {HOME_COPY.featuredKicker}
           </p>
-          <h2 className="mb-4 text-xl font-semibold">今日の分析</h2>
+          <h2 className="mb-4 text-xl font-semibold">{HOME_COPY.featuredTitle}</h2>
           {featured ? (
             <>
               <h3 className="text-base font-bold">
@@ -121,14 +132,14 @@ export default async function Home() {
 
         <div className="border border-line bg-surface p-6">
           <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
-            Stats Lab
+            {HOME_COPY.statsKicker}
           </p>
           <h2 className="mb-4 text-xl font-semibold">人気検索</h2>
           <div className="flex flex-wrap gap-2">
             {STATS_PICKS.map((pick) => (
               <Link
                 key={pick.sort}
-                href={`/stats?sort=${pick.sort}`}
+                href={`/stats?sort=${pick.sort}${"minGames" in pick ? `&minGames=${pick.minGames}` : ""}`}
                 className="border border-line bg-surface px-3 py-2 text-[13px] font-bold"
               >
                 {pick.label}
