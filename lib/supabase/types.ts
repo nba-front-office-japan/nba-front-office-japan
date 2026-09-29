@@ -332,6 +332,70 @@ export interface Database {
         >;
         Relationships: [];
       };
+      owner_net_worth_editions: {
+        Row: {
+          id: string;
+          source_key: "forbes" | "bloomberg";
+          as_of_date: string;
+          source_name: string;
+          title: string;
+          source_url: string;
+          value_definition: string | null;
+          representative_rule: string | null;
+          last_verified: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          source_key: "forbes" | "bloomberg";
+          as_of_date: string;
+          source_name: string;
+          title: string;
+          source_url: string;
+          value_definition?: string | null;
+          representative_rule?: string | null;
+          last_verified: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["owner_net_worth_editions"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      team_owner_net_worths: {
+        Row: {
+          id: string;
+          edition_id: string;
+          team_id: string;
+          owner_name: string;
+          owner_role: "principal_owner" | "governor" | "family" | "corporate";
+          is_family_estimate: boolean;
+          net_worth_usd: number | null;
+          is_rank_eligible: boolean;
+          exclusion_reason: string | null;
+          profile_url: string | null;
+          note: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          edition_id: string;
+          team_id: string;
+          owner_name: string;
+          owner_role: "principal_owner" | "governor" | "family" | "corporate";
+          is_family_estimate?: boolean;
+          net_worth_usd?: number | null;
+          is_rank_eligible?: boolean;
+          exclusion_reason?: string | null;
+          profile_url?: string | null;
+          note?: string | null;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["team_owner_net_worths"]["Insert"]
+        >;
+        Relationships: [];
+      };
       team_valuations: {
         Row: {
           id: string;

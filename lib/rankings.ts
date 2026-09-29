@@ -17,6 +17,12 @@ export const RANKINGS: RankingEntry[] = [
     description: "NBA全30チームの資産価値を順位で比較",
     badge: "推計値",
   },
+  {
+    slug: "owner-net-worth",
+    title: "NBAオーナー資産ランキング",
+    description: "各チームの代表オーナー1名の推定純資産を比較",
+    badge: "推定値",
+  },
 ];
 
 export function rankingHref(slug: string): string {

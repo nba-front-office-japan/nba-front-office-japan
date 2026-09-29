@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { TeamColorChip } from "@/components/team-color-chip";
 import { formatChangePct, formatFinancialOku, formatValueOku } from "@/lib/valuations";
 
 export interface ValuationTableRow {
@@ -133,11 +134,18 @@ export function TeamValuationsTable({ rows }: { rows: ValuationTableRow[] }) {
                   <td
                     className={`${STICKY_TEAM} min-w-[8.5rem] px-2 py-3 sm:whitespace-nowrap group-hover:bg-[#f6f9ff] dark:group-hover:bg-[#151f34]`}
                   >
-                    <Link href={`/teams/${row.teamId}`} className="font-semibold hover:text-blue">
-                      {row.teamName}
-                    </Link>
-                    <span className="mt-0.5 block text-[11px] text-muted">
-                      {row.teamAbbr} · {row.conference}
+                    <span className="flex items-start gap-2">
+                      <span className="mt-1">
+                        <TeamColorChip abbreviation={row.teamAbbr} />
+                      </span>
+                      <span className="min-w-0">
+                        <Link href={`/teams/${row.teamId}`} className="font-semibold hover:text-blue">
+                          {row.teamName}
+                        </Link>
+                        <span className="mt-0.5 block text-[11px] text-muted">
+                          {row.teamAbbr} · {row.conference}
+                        </span>
+                      </span>
                     </span>
                   </td>
                   <td className="whitespace-nowrap px-2 py-3">
