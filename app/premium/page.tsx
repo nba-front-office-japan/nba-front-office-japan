@@ -24,8 +24,9 @@ export default function PremiumPage() {
         <p className="mx-auto mt-3 max-w-md text-sm text-slate-300">
           ニュースを読むだけでなく、意思決定の背景まで理解する。
         </p>
-        <p className="mt-6 text-[40px] font-black">月額 1,980円</p>
-        <p className="text-xs text-slate-400">いつでも解約可能</p>
+        {/* 料金は未定のため、金額・予定額・支払い条件は表示しない */}
+        <p className="mt-6 text-xl font-bold">料金は準備中です</p>
+        <p className="mt-1 text-xs text-slate-400">決まり次第、このページでお知らせします。</p>
         <ul className="mx-auto mt-6 max-w-[360px] space-y-2 text-left text-sm leading-6">
           {FEATURES.map((feature) => (
             <li key={feature}>・{feature}</li>
