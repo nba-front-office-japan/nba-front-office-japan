@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { PageShell } from "@/components/page-shell";
+import { teamThemeBackground } from "@/lib/team-colors";
 import {
   TeamRosterProfileTable,
   type ProfileRow,
@@ -53,6 +54,9 @@ export default async function PlayerGuideTeamPage({
     notFound();
   }
 
+  // チームページ(/teams/[teamId])と同じく、ヘッダーより下の背景をチームのメインカラーにする
+  const teamColor = teamThemeBackground(team.abbreviation);
+
   const viewToggle = (
     <div className="mb-6 flex gap-2">
       {[
@@ -64,7 +68,9 @@ export default async function PlayerGuideTeamPage({
           href={`/players/guide/${teamId}?view=${opt.view}`}
           className={`px-4 py-2 text-sm font-bold transition-colors ${
             selectedView === opt.view
-              ? "bg-blue text-white"
+              ? teamColor
+                ? "border border-surface bg-surface text-foreground"
+                : "bg-blue text-white"
               : "border border-line text-muted hover:text-foreground"
           }`}
         >
@@ -93,7 +99,7 @@ export default async function PlayerGuideTeamPage({
 
   if (!rosterAssignments || rosterAssignments.length === 0) {
     return (
-      <PageShell>
+      <PageShell teamColor={teamColor}>
         {header}
         <div className="border border-line bg-surface p-10 text-center">
           <p className="text-lg font-bold">ロスター準備中</p>
@@ -171,7 +177,7 @@ export default async function PlayerGuideTeamPage({
   });
 
   return (
-    <PageShell>
+    <PageShell teamColor={teamColor}>
       {header}
       {viewToggle}
 
@@ -182,7 +188,7 @@ export default async function PlayerGuideTeamPage({
           <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
             2025-26 ROSTER STATS
           </p>
-          <p className="mb-4 text-xs font-bold text-[#ac6811]">
+          <p className="mb-4 border-l-[3px] border-gold pl-3 text-xs font-bold text-foreground">
             2026-27開幕時ロスターに含まれる選手の2025-26レギュラーシーズン成績です。2025-26のチーム成績ではありません。
           </p>
           <TeamRosterStatsTable rows={teamStatsRows} />
