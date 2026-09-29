@@ -16,7 +16,7 @@ export default async function PlayersPage() {
   if (error) {
     return (
       <PageShell>
-        <h1 className="mb-6 text-2xl font-semibold">2026 選手名鑑</h1>
+        <h1 className="mb-6 text-2xl font-semibold">選手名鑑 2026-27</h1>
         <p className="text-sm text-red-600 dark:text-red-400">
           チームデータの取得に失敗しました: {error.message}
         </p>
@@ -38,7 +38,7 @@ export default async function PlayersPage() {
         Player Database · 2026-27 Season
       </p>
       <h1 className="mb-2 text-[36px] font-semibold tracking-tight">
-        2026 選手名鑑
+        選手名鑑 2026-27
       </h1>
       <p className="mb-7 text-sm text-muted">
         30チーム・6ディビジョン別の一覧です。チーム名から選手名鑑Profileへ進めます。

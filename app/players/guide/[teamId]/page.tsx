@@ -78,7 +78,7 @@ export default async function PlayerGuideTeamPage({
   const header = (
     <>
       <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
-        選手名鑑 2026 · {team.abbreviation}
+        選手名鑑 2026-27 · {team.abbreviation}
       </p>
       <h1 className="mb-3 text-[32px] font-semibold tracking-tight sm:text-[36px]">
         {team.name}
@@ -88,7 +88,7 @@ export default async function PlayerGuideTeamPage({
           href={`/teams/${teamId}`}
           className="font-semibold text-foreground underline underline-offset-4 hover:no-underline"
         >
-          2025-26チーム記録（Overview・Roster・Stats）→
+          2025-26チーム記録（Overview・プロフィール・Stats）→
         </Link>
       </p>
     </>

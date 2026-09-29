@@ -15,8 +15,8 @@ import { ageAt, AGE_REFERENCE_2025_26 } from "@/lib/age";
 import { teamThemeBackground } from "@/lib/team-colors";
 import type { Database } from "@/lib/supabase/types";
 
-// /teams/[teamId] は「2025-26シーズンのチーム記録」(Overview / Roster / Stats)。
-// 2026-27のロスターと Team Profile は選手名鑑 2026(/players/guide/[teamId])に置く。
+// /teams/[teamId] は「2025-26シーズンのチーム記録」(Overview / プロフィール / Stats)。
+// 2026-27のロスターと Team Profile は選手名鑑 2026-27(/players/guide/[teamId])に置く。
 
 type PlayerStatsRow = Database["public"]["Tables"]["player_stats"]["Row"];
 
@@ -77,7 +77,7 @@ export default async function TeamDetailPage({
   const { teamId } = await params;
   const { season: seasonParam, view: viewParam, tab: tabParam } = await searchParams;
 
-  // 移した表示は選手名鑑 2026 へ恒久転送する(公開済みURLのリンク切れを防ぐ)
+  // 移した表示は選手名鑑 2026-27 へ恒久転送する(公開済みURLのリンク切れを防ぐ)
   if (viewParam === "profile") {
     permanentRedirect(`/players/guide/${teamId}?view=team-profile`);
   }
@@ -86,7 +86,12 @@ export default async function TeamDetailPage({
   }
 
   const initialTab =
-    tabParam === "roster" ? "Roster" : tabParam === "stats" ? "Stats" : "Overview";
+    // ?tab=roster は公開済みURLの互換のため、プロフィールタブとして扱う
+    tabParam === "profile" || tabParam === "roster"
+      ? "プロフィール"
+      : tabParam === "stats"
+        ? "Stats"
+        : "Overview";
 
   const supabase = createServerSupabaseClient();
 
@@ -172,7 +177,7 @@ export default async function TeamDetailPage({
     ? agesKnown.reduce((a, b) => a + b, 0) / agesKnown.length
     : null;
 
-  // Roster: 2025-26にこのチームでプレーした選手のプロフィール一覧(出場試合数の多い順)
+  // プロフィール: 2025-26にこのチームでプレーした選手のプロフィール一覧(出場試合数の多い順)
   const rosterProfileRows: ProfileRow[] = (players ?? []).map((player) => ({
     id: player.id,
     name: player.full_name_ja ?? player.full_name,
@@ -212,7 +217,7 @@ export default async function TeamDetailPage({
           href={`/players/guide/${teamId}`}
           className="font-semibold text-foreground underline underline-offset-4 hover:no-underline"
         >
-          選手名鑑 2026（2026-27ロスター・Team Profile）→
+          選手名鑑 2026-27（2026-27ロスター・Team Profile）→
         </Link>
       </p>
 
@@ -261,17 +266,17 @@ export default async function TeamDetailPage({
                   </p>
                   <h2 className="mb-2 text-lg font-semibold">収録データ</h2>
                   <p className="text-sm text-muted">
-                    2025-26レギュラーシーズンの成績から復元した、このチームの記録です。Rosterは2025-26にこのチームでプレーした選手のプロフィール、Statsは2025-26の選手成績です。年齢は2025年10月1日時点。
+                    2025-26レギュラーシーズンの成績から復元した、このチームの記録です。プロフィールは2025-26にこのチームでプレーした選手のプロフィール、Statsは2025-26の選手成績です。年齢は2025年10月1日時点。
                   </p>
                 </div>
               </div>
             }
-            roster={
+            profile={
               <div className="border border-line bg-surface p-6">
                 <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
-                  Roster · 2025-26
+                  Profile · 2025-26
                 </p>
-                <h2 className="mb-1 text-lg font-semibold">Player Roster</h2>
+                <h2 className="mb-1 text-lg font-semibold">選手プロフィール</h2>
                 <p className="mb-4 text-xs text-muted">
                   2025-26レギュラーシーズンにこのチームで出場した選手です（シーズン途中の移籍選手を含む）。出場試合はこのチームでの試合数。POSは現在の登録値、年齢は2025年10月1日時点です。
                 </p>

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { PageShell } from "@/components/page-shell";
@@ -10,10 +11,22 @@ import { AWARDS_SEASON, getAwardLabel } from "@/lib/awards/constants";
 
 const CURRENT_SEASON = 2026;
 
+// 選手ページは「プロフィール」(基本情報・受賞歴)と「スタッツ」(シーズン別成績)を ?view= で切り替える。
+// 上部の選手情報(PlayerHeader)はどちらの表示でも出す。
+type PlayerView = "profile" | "stats";
+
+const VIEW_OPTIONS: { view: PlayerView; label: string }[] = [
+  { view: "profile", label: "プロフィール" },
+  { view: "stats", label: "スタッツ" },
+];
+
 export default async function PlayerDetailPage({
   params,
+  searchParams,
 }: PageProps<"/players/[playerId]">) {
   const { playerId } = await params;
+  const { view: viewParam } = await searchParams;
+  const selectedView: PlayerView = viewParam === "stats" ? "stats" : "profile";
   const supabase = createServerSupabaseClient();
 
   const { data: player, error: playerError } = await supabase
@@ -105,7 +118,23 @@ export default async function PlayerDetailPage({
         currentTeam={currentTeam ?? null}
         currentTeamPending={!currentRoster}
       />
-      {awardLabels.length > 0 && (
+      <div className="mt-6 flex flex-wrap gap-2">
+        {VIEW_OPTIONS.map((opt) => (
+          <Link
+            key={opt.view}
+            href={opt.view === "profile" ? `/players/${playerId}` : `/players/${playerId}?view=${opt.view}`}
+            aria-current={selectedView === opt.view ? "page" : undefined}
+            className={`px-4 py-2 text-sm font-bold transition-colors ${
+              selectedView === opt.view
+                ? "bg-blue text-white"
+                : "border border-line text-muted hover:text-foreground"
+            }`}
+          >
+            {opt.label}
+          </Link>
+        ))}
+      </div>
+      {selectedView === "profile" && awardLabels.length > 0 && (
         <div className="mt-8 border border-line bg-surface p-6">
           <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
             Awards
@@ -120,19 +149,33 @@ export default async function PlayerDetailPage({
           </ul>
         </div>
       )}
-      <div className="mt-8 border border-line bg-surface p-6">
-        <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
-          Season Stats
+      {selectedView === "profile" && (
+        <p className="mt-6 text-sm text-muted">
+          シーズン別成績（全期間）は
+          <Link
+            href={`/players/${playerId}?view=stats`}
+            className="mx-1 font-semibold text-blue underline-offset-2 hover:underline"
+          >
+            スタッツ
+          </Link>
+          で確認できます。
         </p>
-        <h2 className="mb-4 text-lg font-semibold">シーズン別成績（全期間）</h2>
-        {statsError ? (
-          <p className="text-sm text-red-600 dark:text-red-400">
-            スタッツデータの取得に失敗しました: {statsError.message}
+      )}
+      {selectedView === "stats" && (
+        <div className="mt-8 border border-line bg-surface p-6">
+          <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
+            Season Stats
           </p>
-        ) : (
-          <PlayerSeasonStats rows={statRows} />
-        )}
-      </div>
+          <h2 className="mb-4 text-lg font-semibold">シーズン別成績（全期間）</h2>
+          {statsError ? (
+            <p className="text-sm text-red-600 dark:text-red-400">
+              スタッツデータの取得に失敗しました: {statsError.message}
+            </p>
+          ) : (
+            <PlayerSeasonStats rows={statRows} />
+          )}
+        </div>
+      )}
     </PageShell>
   );
 }

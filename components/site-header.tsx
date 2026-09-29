@@ -7,14 +7,27 @@ const navItems = [
   { href: "/", label: "HOME" },
   { href: "/news", label: "NEWS" },
   { href: "/teams", label: "TEAMS" },
-  { href: "/players", label: "選手名鑑 2026" },
-  { href: "/stats", label: "STATS LAB" },
+  { href: "/stats", label: "PLAYERS" },
   { href: "/awards", label: "AWARDS" },
+  { href: "/players", label: "選手名鑑 2026-27" },
   { href: "/draft", label: "DRAFT" },
-  { href: "/rankings", label: "ランキング" },
   { href: "/contracts", label: "CONTRACTS" },
+  { href: "/rankings", label: "ランキング" },
   { href: "/premium", label: "PREMIUM" },
 ];
+
+// 選手個別ページ(/players/{id})は選手名鑑ではなくPLAYERSの配下として扱う。
+// /players(名鑑トップ)と /players/guide/...(チーム別名鑑)は選手名鑑のまま。
+function isPlayerDetailPath(pathname: string): boolean {
+  const segments = pathname.split("/").filter(Boolean);
+  return segments.length === 2 && segments[0] === "players" && segments[1] !== "guide";
+}
+
+function isNavActive(href: string, pathname: string): boolean {
+  if (href === "/") return pathname === "/";
+  if (isPlayerDetailPath(pathname)) return href === "/stats";
+  return pathname.startsWith(href);
+}
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -38,10 +51,7 @@ export function SiteHeader() {
           </div>
           <nav className="mt-6 flex gap-6 overflow-x-auto text-[13px] font-bold sm:gap-7">
             {navItems.map((item) => {
-              const isActive =
-                item.href === "/"
-                  ? pathname === "/"
-                  : pathname.startsWith(item.href);
+              const isActive = isNavActive(item.href, pathname);
               return (
                 <Link
                   key={item.href}
