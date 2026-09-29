@@ -1,34 +1,26 @@
-import { notFound } from "next/navigation";
+import Link from "next/link";
+import { notFound, permanentRedirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { PageShell } from "@/components/page-shell";
 import { TeamHeader } from "@/components/team-header";
-import { TeamViewNav } from "@/components/team-view-nav";
 import { TeamTabs } from "@/components/team-tabs";
-import { TeamRoster, type RosterRow } from "@/components/team-roster";
 import { StatsTable, type StatRow } from "@/components/stats-table";
-import { TeamProfileView } from "@/components/team-profile-view";
-import { deriveStats, formatStat, toRawStatTotals, aggregatePlayerSeasonStats } from "@/lib/stats";
-import { fetchLatestValuationEdition } from "@/lib/valuations";
+import {
+  TeamRosterProfileTable,
+  type ProfileRow,
+} from "@/components/team-roster-profile-table";
+import { deriveStats, formatStat, toRawStatTotals } from "@/lib/stats";
+import { formatDraftInfo, draftSortValue } from "@/lib/draft-format";
+import { ageAt, AGE_REFERENCE_2025_26 } from "@/lib/age";
 import { teamThemeBackground } from "@/lib/team-colors";
 import type { Database } from "@/lib/supabase/types";
 
+// /teams/[teamId] は「2025-26シーズンのチーム記録」(Overview / Roster / Stats)。
+// 2026-27のロスターと Team Profile は選手名鑑 2026(/players/guide/[teamId])に置く。
+
 type PlayerStatsRow = Database["public"]["Tables"]["player_stats"]["Row"];
 
-const CURRENT_SEASON = 2026;
-const PRIOR_SEASON = 2025;
-
-function calcAge(birthDate: string | null): number | null {
-  if (!birthDate) return null;
-  const birth = new Date(birthDate);
-  if (Number.isNaN(birth.getTime())) return null;
-  const now = new Date();
-  let age = now.getFullYear() - birth.getFullYear();
-  const hasHadBirthdayThisYear =
-    now.getMonth() > birth.getMonth() ||
-    (now.getMonth() === birth.getMonth() && now.getDate() >= birth.getDate());
-  if (!hasHadBirthdayThisYear) age -= 1;
-  return age;
-}
+const RECORD_SEASON = 2025;
 
 // 移籍があった選手は、このチーム在籍分の行(team_id一致)を優先し、
 // 無ければTOT行(team_id=NULL)にフォールバックする。
@@ -78,23 +70,21 @@ function toStatRow(
   };
 }
 
-function formatDateTime(iso: string | null): string {
-  if (!iso) return "-";
-  return new Date(iso).toLocaleString("ja-JP", {
-    timeZone: "Asia/Tokyo",
-    dateStyle: "short",
-    timeStyle: "short",
-  });
-}
-
 export default async function TeamDetailPage({
   params,
   searchParams,
 }: PageProps<"/teams/[teamId]">) {
   const { teamId } = await params;
   const { season: seasonParam, view: viewParam, tab: tabParam } = await searchParams;
-  const selectedSeason = seasonParam === String(CURRENT_SEASON) ? CURRENT_SEASON : PRIOR_SEASON;
-  const isProfileView = viewParam === "profile";
+
+  // 移した表示は選手名鑑 2026 へ恒久転送する(公開済みURLのリンク切れを防ぐ)
+  if (viewParam === "profile") {
+    permanentRedirect(`/players/guide/${teamId}?view=team-profile`);
+  }
+  if (seasonParam === "2026") {
+    permanentRedirect(`/players/guide/${teamId}`);
+  }
+
   const initialTab =
     tabParam === "roster" ? "Roster" : tabParam === "stats" ? "Stats" : "Overview";
 
@@ -116,233 +106,28 @@ export default async function TeamDetailPage({
   const { data: allTeams } = await supabase.from("teams").select("*").order("name");
   const teamAbbrById = new Map((allTeams ?? []).map((t) => [t.id, t.abbreviation]));
 
-  // ==========================================================================
-  // Team Profile（選手名鑑・TEAMS成績とは別の、フロント・コーチングスタッフ情報)
-  // team_profiles/team_staff_membersが未作成・未取込の間は取得エラー/行なしになるため、
-  // その場合は「情報準備中」として扱う(TeamProfileView側で表示を切り替える)。
-  // ==========================================================================
-  if (isProfileView) {
-    const { data: profile } = await supabase
-      .from("team_profiles")
-      .select("*")
-      .eq("team_id", teamId)
-      .maybeSingle();
-
-    const { data: staff } = await supabase
-      .from("team_staff_members")
-      .select("*")
-      .eq("team_id", teamId)
-      .order("display_order");
-
-    const { data: arena } = await supabase
-      .from("team_arenas")
-      .select("*")
-      .eq("team_id", teamId)
-      .maybeSingle();
-
-    // 資産価値(推計値)は公開日が最も新しい年版だけを出す
-    const { data: valuationEdition } = await fetchLatestValuationEdition(supabase);
-    const { data: teamValuation } = valuationEdition
-      ? await supabase
-          .from("team_valuations")
-          .select("*")
-          .eq("edition_id", valuationEdition.id)
-          .eq("team_id", teamId)
-          .maybeSingle()
-      : { data: null };
-    const { count: valuationTeamCount } = valuationEdition
-      ? await supabase
-          .from("team_valuations")
-          .select("id", { count: "exact", head: true })
-          .eq("edition_id", valuationEdition.id)
-      : { count: null };
-
-    return (
-      <PageShell teamColor={teamColor}>
-        <TeamHeader
-          team={team}
-          playerCount={0}
-          teamPpg={null}
-          team3pPct={null}
-          variant="profile"
-        />
-        <div className="mt-8">
-          <TeamViewNav teamId={teamId} />
-          <div className="mt-6">
-            <TeamProfileView
-              team={team}
-              profile={profile ?? null}
-              arena={arena ?? null}
-              valuation={
-                valuationEdition
-                  ? {
-                      edition: valuationEdition,
-                      row: teamValuation ?? null,
-                      teamCount: valuationTeamCount ?? null,
-                    }
-                  : null
-              }
-              assistantCoaches={staff ?? []}
-            />
-          </div>
-        </div>
-      </PageShell>
-    );
-  }
-
-  // ==========================================================================
-  // 2026-27シーズン（現在ロスター。player_season_rostersが未整備の間は「準備中」）
-  // ==========================================================================
-  if (selectedSeason === CURRENT_SEASON) {
-    const { data: rosterAssignments } = await supabase
-      .from("player_season_rosters")
-      .select("*")
-      .eq("team_id", teamId)
-      .eq("season", CURRENT_SEASON);
-
-    if (!rosterAssignments || rosterAssignments.length === 0) {
-      return (
-        <PageShell teamColor={teamColor}>
-          <TeamHeader
-            team={team}
-            playerCount={0}
-            teamPpg={null}
-            team3pPct={null}
-            seasonLabel="2026-27"
-          />
-          <div className="mt-8">
-            <div className="border border-line bg-surface p-10 text-center">
-              <p className="text-lg font-bold">ロスター準備中</p>
-              <p className="mt-2 text-sm text-muted">
-                2026-27シーズンのロスター情報はまだ登録されていません。
-              </p>
-            </div>
-          </div>
-        </PageShell>
-      );
-    }
-
-    const playerIds = rosterAssignments.map((r) => r.player_id);
-    const { data: players } = await supabase.from("players").select("*").in("id", playerIds);
-
-    const { data: priorStats } = await supabase
-      .from("player_stats")
-      .select("*")
-      .eq("season", PRIOR_SEASON)
-      .eq("season_type", "regular_season")
-      .in("player_id", playerIds);
-
-    const priorStatsByPlayer = new Map<string, PlayerStatsRow[]>();
-    for (const row of priorStats ?? []) {
-      const list = priorStatsByPlayer.get(row.player_id) ?? [];
-      list.push(row);
-      priorStatsByPlayer.set(row.player_id, list);
-    }
-
-    const rosterRows: RosterRow[] = (players ?? []).map((player) => {
-      const rows = priorStatsByPlayer.get(player.id) ?? [];
-      const seasonTotals = aggregatePlayerSeasonStats(rows);
-      const derived = seasonTotals ? deriveStats(seasonTotals) : null;
-      return {
-        id: player.id,
-        fullName: player.full_name_ja ?? player.full_name,
-        position: player.position,
-        age: calcAge(player.birth_date),
-        ppg: derived?.ppg ?? null,
-        rpg: derived?.rpg ?? null,
-        apg: derived?.apg ?? null,
-      };
-    });
-
-    const withStats = rosterRows.filter((r) => r.ppg !== null);
-    const leadingScorer = withStats.length
-      ? withStats.reduce((a, b) => ((b.ppg ?? 0) > (a.ppg ?? 0) ? b : a))
-      : null;
-    const teamPpg = withStats.reduce((sum, r) => sum + (r.ppg ?? 0), 0);
-    const teamRpg = withStats.reduce((sum, r) => sum + (r.rpg ?? 0), 0);
-    const teamApg = withStats.reduce((sum, r) => sum + (r.apg ?? 0), 0);
-
-    const threePctValues = [...priorStatsByPlayer.values()]
-      .map((rows) => aggregatePlayerSeasonStats(rows))
-      .filter((totals): totals is NonNullable<typeof totals> => Boolean(totals))
-      .map((totals) => deriveStats(totals).threePct)
-      .filter((v): v is number => v !== null);
-    const avgThreePct = threePctValues.length
-      ? threePctValues.reduce((a, b) => a + b, 0) / threePctValues.length
-      : null;
-
-    const lastUpdated = rosterAssignments.reduce<string | null>((latest, r) => {
-      if (!latest || r.updated_at > latest) return r.updated_at;
-      return latest;
-    }, null);
-
-    return (
-      <PageShell teamColor={teamColor}>
-        <TeamHeader
-          team={team}
-          playerCount={rosterRows.length}
-          teamPpg={withStats.length ? teamPpg : null}
-          team3pPct={avgThreePct}
-          seasonLabel="2026-27"
-        />
-        <div className="mt-8">
-          <p className="mb-4 text-xs text-muted">
-            ロスター最終更新日: {formatDateTime(lastUpdated)}
-          </p>
-
-          <div className="mb-6 border border-line bg-surface p-6">
-            <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
-              2026-27ロスター × 2025-26 Team Snapshot
-            </p>
-            <h2 className="mb-4 text-xl font-semibold">{team.name}</h2>
-            <div className="grid grid-cols-1 gap-px bg-line sm:grid-cols-3">
-              {[
-                ["LEADING SCORER（2025-26）", leadingScorer?.fullName ?? "-"],
-                ["TOP PPG（2025-26）", leadingScorer ? `${formatStat(leadingScorer.ppg)} PPG` : "-"],
-                ["TEAM RPG（2025-26合算）", withStats.length ? formatStat(teamRpg) : "-"],
-                ["TEAM APG（2025-26合算）", withStats.length ? formatStat(teamApg) : "-"],
-                ["3P%（2025-26平均）", avgThreePct === null ? "-" : `${avgThreePct.toFixed(1)}%`],
-              ].map(([label, value]) => (
-                <div key={label} className="bg-surface p-4">
-                  <span className="mb-1.5 block text-[11px] text-muted">{label}</span>
-                  <b className="text-[15px]">{value}</b>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="border border-line bg-surface p-6">
-            <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
-              2026-27 現在ロスター
-            </p>
-            <h2 className="mb-1 text-lg font-semibold">Player Roster</h2>
-            <p className="mb-4 text-xs font-bold text-[#ac6811]">
-              各選手の成績は2025-26 レギュラーシーズン成績です（2026-27シーズンの成績ではありません）。
-            </p>
-            <TeamRoster rows={rosterRows} />
-          </div>
-        </div>
-      </PageShell>
-    );
-  }
-
-  // ==========================================================================
-  // 2025-26シーズン（実績のある選手をplayer_statsから復元して表示）
-  // ==========================================================================
+  // 2025-26シーズンの記録(実績のある選手を player_stats から復元して表示)
   const { data: seasonStats } = await supabase
     .from("player_stats")
     .select("*")
-    .eq("season", PRIOR_SEASON);
+    .eq("season", RECORD_SEASON);
 
-  // このチームの在籍歴は「team_id一致の行がある選手」で判定する（player_stats全体を
+  // このチームの在籍歴は「team_id一致の行がある選手」で判定する(player_stats全体を
   // resolveTeamStatsRowsに渡すと、全チームの全選手が1件ずつ拾われてしまうため、
-  // 先にこのチーム所属だった選手だけへ絞り込む）。
+  // 先にこのチーム所属だった選手だけへ絞り込む)。途中移籍した選手も含む。
   const teamSpecificStats = (seasonStats ?? []).filter((s) => s.team_id === teamId);
   const rosterPlayerIdSet = new Set(teamSpecificStats.map((s) => s.player_id));
   const relevantStats = (seasonStats ?? []).filter((s) => rosterPlayerIdSet.has(s.player_id));
 
   const resolvedStats = resolveTeamStatsRows(relevantStats, teamId);
   const regularSeasonStats = resolvedStats.filter((s) => s.season_type === "regular_season");
+
+  // そのチームでのレギュラーシーズン出場試合数(チーム別行のみ。TOT行は使わない)
+  const gamesForTeamByPlayer = new Map(
+    teamSpecificStats
+      .filter((s) => s.season_type === "regular_season")
+      .map((s) => [s.player_id, s.games_played])
+  );
 
   const playerIds = [...new Set(regularSeasonStats.map((s) => s.player_id))];
   const { data: players, error: playersError } =
@@ -354,21 +139,20 @@ export default async function TeamDetailPage({
     (players ?? []).map((p) => [p.id, p.full_name_ja ?? p.full_name])
   );
 
-  const rosterRows: RosterRow[] = (players ?? []).map((player) => {
+  // Overview のスナップショット用(1試合平均は合計値からその場で計算する)
+  const playerSummaries = (players ?? []).map((player) => {
     const statRow = regularSeasonStats.find((s) => s.player_id === player.id);
     const derived = statRow ? deriveStats(toRawStatTotals(statRow)) : null;
     return {
-      id: player.id,
       fullName: player.full_name_ja ?? player.full_name,
-      position: player.position,
-      age: calcAge(player.birth_date),
+      age: ageAt(player.birth_date, AGE_REFERENCE_2025_26),
       ppg: derived?.ppg ?? null,
       rpg: derived?.rpg ?? null,
       apg: derived?.apg ?? null,
     };
   });
 
-  const withStats = rosterRows.filter((r) => r.ppg !== null);
+  const withStats = playerSummaries.filter((r) => r.ppg !== null);
   const leadingScorer = withStats.length
     ? withStats.reduce((a, b) => ((b.ppg ?? 0) > (a.ppg ?? 0) ? b : a))
     : null;
@@ -383,10 +167,32 @@ export default async function TeamDetailPage({
     ? threePctValues.reduce((a, b) => a + b, 0) / threePctValues.length
     : null;
 
-  const agesKnown = rosterRows.map((r) => r.age).filter((a): a is number => a !== null);
+  const agesKnown = playerSummaries.map((r) => r.age).filter((a): a is number => a !== null);
   const avgAge = agesKnown.length
     ? agesKnown.reduce((a, b) => a + b, 0) / agesKnown.length
     : null;
+
+  // Roster: 2025-26にこのチームでプレーした選手のプロフィール一覧(出場試合数の多い順)
+  const rosterProfileRows: ProfileRow[] = (players ?? []).map((player) => ({
+    id: player.id,
+    name: player.full_name_ja ?? player.full_name,
+    nameEn: player.full_name,
+    position: player.position,
+    jerseyNumber: null,
+    birthDate: player.birth_date,
+    age: ageAt(player.birth_date, AGE_REFERENCE_2025_26),
+    heightCm: player.height_cm,
+    weightKg: player.weight_kg,
+    preDraftTeam: player.pre_draft_team ?? null,
+    nationality: player.nationality ?? null,
+    yearsOfService: null,
+    draftText: formatDraftInfo(player),
+    draftSort: draftSortValue(player),
+    gamesPlayed: gamesForTeamByPlayer.get(player.id) ?? null,
+  }));
+  rosterProfileRows.sort(
+    (a, b) => (b.gamesPlayed ?? -1) - (a.gamesPlayed ?? -1) || a.name.localeCompare(b.name, "ja")
+  );
 
   const statRows: StatRow[] = resolvedStats.map((s) =>
     toStatRow(s, playerNameById.get(s.player_id) ?? "不明な選手", teamAbbrById)
@@ -396,10 +202,19 @@ export default async function TeamDetailPage({
     <PageShell teamColor={teamColor}>
       <TeamHeader
         team={team}
-        playerCount={rosterRows.length}
+        playerCount={playerSummaries.length}
         teamPpg={withStats.length ? teamPpg : null}
         team3pPct={avgThreePct}
       />
+
+      <p className="mt-4 text-sm">
+        <Link
+          href={`/players/guide/${teamId}`}
+          className="font-semibold text-foreground underline underline-offset-4 hover:no-underline"
+        >
+          選手名鑑 2026（2026-27ロスター・Team Profile）→
+        </Link>
+      </p>
 
       <div className="mt-8">
         {playersError ? (
@@ -409,7 +224,6 @@ export default async function TeamDetailPage({
         ) : (
           <TeamTabs
             initialTab={initialTab}
-            profileHref={`/teams/${teamId}?view=profile`}
             overview={
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]">
                 <div className="border border-line bg-surface p-6">
@@ -447,7 +261,7 @@ export default async function TeamDetailPage({
                   </p>
                   <h2 className="mb-2 text-lg font-semibold">収録データ</h2>
                   <p className="text-sm text-muted">
-                    2025-26レギュラーシーズンの成績から復元したロスターです。年齢、ポジション、出場試合、得点、リバウンド、アシスト、シュート指標。
+                    2025-26レギュラーシーズンの成績から復元した、このチームの記録です。Rosterは2025-26にこのチームでプレーした選手のプロフィール、Statsは2025-26の選手成績です。年齢は2025年10月1日時点。
                   </p>
                 </div>
               </div>
@@ -455,10 +269,13 @@ export default async function TeamDetailPage({
             roster={
               <div className="border border-line bg-surface p-6">
                 <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
-                  Roster · 2025-26 Basic Stats
+                  Roster · 2025-26
                 </p>
-                <h2 className="mb-4 text-lg font-semibold">Player Roster</h2>
-                <TeamRoster rows={rosterRows} />
+                <h2 className="mb-1 text-lg font-semibold">Player Roster</h2>
+                <p className="mb-4 text-xs text-muted">
+                  2025-26レギュラーシーズンにこのチームで出場した選手です（シーズン途中の移籍選手を含む）。出場試合はこのチームでの試合数。POSは現在の登録値、年齢は2025年10月1日時点です。
+                </p>
+                <TeamRosterProfileTable rows={rosterProfileRows} variant="season" />
               </div>
             }
             stats={

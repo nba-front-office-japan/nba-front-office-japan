@@ -19,7 +19,13 @@ export interface ProfileRow {
   draftText: string | null;
   // ドラフト年・巡目・順位を並べ替え用の1つの数値にしたもの(年が新しいほど大きい)。
   draftSort: number | null;
+  // そのチームでの出場試合数(2025-26 チーム記録の Roster でのみ使う)
+  gamesPlayed?: number | null;
 }
+
+// current: 選手名鑑 2026(2026-27 ロスター。背番号・経験年数あり)
+// season:  2025-26 チーム記録の Roster(当時の背番号・経験年数はDBに無いため出さず、そのチームでの出場試合数を出す)
+export type ProfileTableVariant = "current" | "season";
 
 type SortKey =
   | "name"
@@ -32,21 +38,23 @@ type SortKey =
   | "preDraftTeam"
   | "nationality"
   | "yearsOfService"
+  | "gamesPlayed"
   | "draft";
 type SortDirection = "asc" | "desc";
 
-const COLUMNS: { key: SortKey; label: string }[] = [
-  { key: "name", label: "選手名" },
-  { key: "position", label: "POS" },
-  { key: "jerseyNumber", label: "背番号" },
-  { key: "birthDate", label: "生年月日" },
-  { key: "age", label: "年齢" },
-  { key: "heightCm", label: "身長" },
-  { key: "weightKg", label: "体重" },
-  { key: "preDraftTeam", label: "最終在籍校／直前所属" },
-  { key: "nationality", label: "国籍" },
-  { key: "yearsOfService", label: "経験年数" },
-  { key: "draft", label: "ドラフト情報" },
+const COLUMNS: { key: SortKey; label: string; variants: ProfileTableVariant[] }[] = [
+  { key: "name", label: "選手名", variants: ["current", "season"] },
+  { key: "position", label: "POS", variants: ["current", "season"] },
+  { key: "gamesPlayed", label: "出場試合", variants: ["season"] },
+  { key: "jerseyNumber", label: "背番号", variants: ["current"] },
+  { key: "birthDate", label: "生年月日", variants: ["current", "season"] },
+  { key: "age", label: "年齢", variants: ["current", "season"] },
+  { key: "heightCm", label: "身長", variants: ["current", "season"] },
+  { key: "weightKg", label: "体重", variants: ["current", "season"] },
+  { key: "preDraftTeam", label: "最終在籍校／直前所属", variants: ["current", "season"] },
+  { key: "nationality", label: "国籍", variants: ["current", "season"] },
+  { key: "yearsOfService", label: "経験年数", variants: ["current"] },
+  { key: "draft", label: "ドラフト情報", variants: ["current", "season"] },
 ];
 
 const DASH = "—";
@@ -73,6 +81,8 @@ function sortValue(row: ProfileRow, key: SortKey): string | number | null {
     }
     case "draft":
       return row.draftSort;
+    case "gamesPlayed":
+      return row.gamesPlayed ?? null;
     default:
       return row[key];
   }
@@ -132,7 +142,15 @@ function orDash(value: string | number | null): string | number {
   return value === null || value === "" ? DASH : value;
 }
 
-export function TeamRosterProfileTable({ rows }: { rows: ProfileRow[] }) {
+export function TeamRosterProfileTable({
+  rows,
+  variant = "current",
+}: {
+  rows: ProfileRow[];
+  variant?: ProfileTableVariant;
+}) {
+  const columns = COLUMNS.filter((col) => col.variants.includes(variant));
+
   // 初期表示は並べ替えなし(サーバーから渡された順)。ヘッダーを押すと降順から始まる。
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
@@ -168,10 +186,10 @@ export function TeamRosterProfileTable({ rows }: { rows: ProfileRow[] }) {
 
   return (
     <div className="overflow-x-auto border border-line bg-surface">
-      <table className="w-full min-w-[1080px] border-collapse text-[13px]">
+      <table className="w-full min-w-[1000px] border-collapse text-[13px]">
         <thead>
           <tr className="border-b border-line">
-            {COLUMNS.map((col) => (
+            {columns.map((col) => (
               <SortHeader
                 key={col.key}
                 label={col.label}
@@ -195,7 +213,12 @@ export function TeamRosterProfileTable({ rows }: { rows: ProfileRow[] }) {
                 )}
               </td>
               <td className="whitespace-nowrap px-2 py-3">{orDash(row.position)}</td>
-              <td className="whitespace-nowrap px-2 py-3">{orDash(row.jerseyNumber)}</td>
+              {variant === "season" && (
+                <td className="whitespace-nowrap px-2 py-3">{orDash(row.gamesPlayed ?? null)}</td>
+              )}
+              {variant === "current" && (
+                <td className="whitespace-nowrap px-2 py-3">{orDash(row.jerseyNumber)}</td>
+              )}
               <td className="whitespace-nowrap px-2 py-3">{orDash(row.birthDate)}</td>
               <td className="whitespace-nowrap px-2 py-3">{orDash(row.age)}</td>
               <td className="whitespace-nowrap px-2 py-3">
@@ -220,7 +243,9 @@ export function TeamRosterProfileTable({ rows }: { rows: ProfileRow[] }) {
               </td>
               <td className="whitespace-nowrap px-2 py-3">{orDash(row.preDraftTeam)}</td>
               <td className="whitespace-nowrap px-2 py-3">{orDash(row.nationality)}</td>
-              <td className="whitespace-nowrap px-2 py-3">{orDash(row.yearsOfService)}</td>
+              {variant === "current" && (
+                <td className="whitespace-nowrap px-2 py-3">{orDash(row.yearsOfService)}</td>
+              )}
               <td className="whitespace-nowrap px-2 py-3">{orDash(row.draftText)}</td>
             </tr>
           ))}

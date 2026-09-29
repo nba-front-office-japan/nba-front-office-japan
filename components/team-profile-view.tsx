@@ -383,7 +383,7 @@ export function TeamProfileView({
         )}
       </SectionCard>
 
-      <SectionCard kicker="Coaching Staff" title="コーチ陣">
+      <SectionCard kicker="Coaching Staff · 2026-27" title="コーチ陣（2026-27）">
         <div className="grid grid-cols-1 gap-px bg-line sm:grid-cols-2">
           <ProfileRow label="Head Coach" value={profile?.head_coach_name} profileMissing={profileMissing} />
         </div>

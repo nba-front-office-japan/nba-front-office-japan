@@ -11,8 +11,11 @@ import {
   TeamRosterStatsTable,
   type TeamStatsRow,
 } from "@/components/team-roster-stats-table";
+import { TeamProfileView } from "@/components/team-profile-view";
 import { deriveStats, aggregatePlayerSeasonStats } from "@/lib/stats";
 import { formatDraftInfo, draftSortValue } from "@/lib/draft-format";
+import { ageAt, AGE_REFERENCE_2026_27 } from "@/lib/age";
+import { fetchTeamProfileData } from "@/lib/team-profile-data";
 import type { Database } from "@/lib/supabase/types";
 
 type PlayerStatsRow = Database["public"]["Tables"]["player_stats"]["Row"];
@@ -20,19 +23,13 @@ type PlayerStatsRow = Database["public"]["Tables"]["player_stats"]["Row"];
 const CURRENT_ROSTER_SEASON = 2026;
 const PRIOR_SEASON = 2025;
 
-// 2026-27シーズンの年齢基準日(2026年10月1日)。年齢はDBに保存せず生年月日から計算する。
-const AGE_REFERENCE = { year: 2026, month: 10, day: 1 };
+type GuideView = "profile" | "stats" | "team-profile";
 
-function calcAge(birthDate: string | null): number | null {
-  if (!birthDate) return null;
-  const [y, m, d] = birthDate.split("-").map(Number);
-  if (!y || !m || !d) return null;
-  let age = AGE_REFERENCE.year - y;
-  if (m > AGE_REFERENCE.month || (m === AGE_REFERENCE.month && d > AGE_REFERENCE.day)) {
-    age -= 1;
-  }
-  return age;
-}
+const VIEW_OPTIONS: { view: GuideView; label: string }[] = [
+  { view: "profile", label: "Profile" },
+  { view: "stats", label: "Stats" },
+  { view: "team-profile", label: "Team Profile" },
+];
 
 export default async function PlayerGuideTeamPage({
   params,
@@ -40,7 +37,8 @@ export default async function PlayerGuideTeamPage({
 }: PageProps<"/players/guide/[teamId]">) {
   const { teamId } = await params;
   const { view: viewParam } = await searchParams;
-  const selectedView = viewParam === "stats" ? "stats" : "profile";
+  const selectedView: GuideView =
+    viewParam === "stats" ? "stats" : viewParam === "team-profile" ? "team-profile" : "profile";
 
   const supabase = createServerSupabaseClient();
 
@@ -58,11 +56,8 @@ export default async function PlayerGuideTeamPage({
   const teamColor = teamThemeBackground(team.abbreviation);
 
   const viewToggle = (
-    <div className="mb-6 flex gap-2">
-      {[
-        { view: "profile", label: "Profile" },
-        { view: "stats", label: "Stats" },
-      ].map((opt) => (
+    <div className="mb-6 flex flex-wrap gap-2">
+      {VIEW_OPTIONS.map((opt) => (
         <Link
           key={opt.view}
           href={`/players/guide/${teamId}?view=${opt.view}`}
@@ -85,11 +80,37 @@ export default async function PlayerGuideTeamPage({
       <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
         選手名鑑 2026 · {team.abbreviation}
       </p>
-      <h1 className="mb-6 text-[32px] font-semibold tracking-tight sm:text-[36px]">
+      <h1 className="mb-3 text-[32px] font-semibold tracking-tight sm:text-[36px]">
         {team.name}
       </h1>
+      <p className="mb-6 text-sm">
+        <Link
+          href={`/teams/${teamId}`}
+          className="font-semibold text-foreground underline underline-offset-4 hover:no-underline"
+        >
+          2025-26チーム記録（Overview・Roster・Stats）→
+        </Link>
+      </p>
     </>
   );
+
+  // Team Profile(基本情報・ホームアリーナ・フロント・2026-27のコーチ陣・確認情報)
+  if (selectedView === "team-profile") {
+    const { profile, staff, arena, valuation } = await fetchTeamProfileData(supabase, teamId);
+    return (
+      <PageShell teamColor={teamColor}>
+        {header}
+        {viewToggle}
+        <TeamProfileView
+          team={team}
+          profile={profile}
+          arena={arena}
+          valuation={valuation}
+          assistantCoaches={staff}
+        />
+      </PageShell>
+    );
+  }
 
   const { data: rosterAssignments } = await supabase
     .from("player_season_rosters")
@@ -145,7 +166,7 @@ export default async function PlayerGuideTeamPage({
     position: positionByPlayerId.get(player.id) ?? null,
     jerseyNumber: jerseyByPlayerId.get(player.id) ?? null,
     birthDate: player.birth_date,
-    age: calcAge(player.birth_date),
+    age: ageAt(player.birth_date, AGE_REFERENCE_2026_27),
     heightCm: player.height_cm,
     weightKg: player.weight_kg,
     preDraftTeam: player.pre_draft_team ?? null,
