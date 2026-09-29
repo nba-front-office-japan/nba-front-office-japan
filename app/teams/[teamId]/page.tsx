@@ -9,6 +9,7 @@ import { StatsTable, type StatRow } from "@/components/stats-table";
 import { TeamProfileView } from "@/components/team-profile-view";
 import { deriveStats, formatStat, toRawStatTotals, aggregatePlayerSeasonStats } from "@/lib/stats";
 import { fetchLatestValuationEdition } from "@/lib/valuations";
+import { teamThemeBackground } from "@/lib/team-colors";
 import type { Database } from "@/lib/supabase/types";
 
 type PlayerStatsRow = Database["public"]["Tables"]["player_stats"]["Row"];
@@ -109,6 +110,9 @@ export default async function TeamDetailPage({
     notFound();
   }
 
+  // ヘッダーより下の背景をチームのメインカラーにする(白文字が読める濃さに補正済み)
+  const teamColor = teamThemeBackground(team.abbreviation);
+
   const { data: allTeams } = await supabase.from("teams").select("*").order("name");
   const teamAbbrById = new Map((allTeams ?? []).map((t) => [t.id, t.abbreviation]));
 
@@ -154,7 +158,7 @@ export default async function TeamDetailPage({
       : { count: null };
 
     return (
-      <PageShell>
+      <PageShell teamColor={teamColor}>
         <TeamHeader
           team={team}
           playerCount={0}
@@ -198,7 +202,7 @@ export default async function TeamDetailPage({
 
     if (!rosterAssignments || rosterAssignments.length === 0) {
       return (
-        <PageShell>
+        <PageShell teamColor={teamColor}>
           <TeamHeader
             team={team}
             playerCount={0}
@@ -273,7 +277,7 @@ export default async function TeamDetailPage({
     }, null);
 
     return (
-      <PageShell>
+      <PageShell teamColor={teamColor}>
         <TeamHeader
           team={team}
           playerCount={rosterRows.length}
@@ -389,7 +393,7 @@ export default async function TeamDetailPage({
   );
 
   return (
-    <PageShell>
+    <PageShell teamColor={teamColor}>
       <TeamHeader
         team={team}
         playerCount={rosterRows.length}

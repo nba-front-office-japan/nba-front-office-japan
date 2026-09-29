@@ -16,7 +16,7 @@ export function TeamViewNav({ teamId }: { teamId: string }) {
   return (
     <nav
       aria-label="チームページ"
-      className="flex gap-6 overflow-x-auto border border-line bg-surface px-4"
+      className="flex gap-6 overflow-x-auto border-b border-line"
     >
       {items.map((item) => (
         <Link key={item.label} href={item.href} className={`${TAB_BASE} ${TAB_IDLE}`}>

@@ -10,6 +10,12 @@
   --line: #dce2ea;
   --muted: #647184;
   --accent: #1f63e9;
+
+  /* チームカラー背景(.team-theme)の中で、白いカードの配色を元に戻すための値 */
+  --card-foreground: #101827;
+  --card-muted: #647184;
+  --card-line: #dce2ea;
+  --card-blue: #1f63e9;
 }
 
 @theme inline {
@@ -34,7 +40,30 @@
     --line: #26324a;
     --muted: #8b96ab;
     --accent: #5b9bff;
+
+    --card-foreground: #e7ebf2;
+    --card-muted: #8b96ab;
+    --card-line: #26324a;
   }
+}
+
+/* チームページ(/teams/[teamId])のチームカラー背景。
+   背景の上の文字・罫線・アクセントは白系にし、カード(bg-surface)の中だけ元の配色に戻す。
+   --muted の白90%は lib/team-colors.ts のコントラスト計算と同じ値にしておくこと。 */
+.team-theme {
+  --foreground: #ffffff;
+  --muted: rgba(255, 255, 255, 0.9);
+  --line: rgba(255, 255, 255, 0.35);
+  --blue: #ffffff;
+  color: var(--foreground);
+}
+
+.team-theme .bg-surface {
+  --foreground: var(--card-foreground);
+  --muted: var(--card-muted);
+  --line: var(--card-line);
+  --blue: var(--card-blue);
+  color: var(--foreground);
 }
 
 body {

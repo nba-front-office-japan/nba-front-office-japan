@@ -29,7 +29,7 @@ export function TeamTabs({
 
   return (
     <div>
-      <div className="flex gap-6 overflow-x-auto border border-line bg-surface px-4">
+      <div className="flex gap-6 overflow-x-auto border-b border-line">
         {TABS.map((t) => (
           <button
             key={t}
