@@ -101,4 +101,8 @@ export const GUIDE_PAGES: Record<string, string> = {
   MAX契約: "/guide/max-contract",
   ミニマム契約: "/guide/minimum-contract",
   "Bird Rights": "/guide/bird-rights",
+  // 「契約」の「RFA / UFA」と、「NBA用語」の「RFA」「UFA」は同じ詳細ページへリンクする
+  "RFA / UFA": "/guide/rfa-ufa",
+  RFA: "/guide/rfa-ufa",
+  UFA: "/guide/rfa-ufa",
 };
