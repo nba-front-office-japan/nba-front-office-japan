@@ -99,4 +99,5 @@ export const GUIDE_PAGES: Record<string, string> = {
   "1st Apron / 2nd Apron": "/guide/aprons",
   "Revenue Sharing": "/guide/revenue-sharing",
   MAX契約: "/guide/max-contract",
+  ミニマム契約: "/guide/minimum-contract",
 };
