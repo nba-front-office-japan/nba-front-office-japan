@@ -107,4 +107,5 @@ export const GUIDE_PAGES: Record<string, string> = {
   UFA: "/guide/rfa-ufa",
   // 「契約」と「NBA用語」の「MLE」は同じ詳細ページへリンクする
   MLE: "/guide/mle",
+  ドラフト指名権: "/guide/draft-picks",
 };
