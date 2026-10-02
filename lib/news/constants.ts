@@ -1,4 +1,5 @@
 import type {
+  ArticleKind,
   ArticleType,
   ArticleDraftStatus,
   NewsEventCategory,
@@ -34,6 +35,21 @@ export const ARTICLE_TYPE_OPTIONS: { value: ArticleType; label: string }[] = [
   { value: "standard", label: "Standard" },
   { value: "deep_dive", label: "Deep Dive" },
 ];
+
+// 記事区分。COLUMN の記事だけ、公開ページの一覧・詳細に「COLUMN」ラベルを出す
+// (通常記事には区分のラベルを出さない)。
+export const ARTICLE_KIND_OPTIONS: { value: ArticleKind; label: string }[] = [
+  { value: "news", label: "通常記事" },
+  { value: "column", label: "COLUMN" },
+];
+
+export function isArticleKind(value: string): value is ArticleKind {
+  return ARTICLE_KIND_OPTIONS.some((o) => o.value === value);
+}
+
+// 紺地に金文字。ダークモードでは紺がカード背景に溶けるため、金の枠線で区別する。
+export const COLUMN_BADGE_CLASS =
+  "inline-block border border-navy bg-navy px-1.5 py-1 text-[11px] font-extrabold tracking-[0.6px] text-gold dark:border-gold";
 
 export const ARTICLE_DRAFT_STATUS_LABEL: Record<ArticleDraftStatus, string> = {
   pending_review: "承認待ち",

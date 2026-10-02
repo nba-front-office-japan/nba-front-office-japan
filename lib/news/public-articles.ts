@@ -1,5 +1,6 @@
 import type { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type {
+  ArticleKind,
   ArticleType,
   NewsEventCategory,
   VerificationStatus,
@@ -19,6 +20,7 @@ export interface PublicArticleSummary {
   headlineJa: string;
   dekJa: string | null;
   articleType: ArticleType;
+  articleKind: ArticleKind;
   category: NewsEventCategory;
   verificationStatus: VerificationStatus;
   publishedAt: string | null;
@@ -36,7 +38,7 @@ export async function fetchPublishedArticles(
 ): Promise<PublicArticleSummary[]> {
   const { data: drafts } = await supabase
     .from("article_drafts")
-    .select("id, headline_ja, dek_ja, article_type, published_at, event_id")
+    .select("id, headline_ja, dek_ja, article_type, article_kind, published_at, event_id")
     .eq("status", "published")
     .order("published_at", { ascending: false });
 
@@ -56,6 +58,7 @@ export async function fetchPublishedArticles(
       headlineJa: d.headline_ja,
       dekJa: d.dek_ja,
       articleType: d.article_type,
+      articleKind: d.article_kind,
       category: event?.category ?? "other",
       verificationStatus: event?.verification_status ?? "unverified",
       publishedAt: d.published_at,
@@ -115,6 +118,7 @@ export async function fetchPublishedArticleById(
     headlineJa: draft.headline_ja,
     dekJa: draft.dek_ja,
     articleType: draft.article_type,
+    articleKind: draft.article_kind,
     bodyMarkdown: draft.body_markdown,
     category: event?.category ?? "other",
     verificationStatus: event?.verification_status ?? "unverified",

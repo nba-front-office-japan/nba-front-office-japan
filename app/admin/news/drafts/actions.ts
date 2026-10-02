@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { ArticleType } from "@/lib/supabase/types";
+import { isArticleKind } from "@/lib/news/constants";
 import type { ActionState } from "@/app/admin/_components/action-ui";
 
 export async function createDraftAction(
@@ -14,6 +15,8 @@ export async function createDraftAction(
   if (!eventId) {
     return { status: "error", message: "イベントを選択してください。" };
   }
+  const articleKindValue = String(formData.get("articleKind") ?? "news");
+  const articleKind = isArticleKind(articleKindValue) ? articleKindValue : "news";
 
   const supabase = createAdminSupabaseClient();
 
@@ -42,6 +45,7 @@ export async function createDraftAction(
     .insert({
       event_id: eventId,
       article_type: "standard",
+      article_kind: articleKind,
       headline_ja: event.headline_en,
       body_markdown: "",
       source_attribution_markdown: "",
@@ -66,6 +70,7 @@ export async function updateDraftAction(
 ): Promise<ActionState> {
   const draftId = String(formData.get("draftId") ?? "");
   const articleType = String(formData.get("articleType") ?? "") as ArticleType;
+  const articleKindValue = String(formData.get("articleKind") ?? "");
   const headlineJa = String(formData.get("headlineJa") ?? "").trim();
   const dekJa = String(formData.get("dekJa") ?? "").trim();
   const bodyMarkdown = String(formData.get("bodyMarkdown") ?? "");
@@ -77,12 +82,16 @@ export async function updateDraftAction(
   if (!draftId || !headlineJa) {
     return { status: "error", message: "見出しは必須です。" };
   }
+  if (!isArticleKind(articleKindValue)) {
+    return { status: "error", message: "記事種別（通常記事 / COLUMN）を選んでください。" };
+  }
 
   const supabase = createAdminSupabaseClient();
   const { error } = await supabase
     .from("article_drafts")
     .update({
       article_type: articleType,
+      article_kind: articleKindValue,
       headline_ja: headlineJa,
       dek_ja: dekJa || null,
       body_markdown: bodyMarkdown,
@@ -97,6 +106,8 @@ export async function updateDraftAction(
 
   revalidatePath(`/admin/news/drafts/${draftId}`);
   revalidatePath("/admin/news/drafts");
+  revalidatePath("/news");
+  revalidatePath(`/news/${draftId}`);
   return { status: "success", message: "保存しました" };
 }
 

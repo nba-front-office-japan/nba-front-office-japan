@@ -62,6 +62,8 @@ export type EventSourceRelation =
   | "context"
   | "conflict";
 export type ArticleType = "breaking" | "standard" | "deep_dive";
+// 記事区分: 通常のニュース記事か、自作の解説・コラム記事か
+export type ArticleKind = "news" | "column";
 export type ArticleDraftStatus =
   | "pending_review"
   | "approved"
@@ -769,6 +771,7 @@ export interface Database {
           id: string;
           event_id: string;
           article_type: ArticleType;
+          article_kind: ArticleKind;
           headline_ja: string;
           dek_ja: string | null;
           body_markdown: string;
@@ -786,6 +789,7 @@ export interface Database {
           id?: string;
           event_id: string;
           article_type: ArticleType;
+          article_kind?: ArticleKind;
           headline_ja: string;
           dek_ja?: string | null;
           body_markdown: string;

@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { createDraftAction } from "./actions";
+import { ARTICLE_KIND_OPTIONS } from "@/lib/news/constants";
 import {
   INITIAL_ACTION_STATE,
   PRIMARY_BUTTON_CLASS,
@@ -31,6 +32,21 @@ export function CreateDraftForm({
           {events.map((e) => (
             <option key={e.id} value={e.id}>
               {e.headline_en}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="grid gap-1 text-[11px] font-bold text-muted">
+        記事種別
+        <select
+          name="articleKind"
+          defaultValue="news"
+          disabled={isPending}
+          className="border border-line bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-60"
+        >
+          {ARTICLE_KIND_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
             </option>
           ))}
         </select>

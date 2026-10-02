@@ -86,7 +86,12 @@ export default async function AdminNewsDraftsPage() {
                       <td className="px-3 py-2.5 text-muted">
                         {eventHeadlineById.get(draft.event_id) ?? "-"}
                       </td>
-                      <td className="px-3 py-2.5 text-muted">{draft.article_type}</td>
+                      <td className="px-3 py-2.5 text-muted">
+                        {draft.article_kind === "column" && (
+                          <span className="mr-1.5 font-extrabold text-foreground">COLUMN</span>
+                        )}
+                        {draft.article_type}
+                      </td>
                       <td className="px-3 py-2.5">
                         {ARTICLE_DRAFT_STATUS_LABEL[draft.status]}
                       </td>

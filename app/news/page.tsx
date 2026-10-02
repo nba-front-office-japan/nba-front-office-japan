@@ -3,6 +3,7 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { fetchPublishedArticles } from "@/lib/news/public-articles";
 import {
   CATEGORY_OPTIONS,
+  COLUMN_BADGE_CLASS,
   isRumorOrUnverified,
   isSingleSource,
   SINGLE_SOURCE_BADGE_CLASS,
@@ -53,6 +54,10 @@ export default async function NewsPage() {
                 className="border border-line bg-surface p-6"
               >
                 <div className="mb-2 flex flex-wrap gap-2">
+                  {/* 自作の解説・コラム記事だけに出す(通常記事には区分ラベルを出さない) */}
+                  {article.articleKind === "column" && (
+                    <span className={COLUMN_BADGE_CLASS}>COLUMN</span>
+                  )}
                   <span className="inline-block bg-[#fff0d9] px-1.5 py-1 text-[11px] font-extrabold text-[#ac6811]">
                     {CATEGORY_LABEL[article.category] ?? article.category}
                   </span>
