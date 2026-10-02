@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { PageShell } from "@/components/page-shell";
 
 export const metadata: Metadata = {
@@ -7,8 +8,12 @@ export const metadata: Metadata = {
 };
 
 // ガイドのカテゴリーと、各カテゴリーで扱う内容の例。
-// 各項目の詳細ページはまだ無いため、現時点ではリンクを付けない。
+// 詳細ページがある項目だけ GUIDE_PAGES にURLを登録してリンクにする(未作成のページへはリンクしない)。
 // RFA / UFA・MLE は「契約」と「NBA用語」の両方に載せる(詳細ページを作ったら同じページへリンクする想定)。
+const GUIDE_PAGES: Record<string, string> = {
+  サラリーキャップ: "/guide/salary-cap",
+};
+
 const GUIDE_CATEGORIES: { category: string; examples: string[] }[] = [
   {
     category: "NBA制度",
@@ -35,7 +40,16 @@ function ExampleList({ examples }: { examples: string[] }) {
     <>
       {examples.map((example, i) => (
         <span key={example} className="whitespace-nowrap">
-          {example}
+          {GUIDE_PAGES[example] ? (
+            <Link
+              href={GUIDE_PAGES[example]}
+              className="font-semibold text-blue underline underline-offset-4 hover:no-underline"
+            >
+              {example}
+            </Link>
+          ) : (
+            example
+          )}
           {i < examples.length - 1 && "、"}
         </span>
       ))}
