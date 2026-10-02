@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageShell } from "@/components/page-shell";
+import { GUIDE_PAGES } from "@/lib/guide-official";
 
 export const metadata: Metadata = {
   title: "NBAガイド | NBA Front Office Japan",
@@ -8,11 +9,8 @@ export const metadata: Metadata = {
 };
 
 // ガイドのカテゴリーと、各カテゴリーで扱う内容の例。
-// 詳細ページがある項目だけ GUIDE_PAGES にURLを登録してリンクにする(未作成のページへはリンクしない)。
+// 詳細ページがある項目だけ GUIDE_PAGES(lib/guide-official.ts)にURLを登録してリンクにする(未作成のページへはリンクしない)。
 // RFA / UFA・MLE は「契約」と「NBA用語」の両方に載せる(詳細ページを作ったら同じページへリンクする想定)。
-const GUIDE_PAGES: Record<string, string> = {
-  サラリーキャップ: "/guide/salary-cap",
-};
 
 const GUIDE_CATEGORIES: { category: string; examples: string[] }[] = [
   {
