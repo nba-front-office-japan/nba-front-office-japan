@@ -100,4 +100,5 @@ export const GUIDE_PAGES: Record<string, string> = {
   "Revenue Sharing": "/guide/revenue-sharing",
   MAX契約: "/guide/max-contract",
   ミニマム契約: "/guide/minimum-contract",
+  "Bird Rights": "/guide/bird-rights",
 };
