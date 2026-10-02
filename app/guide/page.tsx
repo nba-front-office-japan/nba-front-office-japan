@@ -8,15 +8,40 @@ export const metadata: Metadata = {
 
 // ガイドのカテゴリーと、各カテゴリーで扱う内容の例。
 // 各項目の詳細ページはまだ無いため、現時点ではリンクを付けない。
+// RFA / UFA・MLE は「契約」と「NBA用語」の両方に載せる(詳細ページを作ったら同じページへリンクする想定)。
 const GUIDE_CATEGORIES: { category: string; examples: string[] }[] = [
-  { category: "NBA制度", examples: ["サラリーキャップ", "ラグジュアリータックス", "Apron"] },
-  { category: "契約", examples: ["MAX契約", "ミニマム", "バード権", "FA"] },
-  { category: "ドラフト", examples: ["指名権", "ロッタリー", "指名権価値"] },
-  { category: "トレード", examples: ["トレードルール", "サラリーマッチング"] },
-  { category: "NBAビジネス", examples: ["放映権", "オーナー", "チーム資産価値"] },
-  { category: "過去事件", examples: ["ジョー・スミス事件", "タンパリング", "キャップ迂回"] },
-  { category: "用語解説", examples: ["2-way", "RFA", "UFA", "MLEなど"] },
+  {
+    category: "NBA制度",
+    examples: ["サラリーキャップ", "ラグジュアリータックス", "1st Apron / 2nd Apron", "Revenue Sharing"],
+  },
+  { category: "契約", examples: ["MAX契約", "ミニマム契約", "Bird Rights", "RFA / UFA", "MLE"] },
+  { category: "ドラフト", examples: ["ドラフト指名権", "ロッタリー", "指名権の価値"] },
+  {
+    category: "トレード・ロスター移動",
+    examples: ["トレードの基本", "サラリーマッチング", "Buyout", "Waive"],
+  },
+  { category: "NBAビジネス", examples: ["放映権", "NBAオーナー", "チーム資産価値"] },
+  {
+    category: "過去事件",
+    examples: ["ジョー・スミス事件", "タンパリング", "サラリーキャップ迂回事件"],
+  },
+  { category: "NBA用語", examples: ["2-way", "RFA", "UFA", "MLE", "その他のNBA用語"] },
 ];
+
+// 例を「、」区切りで並べる。1項目(例:「1st Apron / 2nd Apron」)が行の途中で折り返さないよう、
+// 項目ごとに改行を禁止し、項目の区切りでだけ折り返す。
+function ExampleList({ examples }: { examples: string[] }) {
+  return (
+    <>
+      {examples.map((example, i) => (
+        <span key={example} className="whitespace-nowrap">
+          {example}
+          {i < examples.length - 1 && "、"}
+        </span>
+      ))}
+    </>
+  );
+}
 
 export default function GuidePage() {
   return (
@@ -46,7 +71,9 @@ export default function GuidePage() {
                 <th scope="row" className="px-5 py-4 text-left align-top text-[15px] font-bold">
                   {row.category}
                 </th>
-                <td className="px-5 py-4 leading-7">{row.examples.join("、")}</td>
+                <td className="px-5 py-4 leading-7">
+                  <ExampleList examples={row.examples} />
+                </td>
               </tr>
             ))}
           </tbody>
@@ -62,7 +89,9 @@ export default function GuidePage() {
           {GUIDE_CATEGORIES.map((row) => (
             <div key={row.category} className="border-b border-line px-4 py-4 last:border-b-0">
               <dt className="mb-1 text-[15px] font-bold">{row.category}</dt>
-              <dd className="text-sm leading-7 text-muted">{row.examples.join("、")}</dd>
+              <dd className="text-sm leading-7 text-muted">
+                <ExampleList examples={row.examples} />
+              </dd>
             </div>
           ))}
         </dl>
