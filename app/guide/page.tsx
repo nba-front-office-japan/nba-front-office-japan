@@ -17,7 +17,7 @@ const GUIDE_CATEGORIES: { category: string; examples: string[] }[] = [
     category: "NBA制度",
     examples: ["サラリーキャップ", "ラグジュアリータックス", "1st Apron / 2nd Apron", "Revenue Sharing"],
   },
-  { category: "契約", examples: ["MAX契約", "ミニマム契約", "Bird Rights", "RFA / UFA", "MLE"] },
+  { category: "契約", examples: ["MAX契約", "ミニマム契約", "Bird Rights", "RFA / UFA", "MLE", "ロスター契約・短期契約"] },
   { category: "ドラフト", examples: ["ドラフト指名権", "ロッタリー", "指名権の価値"] },
   {
     category: "トレード・ロスター移動",
