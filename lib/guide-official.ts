@@ -97,4 +97,5 @@ export const GUIDE_PAGES: Record<string, string> = {
   サラリーキャップ: "/guide/salary-cap",
   ラグジュアリータックス: "/guide/luxury-tax",
   "1st Apron / 2nd Apron": "/guide/aprons",
+  "Revenue Sharing": "/guide/revenue-sharing",
 };

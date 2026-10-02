@@ -4,6 +4,7 @@ import {
   OFFICIAL_SOURCES,
   SYSTEM_LEVELS_2026_27,
   SYSTEM_LEVELS_SOURCE_NOTE,
+  type OfficialSource,
   type SystemLevel,
 } from "@/lib/guide-official";
 
@@ -163,7 +164,7 @@ export function GlossarySection({ terms }: { terms: { term: string; description:
       <dl className="divide-y divide-line border-y border-line">
         {terms.map((t) => (
           <div key={t.term} className="py-3 sm:grid sm:grid-cols-[290px_1fr] sm:gap-4">
-            <dt className="font-bold">
+            <dt className="font-bold [word-break:auto-phrase]">
               {t.href ? (
                 <Link href={t.href} className="text-blue underline underline-offset-4 hover:no-underline">
                   {t.term}
@@ -185,11 +186,12 @@ export function GlossarySection({ terms }: { terms: { term: string; description:
   );
 }
 
-export function OfficialSourcesSection() {
+// 公式一次資料。ページごとに確認に使った資料が違う場合は sources で指定する。
+export function OfficialSourcesSection({ sources = OFFICIAL_SOURCES }: { sources?: OfficialSource[] }) {
   return (
     <Section kicker="Official sources" title="公式一次資料">
       <ul className="divide-y divide-line border-y border-line">
-        {OFFICIAL_SOURCES.map((s) => (
+        {sources.map((s) => (
           <li key={s.href} className="py-3">
             <a href={s.href} target="_blank" rel="noreferrer noopener" className="break-words font-semibold text-blue hover:underline">
               {s.title} ↗

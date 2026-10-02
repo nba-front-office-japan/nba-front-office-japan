@@ -110,6 +110,7 @@ export default function LuxuryTaxGuidePage() {
             ]}
           />
           <SystemLevelsTable highlight="tax" />
+          <RelatedGuideLink href={GUIDE_PAGES["Revenue Sharing"]} label="NBAのRevenue Sharingとは？（チーム間の収益分配とタックスの分配の違い）" />
         </Section>
 
         {/* 3. 税額が増える考え方 */}
