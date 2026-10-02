@@ -45,6 +45,7 @@ const RELATED_TERMS: { term: string; description: string; href?: string }[] = [
   {
     term: "1st Apron / 2nd Apron",
     description: "タックスラインより上に設定された2つの基準額。超えると使える補強手段が段階的に減る。",
+    href: GUIDE_PAGES["1st Apron / 2nd Apron"],
   },
   {
     term: "Bird Rights",
@@ -184,6 +185,7 @@ export default function SalaryCapGuidePage() {
               "その後4シーズンのうち2シーズン以上で再び超えると、凍結された指名権は1巡目の最後の順位に回されます。",
             ]}
           />
+          <RelatedGuideLink href={GUIDE_PAGES["1st Apron / 2nd Apron"]} label="NBAの1st Apronと2nd Apronとは？（制限の内容・指名権のペナルティ）" />
           <p className="text-xs leading-6 text-muted">
             ※ 条件の細部には例外や追加のルールがあります。正確な条件は下の公式資料（CBA）を確認してください。
           </p>

@@ -60,6 +60,7 @@ const RELATED_TERMS: { term: string; description: string; href?: string }[] = [
   {
     term: "1st Apron / 2nd Apron",
     description: "タックスラインより上に設定された2つの基準額。超えると使える補強手段が段階的に減る。",
+    href: GUIDE_PAGES["1st Apron / 2nd Apron"],
   },
   {
     term: "Non-Taxpayer MLE / Taxpayer MLE",
@@ -266,6 +267,7 @@ export default function LuxuryTaxGuidePage() {
               </>,
             ]}
           />
+          <RelatedGuideLink href={GUIDE_PAGES["1st Apron / 2nd Apron"]} label="NBAの1st Apronと2nd Apronとは？（制限の内容・指名権のペナルティ）" />
           <RelatedGuideLink href={GUIDE_PAGES["サラリーキャップ"]} label="NBAサラリーキャップとは？（基本の仕組み・Apronの制限）" />
         </Section>
 

@@ -83,7 +83,8 @@ export function Bullets({ items }: { items: ReactNode[] }) {
 }
 
 // 2026-27シーズンの基準額。PCは表、スマホは縦並び。highlight の行だけ強調する。
-export function SystemLevelsTable({ highlight }: { highlight?: SystemLevel["key"] }) {
+export function SystemLevelsTable({ highlight }: { highlight?: SystemLevel["key"] | SystemLevel["key"][] }) {
+  const highlighted = new Set(Array.isArray(highlight) ? highlight : highlight ? [highlight] : []);
   return (
     <div className="pt-2">
       <h3 className="mb-2 text-sm font-bold">2026-27シーズンの基準額</h3>
@@ -100,7 +101,7 @@ export function SystemLevelsTable({ highlight }: { highlight?: SystemLevel["key"
             {SYSTEM_LEVELS_2026_27.map((level) => (
               <tr
                 key={level.label}
-                className={`border-b border-line last:border-b-0 ${level.key === highlight ? "bg-[#fff6e0] dark:bg-white/[.06]" : ""}`}
+                className={`border-b border-line last:border-b-0 ${highlighted.has(level.key) ? "bg-[#fff6e0] dark:bg-white/[.06]" : ""}`}
               >
                 <th scope="row" className="px-4 py-3 text-left align-top font-bold">
                   {level.label}
@@ -117,7 +118,7 @@ export function SystemLevelsTable({ highlight }: { highlight?: SystemLevel["key"
         {SYSTEM_LEVELS_2026_27.map((level) => (
           <div
             key={level.label}
-            className={`border-b border-line px-4 py-3 last:border-b-0 ${level.key === highlight ? "bg-[#fff6e0] dark:bg-white/[.06]" : ""}`}
+            className={`border-b border-line px-4 py-3 last:border-b-0 ${highlighted.has(level.key) ? "bg-[#fff6e0] dark:bg-white/[.06]" : ""}`}
           >
             <dt className="font-bold">{level.label}</dt>
             <dd className="text-xs text-muted">{level.note}</dd>
@@ -134,13 +135,14 @@ export function SystemLevelsTable({ highlight }: { highlight?: SystemLevel["key"
 }
 
 // 基準額の段階(サラリーキャップ → タックスライン → 1st Apron → 2nd Apron)
-export function LevelLadder({ steps, highlight }: { steps: [string, string][]; highlight?: string }) {
+export function LevelLadder({ steps, highlight }: { steps: [string, string][]; highlight?: string | string[] }) {
+  const highlighted = new Set(Array.isArray(highlight) ? highlight : highlight ? [highlight] : []);
   return (
     <ol className="space-y-2">
       {steps.map(([name, text], i) => (
         <li
           key={name}
-          className={`flex items-start gap-3 border px-3 py-2.5 ${name === highlight ? "border-gold bg-[#fff6e0] dark:bg-white/[.06]" : "border-line"}`}
+          className={`flex items-start gap-3 border px-3 py-2.5 ${highlighted.has(name) ? "border-gold bg-[#fff6e0] dark:bg-white/[.06]" : "border-line"}`}
         >
           <span className="grid h-6 w-6 flex-none place-items-center bg-navy text-xs font-bold text-white">{i + 1}</span>
           <span>
