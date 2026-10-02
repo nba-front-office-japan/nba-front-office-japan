@@ -109,4 +109,5 @@ export const GUIDE_PAGES: Record<string, string> = {
   MLE: "/guide/mle",
   ドラフト指名権: "/guide/draft-picks",
   ロッタリー: "/guide/draft-lottery",
+  指名権の価値: "/guide/draft-pick-value",
 };
