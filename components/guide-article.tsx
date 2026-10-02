@@ -37,11 +37,12 @@ export function GuideHeader({ category, current }: { category: string; current: 
 
 // ページ見出し。狭い画面では「NBA○○」と「とは？」の間で改行する。
 // 「NBAラグジュアリータックス」のように画面幅より長い場合だけ、その中でも折り返す(max-w-full)。
-export function GuideTitle({ subject }: { subject: string }) {
+// 「NBAトレードの基本」のように「とは？」を付けない見出しは suffix="" を指定する。
+export function GuideTitle({ subject, suffix = "とは？" }: { subject: string; suffix?: string }) {
   return (
     <h1 className={`mb-3 text-[26px] font-semibold leading-tight tracking-tight sm:text-[36px] ${HEADING_WRAP}`}>
       <span className="inline-block max-w-full">{subject}</span>
-      <span className="inline-block">とは？</span>
+      {suffix && <span className="inline-block">{suffix}</span>}
     </h1>
   );
 }

@@ -110,6 +110,7 @@ export const GUIDE_PAGES: Record<string, string> = {
   // 「契約」の「ロスター契約・短期契約」と、「NBA用語」の「2-way」は同じ詳細ページへリンクする
   "ロスター契約・短期契約": "/guide/roster-contracts",
   "2-way": "/guide/roster-contracts",
+  トレードの基本: "/guide/trade-basics",
   ドラフト指名権: "/guide/draft-picks",
   ロッタリー: "/guide/draft-lottery",
   指名権の価値: "/guide/draft-pick-value",
