@@ -28,7 +28,7 @@ const GUIDE_CATEGORIES: { category: string; examples: string[] }[] = [
     category: "過去事件",
     examples: ["ジョー・スミス事件", "タンパリング", "サラリーキャップ迂回に関する処分"],
   },
-  { category: "NBA用語", examples: ["2-way", "RFA", "UFA", "MLE", "その他のNBA用語"] },
+  { category: "NBA用語", examples: ["2-way", "RFA", "UFA", "MLE", "NBA用語集"] },
 ];
 
 // 例を「、」区切りで並べる。1項目(例:「1st Apron / 2nd Apron」)が行の途中で折り返さないよう、

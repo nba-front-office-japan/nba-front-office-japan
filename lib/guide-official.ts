@@ -120,6 +120,8 @@ export const GUIDE_PAGES: Record<string, string> = {
   "ジョー・スミス事件": "/guide/joe-smith-case",
   タンパリング: "/guide/tampering-cases",
   サラリーキャップ迂回に関する処分: "/guide/salary-cap-circumvention",
+  // 「NBA用語」の「NBA用語集」は用語集ページへリンクする
+  NBA用語集: "/guide/glossary",
   ドラフト指名権: "/guide/draft-picks",
   ロッタリー: "/guide/draft-lottery",
   指名権の価値: "/guide/draft-pick-value",
