@@ -111,6 +111,17 @@ export default async function Home() {
         </div>
       </div>
 
+      {/* 試合センターへの入口。ネタバレ防止のため、ホームには試合の勝敗・点数・チーム名を一切表示しない */}
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border border-line bg-surface px-6 py-4">
+        <div>
+          <p className="text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">Games</p>
+          <p className="text-sm text-muted">試合結果は、ネタバレ防止のため試合センターでだけ表示します。</p>
+        </div>
+        <Link href="/games" className="bg-navy px-4 py-2.5 text-sm font-extrabold text-white">
+          試合センターへ →
+        </Link>
+      </div>
+
       <div className="mt-5 grid grid-cols-1 gap-4.5 lg:grid-cols-[1.55fr_1fr]">
         <div className="border border-line bg-surface p-6">
           <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">

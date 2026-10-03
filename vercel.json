@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/news-collect",
       "schedule": "0 21 * * *"
+    },
+    {
+      "path": "/api/cron/games-sync",
+      "schedule": "5 7 * * *"
     }
   ]
 }

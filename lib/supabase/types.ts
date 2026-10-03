@@ -75,6 +75,9 @@ export type DataImportKind = "player_team_history" | "player_stats";
 export type DataImportStatus = "blocked" | "applied" | "failed";
 export type DataImportBackupTable = "player_stats" | "player_team_history";
 
+// 試合状態(supabase/migrations/20261003000000_games.sql の games_status_check と一致させる)
+export type GameStatus = "scheduled" | "in_progress" | "final" | "postponed";
+
 export interface Database {
   public: {
     Tables: {
@@ -424,6 +427,114 @@ export interface Database {
         Update: Partial<
           Database["public"]["Tables"]["team_valuations"]["Insert"]
         >;
+        Relationships: [];
+      };
+      games: {
+        Row: {
+          id: string;
+          source: string;
+          source_game_id: number;
+          season: number;
+          postseason: boolean;
+          game_date: string;
+          tipoff_at: string | null;
+          home_team_id: string;
+          away_team_id: string;
+          status: GameStatus;
+          status_detail: string | null;
+          period: number | null;
+          home_score: number | null;
+          away_score: number | null;
+          home_q1: number | null;
+          home_q2: number | null;
+          home_q3: number | null;
+          home_q4: number | null;
+          away_q1: number | null;
+          away_q2: number | null;
+          away_q3: number | null;
+          away_q4: number | null;
+          home_ot_scores: number[];
+          away_ot_scores: number[];
+          last_synced_at: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          source: string;
+          source_game_id: number;
+          season: number;
+          postseason?: boolean;
+          game_date: string;
+          tipoff_at?: string | null;
+          home_team_id: string;
+          away_team_id: string;
+          status: GameStatus;
+          status_detail?: string | null;
+          period?: number | null;
+          home_score?: number | null;
+          away_score?: number | null;
+          home_q1?: number | null;
+          home_q2?: number | null;
+          home_q3?: number | null;
+          home_q4?: number | null;
+          away_q1?: number | null;
+          away_q2?: number | null;
+          away_q3?: number | null;
+          away_q4?: number | null;
+          home_ot_scores?: number[];
+          away_ot_scores?: number[];
+          last_synced_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["games"]["Insert"]>;
+        Relationships: [];
+      };
+      game_player_stats: {
+        Row: {
+          id: string;
+          game_id: string;
+          team_id: string;
+          source: string;
+          player_id: string | null;
+          player_name: string;
+          seconds_played: number;
+          pts: number;
+          reb: number;
+          ast: number;
+          stl: number;
+          blk: number;
+          fgm: number;
+          fga: number;
+          fg3m: number;
+          fg3a: number;
+          ftm: number;
+          fta: number;
+          plus_minus: number | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          game_id: string;
+          team_id: string;
+          source?: string;
+          player_id?: string | null;
+          player_name: string;
+          seconds_played?: number;
+          pts?: number;
+          reb?: number;
+          ast?: number;
+          stl?: number;
+          blk?: number;
+          fgm?: number;
+          fga?: number;
+          fg3m?: number;
+          fg3a?: number;
+          ftm?: number;
+          fta?: number;
+          plus_minus?: number | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["game_player_stats"]["Insert"]>;
         Relationships: [];
       };
       team_staff_members: {
@@ -903,6 +1014,10 @@ export interface Database {
       apply_player_stats_import: {
         Args: { p_operations: unknown };
         Returns: unknown;
+      };
+      replace_game_player_stats: {
+        Args: { p_game_id: string; p_rows: unknown };
+        Returns: number;
       };
     };
   };
