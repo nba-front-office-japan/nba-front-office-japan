@@ -26,7 +26,7 @@ const GUIDE_CATEGORIES: { category: string; examples: string[] }[] = [
   { category: "NBAビジネス", examples: ["放映権", "NBAオーナー", "チーム資産価値"] },
   {
     category: "過去事件",
-    examples: ["ジョー・スミス事件", "タンパリング", "サラリーキャップ迂回事件"],
+    examples: ["ジョー・スミス事件", "タンパリング", "サラリーキャップ迂回に関する処分"],
   },
   { category: "NBA用語", examples: ["2-way", "RFA", "UFA", "MLE", "その他のNBA用語"] },
 ];

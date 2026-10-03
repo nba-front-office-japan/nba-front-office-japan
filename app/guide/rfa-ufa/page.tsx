@@ -264,6 +264,7 @@ export default function RfaUfaGuidePage() {
           />
           <RelatedGuideLink href={GUIDE_PAGES["Bird Rights"]} label="NBAのBird Rightsとは？（自チームのFA選手との再契約）" />
           <RelatedGuideLink href={GUIDE_PAGES["MAX契約"]} label="NBAのMAX契約とは？（最高年俸・契約年数・昇給率）" />
+          <RelatedGuideLink href={GUIDE_PAGES["タンパリング"]} label="NBAのタンパリング事例とは？（処分が公表された事例）" />
         </Section>
 
         {/* 7. 関連用語 */}

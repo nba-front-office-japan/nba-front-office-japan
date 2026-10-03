@@ -188,9 +188,20 @@ export function GlossarySection({ terms }: { terms: { term: string; description:
 }
 
 // 公式一次資料。ページごとに確認に使った資料が違う場合は sources で指定する。
-export function OfficialSourcesSection({ sources = OFFICIAL_SOURCES }: { sources?: OfficialSource[] }) {
+// 「過去事件」のように報道も出典にするページでは、kicker・title・noteを差し替える。
+export function OfficialSourcesSection({
+  sources = OFFICIAL_SOURCES,
+  kicker = "Official sources",
+  title = "公式一次資料",
+  note = "このページは上記の公式資料をもとにした当サイト独自の解説です。協定の条文を転載・翻訳したものではありません。",
+}: {
+  sources?: OfficialSource[];
+  kicker?: string;
+  title?: string;
+  note?: string;
+}) {
   return (
-    <Section kicker="Official sources" title="公式一次資料">
+    <Section kicker={kicker} title={title}>
       <ul className="divide-y divide-line border-y border-line">
         {sources.map((s) => (
           <li key={s.href} className="py-3">
@@ -205,9 +216,7 @@ export function OfficialSourcesSection({ sources = OFFICIAL_SOURCES }: { sources
           </li>
         ))}
       </ul>
-      <p className="text-xs leading-6 text-muted">
-        このページは上記の公式資料をもとにした当サイト独自の解説です。協定の条文を転載・翻訳したものではありません。
-      </p>
+      <p className="text-xs leading-6 text-muted">{note}</p>
     </Section>
   );
 }
@@ -229,5 +238,33 @@ export function BackToGuide() {
     <Link href="/guide" className="mt-8 inline-block text-sm font-extrabold text-blue">
       ← NBAガイド一覧に戻る
     </Link>
+  );
+}
+
+// 「過去事件」のガイドで、公式発表・報道で確認できる事実と、当サイトによる制度の解説を見分けるためのラベル
+export function KindLabel({ kind }: { kind: "事実" | "解説" }) {
+  return kind === "事実" ? (
+    <span className="mr-2 inline-block bg-navy px-1.5 py-0.5 align-middle text-[11px] font-extrabold text-white">事実</span>
+  ) : (
+    <span className="mr-2 inline-block border border-line px-1.5 py-0.5 align-middle text-[11px] font-extrabold text-muted">解説</span>
+  );
+}
+
+export type CaseEvent = { date: string; title: string; body: ReactNode; source: string };
+
+// 事件の経過を日付順に並べる(各項目に、根拠とした公式発表・報道を併記する)
+export function CaseTimeline({ events }: { events: CaseEvent[] }) {
+  return (
+    <ol className="space-y-4 border-l-2 border-line pl-4">
+      {events.map((event) => (
+        <li key={event.date + event.title} className="relative">
+          <span aria-hidden className="absolute -left-[21px] top-1.5 h-2.5 w-2.5 bg-gold" />
+          <p className="text-xs font-extrabold text-blue">{event.date}</p>
+          <p className={`font-bold ${HEADING_WRAP}`}>{event.title}</p>
+          <div className="text-pretty">{event.body}</div>
+          <p className="mt-1 text-xs text-muted">根拠：{event.source}</p>
+        </li>
+      ))}
+    </ol>
   );
 }

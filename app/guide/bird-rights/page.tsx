@@ -296,6 +296,7 @@ export default function BirdRightsGuidePage() {
           />
           <RelatedGuideLink href={GUIDE_PAGES["ラグジュアリータックス"]} label="NBAラグジュアリータックスとは？（年俸総額が上がったときの負担）" />
           <RelatedGuideLink href={GUIDE_PAGES["1st Apron / 2nd Apron"]} label="NBAの1st Apronと2nd Apronとは？（高額年俸チームへの制限）" />
+          <RelatedGuideLink href={GUIDE_PAGES["ジョー・スミス事件"]} label="ジョー・スミス事件とは？（2000年の秘密の合意と処分）" />
         </Section>
 
         {/* 7. 関連用語 */}
