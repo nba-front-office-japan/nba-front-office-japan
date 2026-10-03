@@ -286,9 +286,8 @@ export default function BuyoutGuidePage() {
             トレードは<b>相手の球団との取引</b>、ウェイブは<b>球団の判断で契約を手放す手続き</b>、Buyoutは<b>球団と選手の合意で契約を終える手続き</b>です。
           </p>
           <CompareTable />
-          <p className="border-l-4 border-line bg-[#f3f6fb] px-4 py-2.5 text-xs leading-6 text-muted dark:bg-white/[.04]">
-            ウェイブの詳しい手続き、再契約の制限、プレーオフの出場資格、期限などは、今後の個別ガイド「ウェイブ」で解説する予定です（準備中）。
-          </p>
+          <p className="text-xs leading-6 text-muted">※ ウェイバーの手続きの流れやクレームの優先順位は、ウェイブのガイドで解説しています。</p>
+          <RelatedGuideLink href={GUIDE_PAGES["Waive"]} label="NBAのウェイブ（Waive）とは？（ウェイバーの手続き・年俸総額への影響）" />
         </Section>
 
         {/* 7. 関連ガイド */}
@@ -297,6 +296,7 @@ export default function BuyoutGuidePage() {
           <RelatedGuideLink href={GUIDE_PAGES["トレードの基本"]} label="NBAトレードの基本（トレードで扱われるもの・時期・ウェイブとの違い）" />
           <RelatedGuideLink href={GUIDE_PAGES["サラリーマッチング"]} label="NBAのサラリーマッチングとは？（トレードで送る年俸と受け取る年俸）" />
           <RelatedGuideLink href={GUIDE_PAGES["ロスター契約・短期契約"]} label="NBAのロスター契約・短期契約とは？（ロスター枠と契約の種類）" />
+          <RelatedGuideLink href={GUIDE_PAGES["Waive"]} label="NBAのウェイブ（Waive）とは？（ウェイバーの手続き・年俸総額への影響）" />
         </Section>
 
         {/* 8. 関連用語 */}

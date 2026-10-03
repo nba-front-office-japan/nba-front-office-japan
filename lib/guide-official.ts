@@ -113,6 +113,7 @@ export const GUIDE_PAGES: Record<string, string> = {
   トレードの基本: "/guide/trade-basics",
   サラリーマッチング: "/guide/salary-matching",
   Buyout: "/guide/buyout",
+  Waive: "/guide/waive",
   ドラフト指名権: "/guide/draft-picks",
   ロッタリー: "/guide/draft-lottery",
   指名権の価値: "/guide/draft-pick-value",

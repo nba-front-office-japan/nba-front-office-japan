@@ -359,6 +359,7 @@ export default function TradeBasicsGuidePage() {
           </p>
           <RelatedGuideLink href={GUIDE_PAGES["ロスター契約・短期契約"]} label="NBAのロスター契約・短期契約とは？（ロスター枠と契約の種類）" />
           <RelatedGuideLink href={GUIDE_PAGES["Buyout"]} label="NBAのBuyout（バイアウト）とは？（合意による契約の途中終了）" />
+          <RelatedGuideLink href={GUIDE_PAGES["Waive"]} label="NBAのウェイブ（Waive）とは？（ウェイバーの手続き・年俸総額への影響）" />
         </Section>
 
         {/* 9. 関連用語 */}
