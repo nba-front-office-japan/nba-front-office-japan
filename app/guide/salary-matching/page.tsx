@@ -300,6 +300,7 @@ export default function SalaryMatchingGuidePage() {
           <RelatedGuideLink href={GUIDE_PAGES["サラリーキャップ"]} label="NBAサラリーキャップとは？（基本の仕組み・例外）" />
           <RelatedGuideLink href={GUIDE_PAGES["ラグジュアリータックス"]} label="NBAラグジュアリータックスとは？（税率の考え方・チーム編成への影響）" />
           <RelatedGuideLink href={GUIDE_PAGES["1st Apron / 2nd Apron"]} label="NBAの1st Apronと2nd Apronとは？（制限の内容・指名権のペナルティ）" />
+          <RelatedGuideLink href={GUIDE_PAGES["Buyout"]} label="NBAのBuyout（バイアウト）とは？（合意による契約の途中終了）" />
         </Section>
 
         {/* 8. 関連用語 */}

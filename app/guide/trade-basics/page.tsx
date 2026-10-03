@@ -358,6 +358,7 @@ export default function TradeBasicsGuidePage() {
             ※ 「Buyout」はCBAで定義された言葉ではありません。このページでは、CBA 第2条 Section 3(p)の「球団と選手の合意で契約を途中で終えるための修正」として説明しています。
           </p>
           <RelatedGuideLink href={GUIDE_PAGES["ロスター契約・短期契約"]} label="NBAのロスター契約・短期契約とは？（ロスター枠と契約の種類）" />
+          <RelatedGuideLink href={GUIDE_PAGES["Buyout"]} label="NBAのBuyout（バイアウト）とは？（合意による契約の途中終了）" />
         </Section>
 
         {/* 9. 関連用語 */}

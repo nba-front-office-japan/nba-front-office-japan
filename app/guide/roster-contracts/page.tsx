@@ -326,6 +326,7 @@ export default function RosterContractsGuidePage() {
               </>,
             ]}
           />
+          <RelatedGuideLink href={GUIDE_PAGES["Buyout"]} label="NBAのBuyout（バイアウト）とは？（合意による契約の途中終了）" />
         </Section>
 
         {/* 4. Two-Way */}
