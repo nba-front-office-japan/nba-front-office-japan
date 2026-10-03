@@ -111,6 +111,7 @@ export const GUIDE_PAGES: Record<string, string> = {
   "ロスター契約・短期契約": "/guide/roster-contracts",
   "2-way": "/guide/roster-contracts",
   トレードの基本: "/guide/trade-basics",
+  サラリーマッチング: "/guide/salary-matching",
   ドラフト指名権: "/guide/draft-picks",
   ロッタリー: "/guide/draft-lottery",
   指名権の価値: "/guide/draft-pick-value",

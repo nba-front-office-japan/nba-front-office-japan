@@ -186,6 +186,7 @@ export default function SalaryCapGuidePage() {
             ]}
           />
           <RelatedGuideLink href={GUIDE_PAGES["1st Apron / 2nd Apron"]} label="NBAの1st Apronと2nd Apronとは？（制限の内容・指名権のペナルティ）" />
+          <RelatedGuideLink href={GUIDE_PAGES["サラリーマッチング"]} label="NBAのサラリーマッチングとは？（トレードで送る年俸と受け取る年俸）" />
           <p className="text-xs leading-6 text-muted">
             ※ 条件の細部には例外や追加のルールがあります。正確な条件は下の公式資料（CBA）を確認してください。
           </p>

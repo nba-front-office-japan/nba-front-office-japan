@@ -274,6 +274,7 @@ export default function ApronsGuidePage() {
             ]}
           />
           <RelatedGuideLink href={GUIDE_PAGES["サラリーキャップ"]} label="NBAサラリーキャップとは？（基本の仕組み・例外）" />
+          <RelatedGuideLink href={GUIDE_PAGES["サラリーマッチング"]} label="NBAのサラリーマッチングとは？（トレードで送る年俸と受け取る年俸）" />
         </Section>
 
         {/* 7. 関連用語 */}

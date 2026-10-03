@@ -293,7 +293,7 @@ export default function TradeBasicsGuidePage() {
               </>,
             ]}
           />
-          <UpcomingGuideNote topic="サラリーマッチング" />
+          <RelatedGuideLink href={GUIDE_PAGES["サラリーマッチング"]} label="NBAのサラリーマッチングとは？（トレードで送る年俸と受け取る年俸）" />
           <RelatedGuideLink href={GUIDE_PAGES["1st Apron / 2nd Apron"]} label="NBAの1st Apronと2nd Apronとは？（Apronを超えた球団への制限）" />
         </Section>
 
