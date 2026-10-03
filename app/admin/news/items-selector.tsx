@@ -3,6 +3,7 @@
 import { useActionState, useMemo, useState } from "react";
 import Link from "next/link";
 import { createEventFromItemsAction } from "./actions";
+import { BulkActions } from "./bulk-actions";
 import {
   CATEGORY_OPTIONS,
   VERIFICATION_STATUS_OPTIONS,
@@ -35,15 +36,32 @@ export interface SelectableNewsItem {
   eventHeadline: string | null;
 }
 
-type DateFilter = "all" | "today" | "7days" | "30days";
+type DateFilter = "all" | "today" | "7days" | "30days" | "custom";
 type StageFilter = "all" | ProcessingStage;
+type VisibilityFilter = "visible" | "hidden" | "all";
 
 const DATE_FILTER_OPTIONS: { value: DateFilter; label: string }[] = [
   { value: "all", label: "すべて" },
   { value: "today", label: "今日" },
   { value: "7days", label: "過去7日" },
   { value: "30days", label: "過去30日" },
+  { value: "custom", label: "期間を指定" },
 ];
+
+const VISIBILITY_OPTIONS: { value: VisibilityFilter; label: string }[] = [
+  { value: "visible", label: "通常（非掲載を除く）" },
+  { value: "hidden", label: "非掲載のみ" },
+  { value: "all", label: "すべて" },
+];
+
+/** 取得日時の日本時間の日付(YYYY-MM-DD) */
+function jstDate(iso: string): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(iso));
+}
+
+function isHidden(item: SelectableNewsItem): boolean {
+  return item.status === "ignored";
+}
 
 const STAGE_FILTER_OPTIONS: { value: StageFilter; label: string }[] = [
   { value: "unprocessed", label: "未処理" },
@@ -53,8 +71,12 @@ const STAGE_FILTER_OPTIONS: { value: StageFilter; label: string }[] = [
   { value: "published", label: "公開済み" },
 ];
 
-function isWithinDateFilter(fetchedAt: string | null, filter: DateFilter): boolean {
+function isWithinDateFilter(fetchedAt: string | null, filter: DateFilter, from: string, to: string): boolean {
   if (filter === "all" || !fetchedAt) return filter === "all";
+  if (filter === "custom") {
+    const d = jstDate(fetchedAt);
+    return (from === "" || d >= from) && (to === "" || d <= to);
+  }
   const diffDays = (Date.now() - new Date(fetchedAt).getTime()) / (1000 * 60 * 60 * 24);
   if (filter === "today") return diffDays <= 1;
   if (filter === "7days") return diffDays <= 7;
@@ -66,6 +88,9 @@ export function ItemsSelector({ items }: { items: SelectableNewsItem[] }) {
   const [stageFilter, setStageFilter] = useState<StageFilter>("unprocessed");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [visibility, setVisibility] = useState<VisibilityFilter>("visible");
   const [keyword, setKeyword] = useState("");
 
   const [state, formAction, isPending] = useActionState(
@@ -90,13 +115,25 @@ export function ItemsSelector({ items }: { items: SelectableNewsItem[] }) {
   const filteredItems = useMemo(() => {
     const kw = keyword.trim().toLowerCase();
     return items.filter((item) => {
+      if (visibility === "visible" && isHidden(item)) return false;
+      if (visibility === "hidden" && !isHidden(item)) return false;
       if (stageFilter !== "all" && item.stage !== stageFilter) return false;
       if (sourceFilter !== "all" && item.sourceName !== sourceFilter) return false;
-      if (!isWithinDateFilter(item.fetchedAt, dateFilter)) return false;
-      if (kw && !item.title.toLowerCase().includes(kw)) return false;
+      if (!isWithinDateFilter(item.fetchedAt, dateFilter, dateFrom, dateTo)) return false;
+      if (kw && !`${item.title} ${item.authorName ?? ""}`.toLowerCase().includes(kw)) return false;
       return true;
     });
-  }, [items, stageFilter, sourceFilter, dateFilter, keyword]);
+  }, [items, visibility, stageFilter, sourceFilter, dateFilter, dateFrom, dateTo, keyword]);
+
+  const allFilteredSelected = filteredItems.length > 0 && filteredItems.every((item) => selected.has(item.id));
+  function toggleAllFiltered() {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allFilteredSelected) for (const item of filteredItems) next.delete(item.id);
+      else for (const item of filteredItems) next.add(item.id);
+      return next;
+    });
+  }
 
   // 選択状態は絞り込み前の全件(items)から算出する。フィルター操作で表示が
   // 変わっても、既に選択した記事が失われないようにするため。
@@ -105,6 +142,7 @@ export function ItemsSelector({ items }: { items: SelectableNewsItem[] }) {
     [items, selected]
   );
 
+  const selectedHiddenCount = selectedItems.filter(isHidden).length;
   const defaultHeadline = selectedItems[0]?.title ?? "";
   const defaultReliability = selectedItems.length
     ? Math.round(
@@ -116,6 +154,20 @@ export function ItemsSelector({ items }: { items: SelectableNewsItem[] }) {
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-end gap-3 border border-line bg-surface p-4">
+        <label className="grid gap-1 text-[11px] font-bold text-muted">
+          表示
+          <select
+            value={visibility}
+            onChange={(e) => setVisibility(e.target.value as VisibilityFilter)}
+            className="min-w-[160px] border border-line bg-surface px-3 py-2 text-sm text-foreground"
+          >
+            {VISIBILITY_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </label>
         <label className="grid gap-1 text-[11px] font-bold text-muted">
           処理状況
           <select
@@ -159,28 +211,71 @@ export function ItemsSelector({ items }: { items: SelectableNewsItem[] }) {
             ))}
           </select>
         </label>
+        {dateFilter === "custom" && (
+          <>
+            <label className="grid gap-1 text-[11px] font-bold text-muted">
+              開始日（日本時間）
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="border border-line bg-surface px-3 py-2 text-sm text-foreground"
+              />
+            </label>
+            <label className="grid gap-1 text-[11px] font-bold text-muted">
+              終了日（日本時間）
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="border border-line bg-surface px-3 py-2 text-sm text-foreground"
+              />
+            </label>
+          </>
+        )}
         <label className="grid min-w-[160px] flex-1 gap-1 text-[11px] font-bold text-muted">
           キーワード
           <input
             type="text"
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
-            placeholder="タイトルで検索"
+            placeholder="タイトル・著者で検索"
             className="border border-line bg-surface px-3 py-2 text-sm text-foreground"
           />
         </label>
       </div>
 
       <p className="mb-2 text-xs text-muted">
-        {filteredItems.length}件表示中（全{items.length}件） ・ 選択中 {selectedItems.length}件
+        {filteredItems.length}件表示中（全{items.length}件、うち非掲載 {items.filter(isHidden).length}件） ・ 選択中 {selectedItems.length}件
+        {selectedItems.length > 0 && (
+          <button type="button" onClick={() => setSelected(new Set())} className={`ml-2 ${LINK_CLASS}`}>
+            選択を解除
+          </button>
+        )}
       </p>
+
+      {selectedItems.length > 0 && (
+        <BulkActions
+          selectedItems={selectedItems.map((item) => ({ id: item.id, isHidden: isHidden(item), eventId: item.eventId }))}
+          onDone={() => setSelected(new Set())}
+        />
+      )}
       <p className="mb-2 text-xs text-muted sm:hidden">→ 横にスクロールできます</p>
 
       <div className="overflow-x-auto">
         <table className="w-full min-w-[800px] border-collapse text-sm">
           <thead>
             <tr className="border-b border-line text-left text-[11px] font-bold text-muted">
-              <th className="px-3 py-2"></th>
+              <th className="px-3 py-2">
+                <input
+                  type="checkbox"
+                  checked={allFilteredSelected}
+                  onChange={toggleAllFiltered}
+                  disabled={isPending || filteredItems.length === 0}
+                  aria-label="表示中の記事をすべて選択"
+                  title="表示中の記事をすべて選択"
+                />
+              </th>
               <th className="px-3 py-2">タイトル</th>
               <th className="px-3 py-2">媒体</th>
               <th className="px-3 py-2">著者</th>
@@ -225,11 +320,15 @@ export function ItemsSelector({ items }: { items: SelectableNewsItem[] }) {
                     {item.fetchedAtLabel}
                   </td>
                   <td className="whitespace-nowrap px-3 py-2.5">
-                    <span
-                      className={`inline-block px-2 py-1 text-[11px] font-bold ${PROCESSING_STAGE_BADGE_CLASS[item.stage]}`}
-                    >
-                      {PROCESSING_STAGE_LABEL[item.stage]}
-                    </span>
+                    {isHidden(item) ? (
+                      <span className="inline-block border border-line px-2 py-1 text-[11px] font-bold text-muted">非掲載</span>
+                    ) : (
+                      <span
+                        className={`inline-block px-2 py-1 text-[11px] font-bold ${PROCESSING_STAGE_BADGE_CLASS[item.stage]}`}
+                      >
+                        {PROCESSING_STAGE_LABEL[item.stage]}
+                      </span>
+                    )}
                     {item.eventId && item.eventHeadline && (
                       <Link
                         href={`/admin/news/events/${item.eventId}`}
@@ -247,7 +346,13 @@ export function ItemsSelector({ items }: { items: SelectableNewsItem[] }) {
         </table>
       </div>
 
-      {selectedItems.length > 0 && (
+      {selectedItems.length > 0 && selectedHiddenCount > 0 && (
+        <p className="mt-4 border border-line bg-surface px-4 py-3 text-sm text-muted">
+          非掲載の記事が{selectedHiddenCount}件選択されているため、イベントは作成できません。非掲載を解除するか、選択から外してください。
+        </p>
+      )}
+
+      {selectedItems.length > 0 && selectedHiddenCount === 0 && (
         <form
           action={formAction}
           className="mt-4 grid grid-cols-1 gap-3 border border-line bg-[#eaf1ff] p-4 dark:bg-white/[.06] sm:grid-cols-2"
