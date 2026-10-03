@@ -107,6 +107,11 @@ export default async function TeamValuationsPage() {
         <span className="font-bold text-foreground">推計値：</span>
         メディア（{edition.source_name}）による推計で、NBA・各チームの公式発表ではありません。
         {formatJaDate(edition.published_on)}公開の{valuationEditionLabel(edition)}の数値です。
+        推計値の見方は
+        <Link href="/guide/team-value" className="font-semibold text-blue hover:underline">
+          ガイド「NBAのチーム資産価値とは？」
+        </Link>
+        で解説しています。
       </p>
 
       {valuationsError ? (

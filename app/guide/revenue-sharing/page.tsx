@@ -288,6 +288,8 @@ export default function RevenueSharingGuidePage() {
             ]}
           />
           <RelatedGuideLink href={GUIDE_PAGES["サラリーキャップ"]} label="NBAサラリーキャップとは？（基本の仕組み・BRIとの関係）" />
+          <RelatedGuideLink href={GUIDE_PAGES["放映権"]} label="NBAの放映権とは？（全国放映権契約・収入の分配）" />
+          <RelatedGuideLink href={GUIDE_PAGES["チーム資産価値"]} label="NBAのチーム資産価値とは？（推計値の見方）" />
         </Section>
 
         {/* 7. 関連用語 */}

@@ -90,6 +90,11 @@ export default async function OwnerNetWorthPage() {
         <span className="font-bold text-foreground">推定値：</span>
         {edition.source_name}による個人の推定純資産で、本人・チームの公式発表ではありません。チームの資産価値とは別の指標です。
         {asOf}時点（{checked}確認）。
+        オーナーの役割やルールは
+        <Link href="/guide/owners" className="font-semibold text-blue hover:underline">
+          ガイド「NBAのオーナーとは？」
+        </Link>
+        で解説しています。
       </p>
 
       {recordsError ? (
