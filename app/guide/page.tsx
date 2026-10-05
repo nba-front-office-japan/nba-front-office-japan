@@ -13,6 +13,8 @@ export const metadata: Metadata = {
 // RFA / UFA・MLE は「契約」と「NBA用語」の両方に載せる(詳細ページを作ったら同じページへリンクする想定)。
 
 const GUIDE_CATEGORIES: { category: string; examples: string[] }[] = [
+  // 最初に読む導入ページ
+  { category: "はじめに", examples: ["NBAを試合結果だけで終わらせない"] },
   {
     category: "NBA制度",
     examples: ["サラリーキャップ", "ラグジュアリータックス", "1st Apron / 2nd Apron", "Revenue Sharing"],

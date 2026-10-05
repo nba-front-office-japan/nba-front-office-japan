@@ -159,6 +159,25 @@ export default async function Home() {
           </div>
         </div>
       </div>
+
+      {/* GUIDE「はじめに」への短い導入。文は元の文書「はじめに」から抜粋し、全文はGUIDEに載せる */}
+      <section className="mt-5 border-l-4 border-gold bg-surface p-6 sm:p-8">
+        <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">Introduction</p>
+        <h2 className="mb-4 text-xl font-semibold tracking-tight text-balance [word-break:auto-phrase] sm:text-2xl">
+          NBAは、試合だけ見ていては半分しか分からない。
+        </h2>
+        <div className="max-w-3xl space-y-3 text-sm leading-7 text-muted sm:text-[15px] sm:leading-8">
+          <p>世界約4.5億人以上がプレーするバスケットボール。その最高峰、NBAの標準契約枠はわずか約450人。</p>
+          <p>
+            しかしNBAの本当の面白さは、コートの中だけではありません。なぜ大富豪のオーナーでも、好きなだけスター選手を集められないのか。なぜドラフト1巡目指名権一つが、スター選手とのトレードを左右するのか。
+          </p>
+          <p>サラリーキャップ。MAX契約。ドラフト。トレード。オーナー。放映権。そして戦力均衡。</p>
+          <p>NBA Front Office Japanでは、「誰が勝ったか」だけではなく、「なぜ、そうなったのか」まで掘り下げます。</p>
+        </div>
+        <Link href="/guide/introduction" className="mt-5 inline-block bg-navy px-4 py-3 text-sm font-extrabold text-white">
+          GUIDEで読む →
+        </Link>
+      </section>
     </PageShell>
   );
 }

@@ -94,6 +94,8 @@ export const OFFICIAL_SOURCES: OfficialSource[] = [
 
 // 作成済みの詳細ガイド。未作成のページへはリンクしないため、ここに無い項目はリンクにしない。
 export const GUIDE_PAGES: Record<string, string> = {
+  // GUIDEの導入ページ(「はじめに」)
+  NBAを試合結果だけで終わらせない: "/guide/introduction",
   サラリーキャップ: "/guide/salary-cap",
   ラグジュアリータックス: "/guide/luxury-tax",
   "1st Apron / 2nd Apron": "/guide/aprons",
