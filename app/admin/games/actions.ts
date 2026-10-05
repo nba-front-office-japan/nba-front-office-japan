@@ -6,59 +6,60 @@
 import { revalidatePath } from "next/cache";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { MAX_CSV_BYTES } from "@/lib/games/box-score-csv";
-import { applyBoxScoreImport, prepareBoxScoreImport, type CheckReport, type ImportResult } from "@/lib/games/box-score-import";
+import { applyTeamBoxScore, isTeamSide, prepareTeamBoxScore, type CheckReport, type TeamSide } from "@/lib/games/box-score-import";
 import { MAX_SYNC_DAYS, syncGamesFromBalldontlie, type SyncResult } from "@/lib/games/balldontlie-sync";
 import { addDays, isValidDateString } from "@/lib/games/date";
 
-export type CheckState =
-  | { status: "idle" }
-  | { status: "error"; message: string }
-  | { status: "checked"; fileName: string; csvText: string; report: CheckReport };
+export type CheckResult = { ok: true; report: CheckReport } | { ok: false; message: string };
 
-export type ImportState =
-  | { status: "idle" }
-  | { status: "error"; message: string; report?: CheckReport }
-  | { status: "done"; results: ImportResult[] };
+export type SaveResult = { ok: true; count: number; replaced: number } | { ok: false; message: string; report?: CheckReport };
 
 export type SyncState = { status: "idle" } | { status: "error"; message: string } | { status: "done"; result: SyncResult };
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
-/** 1. CSVを検査する(DBへの書き込みはしない) */
-export async function checkBoxScoreCsvAction(_prev: CheckState, formData: FormData): Promise<CheckState> {
-  const file = formData.get("csv");
-  if (!(file instanceof File) || file.size === 0) return { status: "error", message: "CSVファイルを選択してください。" };
-  if (file.size > MAX_CSV_BYTES) return { status: "error", message: `ファイルが大きすぎます（上限 ${Math.round(MAX_CSV_BYTES / 1000)}KB）。試合ごとなどに分けてください。` };
-  if (!/\.csv$/i.test(file.name)) return { status: "error", message: "拡張子が .csv のファイルを選択してください。" };
+function validateInput(gameId: unknown, side: unknown, csvText: unknown): string | null {
+  if (typeof gameId !== "string" || !UUID_RE.test(gameId)) return "試合の指定が正しくありません。試合一覧から選び直してください。";
+  if (!isTeamSide(side)) return "ホーム／アウェーを選んでください。";
+  if (typeof csvText !== "string" || csvText.trim() === "") return "CSVファイルを選んでください。";
+  if (csvText.length > MAX_CSV_BYTES) return `ファイルが大きすぎます（上限 ${Math.round(MAX_CSV_BYTES / 1000)}KB）。1試合・1チーム分だけを入れてください。`;
+  return null;
+}
 
+/** CSVを検査し、登録前のプレビューを返す(DBへの書き込みはしない) */
+export async function checkTeamBoxScoreAction(gameId: string, side: TeamSide, csvText: string): Promise<CheckResult> {
+  const invalid = validateInput(gameId, side, csvText);
+  if (invalid) return { ok: false, message: invalid };
   try {
-    const csvText = await file.text();
-    const { report } = await prepareBoxScoreImport(createAdminSupabaseClient(), csvText);
-    return { status: "checked", fileName: file.name, csvText, report };
+    const prepared = await prepareTeamBoxScore(createAdminSupabaseClient(), gameId, side, csvText);
+    if (!prepared) return { ok: false, message: "試合が見つかりません。試合一覧から選び直してください。" };
+    return { ok: true, report: prepared.report };
   } catch (err) {
-    return { status: "error", message: `検査中にエラーが発生しました: ${errorMessage(err)}` };
+    return { ok: false, message: `検査中にエラーが発生しました：${errorMessage(err)}` };
   }
 }
 
-/** 2. 検査済みのCSVを取り込む(取込直前にもう一度すべて検査し、エラーがあれば書き込まない) */
-export async function importBoxScoreCsvAction(_prev: ImportState, formData: FormData): Promise<ImportState> {
-  const csvText = formData.get("csvText");
-  if (typeof csvText !== "string" || csvText === "") return { status: "error", message: "取り込むCSVがありません。もう一度検査してください。" };
-  if (csvText.length > MAX_CSV_BYTES) return { status: "error", message: "CSVが大きすぎます。" };
-
+/** 「このチームの成績を登録」。直前にもう一度すべて検査し、エラーがあれば書き込まない */
+export async function saveTeamBoxScoreAction(gameId: string, side: TeamSide, csvText: string): Promise<SaveResult> {
+  const invalid = validateInput(gameId, side, csvText);
+  if (invalid) return { ok: false, message: invalid };
   try {
     const supabase = createAdminSupabaseClient();
-    const prepared = await prepareBoxScoreImport(supabase, csvText);
+    const prepared = await prepareTeamBoxScore(supabase, gameId, side, csvText);
+    if (!prepared) return { ok: false, message: "試合が見つかりません。試合一覧から選び直してください。" };
     if (prepared.report.errors.length > 0) {
-      return { status: "error", message: "検査でエラーが見つかったため、取り込みませんでした。", report: prepared.report };
+      return { ok: false, message: "検査でエラーが見つかったため、登録しませんでした。", report: prepared.report };
     }
-    const results = await applyBoxScoreImport(supabase, prepared);
+    const count = await applyTeamBoxScore(supabase, prepared);
     revalidatePath("/admin/games");
-    return { status: "done", results };
+    revalidatePath(`/admin/games/${gameId}`);
+    return { ok: true, count, replaced: prepared.report.existingCount };
   } catch (err) {
-    return { status: "error", message: `取込中にエラーが発生しました: ${errorMessage(err)}` };
+    return { ok: false, message: `登録に失敗しました（以前のデータのままです）：${errorMessage(err)}` };
   }
 }
 

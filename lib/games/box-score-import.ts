@@ -1,36 +1,59 @@
-// 試合ボックススコアCSVの、DBを使う検査と取込(サーバー専用・service_roleで実行)。
-// 1. lib/games/box-score-csv.ts で列・必須項目・数値・試合内の重複を検査
-// 2. ここでチームの存在・試合の存在・選手の照合・合計得点の照合を検査
-// 3. 問題がなければ、試合ごとに replace_game_player_stats() で選手スタッツを入れ替える
-//    (削除と登録が1つのトランザクションで行われるため、失敗しても以前のデータが残る)
+// 試合ボックススコアCSV(1試合・1チーム分)の、DBを使う検査と登録(サーバー専用・service_roleで実行)。
+// 1. lib/games/box-score-csv.ts で列・必須項目・数値・重複・PTSと得点内訳を検査
+// 2. ここで試合の存在、相手チームの登録済みデータとの重複、選手の照合、試合のスコアとの照合を行う
+// 3. 登録は replace_game_player_stats()(1試合分を削除と登録の1トランザクションで入れ替える関数)を使う。
+//    この関数は試合単位で入れ替えるため、「相手チームの登録済みの行」＋「今回のCSVの行」を渡し、
+//    選んだチームの分だけが置き換わるようにする(相手チームの行は登録済みの値のまま渡し直す)。
+//    途中で失敗した場合は全体が取り消され、以前のデータが残る。
 
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
-import { gameKey, normalizePlayerName, parseBoxScoreCsv, type CsvIssue, type ParsedBoxScoreRow } from "./box-score-csv";
+import { normalizePlayerName, parseBoxScoreCsv, type CsvIssue, type PreviewRow } from "./box-score-csv";
 
 type Client = SupabaseClient<Database>;
+type StatRow = Database["public"]["Tables"]["game_player_stats"]["Row"];
 
-export type GamePlan = {
-  key: string;
-  label: string;
+export type TeamSide = "home" | "away";
+
+export const SIDE_LABEL: Record<TeamSide, string> = { home: "ホーム", away: "アウェー" };
+
+export function isTeamSide(value: unknown): value is TeamSide {
+  return value === "home" || value === "away";
+}
+
+/** 管理画面に表示する、対象の試合とチーム */
+export type TargetInfo = {
   gameId: string;
-  gameStatus: string;
-  rowCount: number;
-  awayCount: number;
-  homeCount: number;
+  gameDate: string;
+  status: string;
+  side: TeamSide;
+  teamAbbr: string;
+  teamName: string;
+  opponentAbbr: string;
+  /** 試合管理の最終スコア(未確定ならnull) */
+  teamScore: number | null;
+  opponentScore: number | null;
+};
+
+export type PreviewPlayer = PreviewRow & { matched: boolean | null };
+
+export type CheckReport = {
+  target: TargetInfo;
+  errors: CsvIssue[];
+  warnings: CsvIssue[];
+  preview: PreviewPlayer[];
+  /** エラーがない場合の選手数と合計 */
+  playerCount: number;
+  totals: { pts: number; reb: number; ast: number; fgm: number; fga: number; fg3m: number; fg3a: number; ftm: number; fta: number } | null;
+  /** このチームの登録済みの人数(置き換え対象) */
   existingCount: number;
+  /** 相手チームの登録済みの人数(そのまま残す) */
+  opponentExistingCount: number;
   unmatchedPlayers: string[];
 };
 
-export type CheckReport = {
-  errors: CsvIssue[];
-  warnings: CsvIssue[];
-  games: GamePlan[];
-  totalRows: number;
-};
-
-type PreparedRow = {
+type InsertRow = {
   team_id: string;
   player_id: string | null;
   player_name: string;
@@ -49,16 +72,20 @@ type PreparedRow = {
   plus_minus: number | null;
 };
 
-type Prepared = { report: CheckReport; payloads: Map<string, PreparedRow[]> };
+export type Prepared = { report: CheckReport; teamRows: InsertRow[]; opponentRows: InsertRow[] };
 
 async function fetchAllPlayers(supabase: Client): Promise<{ id: string; full_name: string }[]> {
-  const all: { id: string; full_name: string }[] = [];
+  // 1ページ目で件数を取り、残りのページはまとめて並行に取得する(検査の待ち時間を短くするため)
   const PAGE = 1000;
-  for (let from = 0; ; from += PAGE) {
-    const { data, error } = await supabase.from("players").select("id, full_name").order("id").range(from, from + PAGE - 1);
-    if (error) throw new Error(`playersの取得に失敗しました: ${error.message}`);
-    all.push(...(data ?? []));
-    if (!data || data.length < PAGE) break;
+  const page = (from: number) => supabase.from("players").select("id, full_name", from === 0 ? { count: "exact" } : undefined).order("id").range(from, from + PAGE - 1);
+  const first = await page(0);
+  if (first.error) throw new Error(`playersの取得に失敗しました: ${first.error.message}`);
+  const total = first.count ?? 0;
+  const rest = await Promise.all(Array.from({ length: Math.max(0, Math.ceil(total / PAGE) - 1) }, (_, i) => page((i + 1) * PAGE)));
+  const all = [...(first.data ?? [])];
+  for (const r of rest) {
+    if (r.error) throw new Error(`playersの取得に失敗しました: ${r.error.message}`);
+    all.push(...(r.data ?? []));
   }
   return all;
 }
@@ -93,151 +120,155 @@ async function buildPlayerResolver(supabase: Client): Promise<(name: string) => 
   };
 }
 
-/** CSVを検査し、取り込める場合は試合ごとの登録データを用意する */
-export async function prepareBoxScoreImport(supabase: Client, csvText: string): Promise<Prepared> {
+/** 対象の試合とチームを読み込む。見つからなければnull */
+export async function loadTarget(supabase: Client, gameId: string, side: TeamSide): Promise<(TargetInfo & { teamId: string; opponentId: string }) | null> {
+  const { data: game, error } = await supabase
+    .from("games")
+    .select("id, game_date, status, home_team_id, away_team_id, home_score, away_score")
+    .eq("id", gameId)
+    .maybeSingle();
+  if (error) throw new Error(`gamesの取得に失敗しました: ${error.message}`);
+  if (!game) return null;
+
+  const teamId = side === "home" ? game.home_team_id : game.away_team_id;
+  const opponentId = side === "home" ? game.away_team_id : game.home_team_id;
+  const { data: teams, error: teamsError } = await supabase.from("teams").select("id, abbreviation, name").in("id", [teamId, opponentId]);
+  if (teamsError) throw new Error(`teamsの取得に失敗しました: ${teamsError.message}`);
+  const team = teams?.find((t) => t.id === teamId);
+  const opponent = teams?.find((t) => t.id === opponentId);
+
+  return {
+    gameId: game.id,
+    gameDate: game.game_date,
+    status: game.status,
+    side,
+    teamId,
+    opponentId,
+    teamAbbr: team?.abbreviation ?? "—",
+    teamName: team?.name ?? "（不明）",
+    opponentAbbr: opponent?.abbreviation ?? "—",
+    teamScore: side === "home" ? game.home_score : game.away_score,
+    opponentScore: side === "home" ? game.away_score : game.home_score,
+  };
+}
+
+function toInsertRow(s: StatRow): InsertRow {
+  return {
+    team_id: s.team_id,
+    player_id: s.player_id,
+    player_name: s.player_name,
+    seconds_played: s.seconds_played,
+    pts: s.pts,
+    reb: s.reb,
+    ast: s.ast,
+    stl: s.stl,
+    blk: s.blk,
+    fgm: s.fgm,
+    fga: s.fga,
+    fg3m: s.fg3m,
+    fg3a: s.fg3a,
+    ftm: s.ftm,
+    fta: s.fta,
+    plus_minus: s.plus_minus,
+  };
+}
+
+/** CSVを検査し、登録できる場合は登録データを用意する(DBへの書き込みはしない) */
+export async function prepareTeamBoxScore(supabase: Client, gameId: string, side: TeamSide, csvText: string): Promise<Prepared | null> {
+  const target = await loadTarget(supabase, gameId, side);
+  if (!target) return null;
+  const { teamId, opponentId, ...targetInfo } = target;
+
   const parsed = parseBoxScoreCsv(csvText);
   const errors = [...parsed.errors];
   const warnings = [...parsed.warnings];
-  const payloads = new Map<string, PreparedRow[]>();
-  const games: GamePlan[] = [];
 
-  if (parsed.rows.length === 0 && errors.length > 0) {
-    return errorsOnly(errors, parsed.dataLineCount);
-  }
+  const { data: existing, error: existingError } = await supabase.from("game_player_stats").select("*").eq("game_id", gameId);
+  if (existingError) throw new Error(`game_player_statsの取得に失敗しました: ${existingError.message}`);
+  const existingRows = existing ?? [];
+  const teamExisting = existingRows.filter((r) => r.team_id === teamId);
+  // 選んだチーム以外の行(通常は相手チームの行)は、そのまま残す
+  const keptRows = existingRows.filter((r) => r.team_id !== teamId);
+  const opponentExistingCount = keptRows.filter((r) => r.team_id === opponentId).length;
 
-  // チームの存在
-  const { data: teams, error: teamsError } = await supabase.from("teams").select("id, abbreviation, is_active");
-  if (teamsError) throw new Error(`teamsの取得に失敗しました: ${teamsError.message}`);
-  const teamIdByAbbr = new Map((teams ?? []).map((t) => [t.abbreviation, t.id]));
-  const unknownTeams = new Map<string, number[]>();
+  // 相手チームに同じ選手名が登録済み(チームの選び間違い、または同じ名前の選手。DBでは1試合に同じ選手名は1行だけ)
+  const keptNames = new Map(keptRows.map((r) => [normalizePlayerName(r.player_name), r.player_name]));
   for (const r of parsed.rows) {
-    for (const abbr of new Set([r.awayTeam, r.homeTeam, r.team])) {
-      if (!teamIdByAbbr.has(abbr)) unknownTeams.set(abbr, [...(unknownTeams.get(abbr) ?? []), r.line]);
+    if (keptNames.has(normalizePlayerName(r.player))) {
+      errors.push({ line: r.line, message: `選手「${r.player}」は、この試合の${target.opponentAbbr}（${SIDE_LABEL[side === "home" ? "away" : "home"]}）にすでに登録されています。チームの選択を確認してください。` });
     }
   }
-  for (const [abbr, lines] of unknownTeams) {
-    errors.push({ line: lines[0], message: `チーム略称「${abbr}」が見つかりません（${lines.length}行、最初は${lines[0]}行目）。当サイトのチーム略称（例: BOS, NYK, GSW）で記入してください。` });
-  }
 
-  // 試合ごとにまとめる
-  const groups = new Map<string, ParsedBoxScoreRow[]>();
-  for (const r of parsed.rows) groups.set(gameKey(r), [...(groups.get(gameKey(r)) ?? []), r]);
+  const resolvePlayer = parsed.rows.length > 0 ? await buildPlayerResolver(supabase) : null;
+  const unmatched: string[] = [];
+  const matchedByLine = new Map<number, boolean>();
+  const teamRows: InsertRow[] = parsed.rows.map((r) => {
+    const playerId = resolvePlayer ? resolvePlayer(r.player) : null;
+    matchedByLine.set(r.line, playerId !== null);
+    if (!playerId) unmatched.push(r.player);
+    return {
+      team_id: teamId,
+      player_id: playerId,
+      player_name: r.player,
+      seconds_played: r.secondsPlayed,
+      pts: r.pts,
+      reb: r.reb,
+      ast: r.ast,
+      stl: r.stl,
+      blk: r.blk,
+      fgm: r.fgm,
+      fga: r.fga,
+      fg3m: r.fg3m,
+      fg3a: r.fg3a,
+      ftm: r.ftm,
+      fta: r.fta,
+      plus_minus: r.plusMinus,
+    };
+  });
 
-  // 選手の照合は「注意」にしか使わないため、エラーがすでにある場合は行わない
-  const resolvePlayer = errors.length === 0 && groups.size > 0 ? await buildPlayerResolver(supabase) : null;
+  const ok = errors.length === 0;
+  const sum = (key: keyof InsertRow) => teamRows.reduce((acc, r) => acc + Number(r[key] ?? 0), 0);
+  const totals = ok
+    ? { pts: sum("pts"), reb: sum("reb"), ast: sum("ast"), fgm: sum("fgm"), fga: sum("fga"), fg3m: sum("fg3m"), fg3a: sum("fg3a"), ftm: sum("ftm"), fta: sum("fta") }
+    : null;
 
-  for (const [key, rows] of groups) {
-    const { gameDate, awayTeam, homeTeam } = rows[0];
-    const label = `${gameDate} ${awayTeam} @ ${homeTeam}`;
-    const awayId = teamIdByAbbr.get(awayTeam);
-    const homeId = teamIdByAbbr.get(homeTeam);
-    if (!awayId || !homeId) continue;
-
-    const { data: game, error } = await supabase
-      .from("games")
-      .select("id, status, home_score, away_score")
-      .eq("game_date", gameDate)
-      .eq("home_team_id", homeId)
-      .eq("away_team_id", awayId)
-      .maybeSingle();
-    if (error) throw new Error(`gamesの取得に失敗しました: ${error.message}`);
-
-    if (!game) {
-      // 日付の書き間違いの手がかりとして、前後の日付に同じ対戦があるか調べる
-      const { data: nearby } = await supabase
-        .from("games")
-        .select("game_date")
-        .eq("home_team_id", homeId)
-        .eq("away_team_id", awayId)
-        .gte("game_date", shiftDate(gameDate, -3))
-        .lte("game_date", shiftDate(gameDate, 3));
-      const hint = nearby && nearby.length > 0 ? `近い日付にこの対戦があります（${nearby.map((g) => g.game_date).join("、")}）。試合日は米国の日付で記入してください。` : "先に「日程・スコアの取り込み」でこの日の試合を取り込んでください。";
-      errors.push({ line: rows[0].line, message: `試合が見つかりません: ${label}。${hint}` });
-      continue;
+  if (ok && totals) {
+    // 試合管理の最終スコアとの照合(登録はできるが、記入漏れ・チームの選び間違いの手がかりとして表示する)
+    if (target.teamScore !== null && totals.pts !== target.teamScore) {
+      const swapped = target.opponentScore !== null && totals.pts === target.opponentScore;
+      warnings.push({
+        line: null,
+        message: swapped
+          ? `選手の得点合計 ${totals.pts} が、${target.teamAbbr} のスコア ${target.teamScore} ではなく、相手の${target.opponentAbbr} のスコア ${target.opponentScore} と一致しています。ホーム／アウェーの選択を確認してください。`
+          : `選手の得点合計 ${totals.pts} が、試合管理の${target.teamAbbr} のスコア ${target.teamScore} と一致しません。選手の記入漏れがないか確認してください。`,
+      });
     }
-
-    if (game.status !== "final") warnings.push({ line: rows[0].line, message: `${label} は試合終了になっていません（状態: ${game.status}）。最終結果の確定後に再取込してください。` });
-
-    // 合計得点の照合(試合のスコアがある場合)
-    for (const [side, teamAbbr, score] of [["アウェー", awayTeam, game.away_score], ["ホーム", homeTeam, game.home_score]] as const) {
-      const total = rows.filter((r) => r.team === teamAbbr).reduce((sum, r) => sum + r.pts, 0);
-      if (score !== null && total !== score) {
-        warnings.push({ line: rows[0].line, message: `${label}: ${side}（${teamAbbr}）の選手の得点合計 ${total} が、試合のスコア ${score} と一致しません。選手の記入漏れがないか確認してください。` });
-      }
+    if (target.status !== "final") {
+      warnings.push({ line: null, message: "この試合はまだ「試合終了」になっていません。最終結果の確定後に登録し直すことをおすすめします。" });
     }
-
-    const { count: existingCount } = await supabase.from("game_player_stats").select("id", { count: "exact", head: true }).eq("game_id", game.id);
-    if ((existingCount ?? 0) > 0) warnings.push({ line: rows[0].line, message: `${label} には登録済みのボックススコア（${existingCount}人分）があります。取り込むと、この試合の選手スタッツはCSVの内容にすべて置き換わります。` });
-
-    const unmatched: string[] = [];
-    const payload: PreparedRow[] = rows.map((r) => {
-      const playerId = resolvePlayer ? resolvePlayer(r.player) : null;
-      if (!playerId) unmatched.push(r.player);
-      return {
-        team_id: teamIdByAbbr.get(r.team)!,
-        player_id: playerId,
-        player_name: r.player,
-        seconds_played: r.secondsPlayed,
-        pts: r.pts,
-        reb: r.reb,
-        ast: r.ast,
-        stl: r.stl,
-        blk: r.blk,
-        fgm: r.fgm,
-        fga: r.fga,
-        fg3m: r.fg3m,
-        fg3a: r.fg3a,
-        ftm: r.ftm,
-        fta: r.fta,
-        plus_minus: r.plusMinus,
-      };
-    });
     if (unmatched.length > 0) {
-      warnings.push({ line: rows[0].line, message: `${label}: 当サイトの選手データと照合できなかった選手がいます（${unmatched.join("、")}）。名前のまま登録し、選手ページへのリンクは付きません。` });
+      warnings.push({ line: null, message: `当サイトの選手データと照合できなかった選手が${unmatched.length}人います（${unmatched.join("、")}）。名前のまま登録し、選手ページへのリンクは付きません。` });
     }
-
-    payloads.set(key, payload);
-    games.push({
-      key,
-      label,
-      gameId: game.id,
-      gameStatus: game.status,
-      rowCount: rows.length,
-      awayCount: rows.filter((r) => r.team === awayTeam).length,
-      homeCount: rows.filter((r) => r.team === homeTeam).length,
-      existingCount: existingCount ?? 0,
-      unmatchedPlayers: unmatched,
-    });
   }
 
-  // エラーが1件でもある場合は取り込めないため、試合ごとの「注意」や概要は出さず、エラーだけを返す
-  if (errors.length > 0) return errorsOnly(errors, parsed.dataLineCount);
-
-  return { report: { errors, warnings, games, totalRows: parsed.dataLineCount }, payloads };
+  const report: CheckReport = {
+    target: targetInfo,
+    errors: [...errors].sort((a, b) => (a.line ?? 0) - (b.line ?? 0)),
+    warnings,
+    preview: parsed.preview.map((p) => ({ ...p, matched: matchedByLine.get(p.line) ?? null })),
+    playerCount: parsed.preview.length,
+    totals,
+    existingCount: teamExisting.length,
+    opponentExistingCount,
+    unmatchedPlayers: ok ? unmatched : [],
+  };
+  return { report, teamRows: ok ? teamRows : [], opponentRows: keptRows.map(toInsertRow) };
 }
 
-/** エラーだけの検査結果(行番号順。行番号のないファイル全体のエラーを先頭にする) */
-function errorsOnly(errors: CsvIssue[], totalRows: number): Prepared {
-  const sorted = [...errors].sort((a, b) => (a.line ?? 0) - (b.line ?? 0));
-  return { report: { errors: sorted, warnings: [], games: [], totalRows }, payloads: new Map() };
-}
-
-function shiftDate(date: string, days: number): string {
-  const d = new Date(`${date}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
-export type ImportResult = { label: string; ok: boolean; count: number; message?: string };
-
-/** 検査済みのデータを、試合ごとに入れ替えて登録する */
-export async function applyBoxScoreImport(supabase: Client, prepared: Prepared): Promise<ImportResult[]> {
-  const results: ImportResult[] = [];
-  for (const plan of prepared.report.games) {
-    const rows = prepared.payloads.get(plan.key) ?? [];
-    const { data, error } = await supabase.rpc("replace_game_player_stats", { p_game_id: plan.gameId, p_rows: rows });
-    if (error) results.push({ label: plan.label, ok: false, count: 0, message: error.message });
-    else results.push({ label: plan.label, ok: true, count: typeof data === "number" ? data : rows.length });
-  }
-  return results;
+/** 検査済みのデータで、選んだチームの分だけを置き換える。戻り値はこのチームの登録人数 */
+export async function applyTeamBoxScore(supabase: Client, prepared: Prepared): Promise<number> {
+  const rows = [...prepared.opponentRows, ...prepared.teamRows];
+  const { error } = await supabase.rpc("replace_game_player_stats", { p_game_id: prepared.report.target.gameId, p_rows: rows });
+  if (error) throw new Error(error.message);
+  return prepared.teamRows.length;
 }

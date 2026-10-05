@@ -1,24 +1,17 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import { BOX_SCORE_COLUMNS, BOX_SCORE_HEADER, MAX_CSV_BYTES, MAX_CSV_ROWS } from "@/lib/games/box-score-csv";
+import { BOX_SCORE_HEADER } from "@/lib/games/box-score-csv";
 import { MAX_SYNC_DAYS, defaultSyncDates } from "@/lib/games/balldontlie-sync";
-import { formatJstTime } from "@/lib/games/date";
+import { formatJstTime, isValidDateString } from "@/lib/games/date";
 import { GAME_STATUS_LABEL } from "@/lib/games/types";
-import { LINK_CLASS } from "@/app/admin/_components/action-ui";
-import { BoxScoreImportForm } from "./box-score-import-form";
+import { GHOST_BUTTON_CLASS, LINK_CLASS } from "@/app/admin/_components/action-ui";
 import { SyncForm } from "./sync-form";
 
 // 管理画面は常に最新の登録状況を見せるため、毎回サーバーで取得する。
 export const dynamic = "force-dynamic";
 
 const RECENT_LIMIT = 30;
-
-// 記入例(架空の選手名。実際の試合データではない)
-const EXAMPLE_ROWS = [
-  ["2026-10-21", "NYK", "BOS", "BOS", "Example Player A", "34:12", "27", "8", "5", "1", "0", "9", "19", "4", "10", "5", "6", "-3"],
-  ["2026-10-21", "NYK", "BOS", "BOS", "Example Player B", "0:00", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", ""],
-  ["2026-10-21", "NYK", "BOS", "NYK", "Example Player C", "36:40", "31", "4", "9", "2", "1", "11", "22", "3", "7", "6", "7", "+5"],
-];
 
 type RecentGame = {
   id: string;
@@ -29,17 +22,18 @@ type RecentGame = {
   away: string;
   home_score: number | null;
   away_score: number | null;
-  statCount: number;
+  awayCount: number;
+  homeCount: number;
 };
 
-async function fetchRecentGames(): Promise<{ ready: boolean; games: RecentGame[]; error?: string }> {
+// date(米国の試合日)を指定した場合はその日の試合、指定がなければ最近の試合
+async function fetchRecentGames(date: string | null): Promise<{ ready: boolean; games: RecentGame[]; error?: string }> {
   const supabase = createAdminSupabaseClient();
-  const { data, error } = await supabase
-    .from("games")
-    .select("id, game_date, tipoff_at, status, home_team_id, away_team_id, home_score, away_score")
-    .lte("tipoff_at", new Date(Date.now() + 2 * 86400_000).toISOString())
-    .order("tipoff_at", { ascending: false })
-    .limit(RECENT_LIMIT);
+  const base = supabase.from("games").select("id, game_date, tipoff_at, status, home_team_id, away_team_id, home_score, away_score");
+  const { data, error } = await (date
+    ? base.eq("game_date", date).order("tipoff_at", { ascending: true })
+    : base.lte("tipoff_at", new Date(Date.now() + 2 * 86400_000).toISOString()).order("tipoff_at", { ascending: false })
+  ).limit(RECENT_LIMIT);
   if (error) {
     if (error.code === "PGRST205" || error.code === "42P01") return { ready: false, games: [] };
     return { ready: true, games: [], error: error.message };
@@ -49,11 +43,11 @@ async function fetchRecentGames(): Promise<{ ready: boolean; games: RecentGame[]
   const ids = games.map((g) => g.id);
   const [{ data: teams }, { data: stats }] = await Promise.all([
     supabase.from("teams").select("id, abbreviation"),
-    ids.length > 0 ? supabase.from("game_player_stats").select("game_id").in("game_id", ids) : Promise.resolve({ data: [] as { game_id: string }[] }),
+    ids.length > 0 ? supabase.from("game_player_stats").select("game_id, team_id").in("game_id", ids) : Promise.resolve({ data: [] as { game_id: string; team_id: string }[] }),
   ]);
   const abbr = new Map((teams ?? []).map((t) => [t.id, t.abbreviation]));
   const counts = new Map<string, number>();
-  for (const s of stats ?? []) counts.set(s.game_id, (counts.get(s.game_id) ?? 0) + 1);
+  for (const s of stats ?? []) counts.set(`${s.game_id}|${s.team_id}`, (counts.get(`${s.game_id}|${s.team_id}`) ?? 0) + 1);
 
   return {
     ready: true,
@@ -66,9 +60,19 @@ async function fetchRecentGames(): Promise<{ ready: boolean; games: RecentGame[]
       away: abbr.get(g.away_team_id) ?? "—",
       home_score: g.home_score,
       away_score: g.away_score,
-      statCount: counts.get(g.id) ?? 0,
+      awayCount: counts.get(`${g.id}|${g.away_team_id}`) ?? 0,
+      homeCount: counts.get(`${g.id}|${g.home_team_id}`) ?? 0,
     })),
   };
+}
+
+function TeamCount({ label, count }: { label: string; count: number }) {
+  return (
+    <span className="block">
+      <span className="inline-block w-10 font-bold">{label}</span>
+      {count > 0 ? <span className="text-[#218c68]">登録済み（{count}人）</span> : <span className="font-bold text-[#cf4a51]">未登録</span>}
+    </span>
+  );
 }
 
 function Card({ title, children }: { title: string; children: ReactNode }) {
@@ -80,8 +84,10 @@ function Card({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-export default async function AdminGamesPage() {
-  const recent = await fetchRecentGames();
+export default async function AdminGamesPage({ searchParams }: PageProps<"/admin/games">) {
+  const { date: dateParam } = await searchParams;
+  const date = typeof dateParam === "string" && isValidDateString(dateParam) ? dateParam : null;
+  const recent = await fetchRecentGames(date);
   const syncDates = defaultSyncDates();
 
   return (
@@ -107,104 +113,85 @@ export default async function AdminGamesPage() {
         <SyncForm defaultFrom={syncDates[0]} defaultTo={syncDates[syncDates.length - 1]} maxDays={MAX_SYNC_DAYS} />
       </Card>
 
-      <Card title="2. 試合ボックススコアCSV取込">
+      <Card title="2. 試合ボックススコアの登録（CSV・1試合1チームごと）">
         <ol className="list-decimal space-y-1 pl-5">
-          <li>
-            <a href="/admin/games/box-score-template" className={LINK_CLASS}>
-              CSVテンプレート（box-score-template.csv）
-            </a>
-            をダウンロードし、1行に1選手ずつ記入します。複数の試合を1つのCSVにまとめても構いません。
-          </li>
-          <li>「CSV UTF-8（コンマ区切り）」形式で保存します（通常の「CSV」形式だと文字化けします）。</li>
-          <li>下のフォームで「① 検査する」を押し、エラーがないことを確認してから「② この内容で取り込む」を押します。</li>
-          <li>同じ試合のCSVをもう一度取り込むと、その試合の選手スタッツはCSVの内容にすべて置き換わります（一部の選手だけの追記はできません）。</li>
+          <li>下の「3. 試合一覧」から対象の試合の「登録・確認」を開きます。</li>
+          <li>ホーム／アウェーのどちらのチームの成績を入れるか選び、CSV雛形をダウンロードして選手別の成績を記入します。</li>
+          <li>CSVを選ぶと、登録前に選手と主要な数値のプレビュー、エラー・注意が表示されます。</li>
+          <li>「このチームの成績を登録」を押したときだけ保存されます。同じチームを登録し直すと、そのチームの分だけが置き換わります。</li>
         </ol>
-
-        <div>
-          <h3 className="mb-2 font-bold">列の意味（1行目の列名はこのとおりに書きます）</h3>
-          <p className="mb-2 break-all rounded-sm bg-[#f3f6fb] px-3 py-2 font-mono text-xs dark:bg-white/[.06]">{BOX_SCORE_HEADER}</p>
-          <div className="overflow-x-auto border border-line">
-            <table className="w-full min-w-[640px] border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-line text-left text-xs text-muted">
-                  <th className="px-3 py-2">列名</th>
-                  <th className="px-3 py-2">項目</th>
-                  <th className="px-3 py-2">必須</th>
-                  <th className="px-3 py-2">説明</th>
-                </tr>
-              </thead>
-              <tbody>
-                {BOX_SCORE_COLUMNS.map((c) => (
-                  <tr key={c.key} className="border-b border-line align-top last:border-b-0">
-                    <td className="px-3 py-2 font-mono text-xs font-bold">{c.key}</td>
-                    <td className="whitespace-nowrap px-3 py-2">{c.label}</td>
-                    <td className="px-3 py-2">{c.required ? "必須" : "空欄可"}</td>
-                    <td className="px-3 py-2">{c.description}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div>
-          <h3 className="mb-2 font-bold">記入例（架空の選手名です）</h3>
-          <pre className="overflow-x-auto bg-[#f3f6fb] px-3 py-2 text-xs leading-6 dark:bg-white/[.06]">
-            {[BOX_SCORE_HEADER, ...EXAMPLE_ROWS.map((r) => r.join(","))].join("\n")}
-          </pre>
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-muted">
-            <li>試合日（game_date）は米国の日付です。日本時間の日付ではありません。</li>
-            <li>チームは当サイトの略称（例: BOS, NYK, GSW, LAL, PHX, NOP, BKN, UTA）で記入します。</li>
-            <li>FG（fgm・fga）は3Pを含む数です。出場しなかった選手は、出場時間を 0:00、各スタッツを 0 にするか、行を省きます。</li>
-          </ul>
-        </div>
-
-        <div>
-          <h3 className="mb-2 font-bold">取込時の検査</h3>
-          <ul className="list-disc space-y-1 pl-5 text-xs text-muted">
-            <li>エラー（取り込めません）：必須の列・項目の空欄、数値の形式、成功数と試投数の関係、出場時間の形式、存在しないチーム略称、所属チームが対戦チームと合わない、試合が見つからない、同じ試合での選手の重複、文字化け。</li>
-            <li>注意（取り込めます）：当サイトの選手データと照合できない選手、得点がFG・3P・FTの計算と合わない、選手の得点合計が試合のスコアと合わない、試合終了になっていない、登録済みのデータを置き換える。</li>
-            <li>
-              1回の取込は {MAX_CSV_ROWS}行・{Math.round(MAX_CSV_BYTES / 1000)}KB までです。取り込む直前にもう一度すべて検査し、エラーがあれば何も書き込みません。
-            </li>
-          </ul>
-        </div>
-
-        <BoxScoreImportForm />
+        <p className="text-xs text-muted">
+          試合日・ホーム／アウェー・クオータースコア・最終スコアは試合管理（1. で取り込んだデータ）を使うため、CSVには選手別の成績だけを入れます。CSVの列：
+          <code className="ml-1 break-all font-mono">{BOX_SCORE_HEADER}</code>
+        </p>
       </Card>
 
-      <Card title="3. 最近の試合とボックススコアの登録状況">
+      <Card title="3. 試合一覧とボックススコアの登録状況">
+        <form method="get" action="/admin/games" className="flex flex-wrap items-end gap-3">
+          <label className="text-sm">
+            <span className="mb-1 block text-xs font-bold text-muted">試合日（米国）で探す</span>
+            <input type="date" name="date" defaultValue={date ?? ""} required className="border border-line bg-surface px-2 py-1.5" />
+          </label>
+          <button type="submit" className={GHOST_BUTTON_CLASS}>
+            表示
+          </button>
+          {date && (
+            <Link href="/admin/games" className={LINK_CLASS}>
+              最近の試合に戻す
+            </Link>
+          )}
+        </form>
+        <p className="text-xs text-muted">
+          {date ? `米国の試合日 ${date} の試合です。` : `開始日時が新しい順に${RECENT_LIMIT}試合を表示しています。それより前の試合は日付で探してください。`}
+          ボックススコアは、各試合の「登録・確認」から1チームずつ登録します。
+        </p>
         {recent.error && <p className="text-[#cf4a51]">取得に失敗しました: {recent.error}</p>}
-        {recent.ready && recent.games.length === 0 && !recent.error && <p className="text-muted">取り込まれた試合はまだありません。</p>}
+        {recent.ready && recent.games.length === 0 && !recent.error && (
+          <p className="text-muted">{date ? "この日の試合は取り込まれていません。" : "取り込まれた試合はまだありません。"}</p>
+        )}
         {recent.games.length > 0 && (
-          <div className="overflow-x-auto border border-line">
-            <table className="w-full min-w-[620px] border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-line text-left text-xs text-muted">
-                  <th className="px-3 py-2">試合日（米国）</th>
-                  <th className="px-3 py-2">開始（日本時間）</th>
-                  <th className="px-3 py-2">対戦（アウェー @ ホーム）</th>
-                  <th className="px-3 py-2">状態</th>
-                  <th className="px-3 py-2 text-right">スコア</th>
-                  <th className="px-3 py-2 text-right">ボックススコア</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recent.games.map((g) => (
-                  <tr key={g.id} className="border-b border-line last:border-b-0">
-                    <td className="px-3 py-2 tabular-nums">{g.game_date}</td>
-                    <td className="px-3 py-2 tabular-nums">{g.tipoff_at ? formatJstTime(g.tipoff_at) : "未定"}</td>
-                    <td className="px-3 py-2 font-bold">
-                      {g.away} @ {g.home}
-                    </td>
-                    <td className="px-3 py-2">{GAME_STATUS_LABEL[g.status]}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{g.away_score !== null && g.home_score !== null ? `${g.away_score}-${g.home_score}` : "—"}</td>
-                    <td className={`px-3 py-2 text-right ${g.statCount > 0 ? "" : "font-bold text-[#cf4a51]"}`}>{g.statCount > 0 ? `登録済み（${g.statCount}人）` : "未登録"}</td>
+          <>
+            <p className="text-xs text-muted sm:hidden">→ 表は横にスクロールできます</p>
+            <div className="overflow-x-auto border border-line">
+              <table className="w-full min-w-[720px] border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-line text-left text-xs text-muted">
+                    <th className="px-3 py-2">試合日（米国）</th>
+                    <th className="px-3 py-2">開始（日本時間）</th>
+                    <th className="px-3 py-2">対戦（アウェー @ ホーム）</th>
+                    <th className="px-3 py-2">状態</th>
+                    <th className="px-3 py-2 text-right">スコア</th>
+                    <th className="px-3 py-2">ボックススコア</th>
+                    <th className="px-3 py-2 text-right">操作</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {recent.games.map((g) => (
+                    <tr key={g.id} className="border-b border-line last:border-b-0">
+                      <td className="px-3 py-2 tabular-nums">{g.game_date}</td>
+                      <td className="px-3 py-2 tabular-nums">{g.tipoff_at ? formatJstTime(g.tipoff_at) : "未定"}</td>
+                      <td className="px-3 py-2 font-bold">
+                        <Link href={`/admin/games/${g.id}`} className="hover:underline">
+                          {g.away} @ {g.home}
+                        </Link>
+                      </td>
+                      <td className="px-3 py-2">{GAME_STATUS_LABEL[g.status]}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{g.away_score !== null && g.home_score !== null ? `${g.away_score}-${g.home_score}` : "—"}</td>
+                      <td className="whitespace-nowrap px-3 py-2 text-xs">
+                        <TeamCount label={g.away} count={g.awayCount} />
+                        <TeamCount label={g.home} count={g.homeCount} />
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        <Link href={`/admin/games/${g.id}`} className={`${LINK_CLASS} whitespace-nowrap`}>
+                          登録・確認 →
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </Card>
     </main>
