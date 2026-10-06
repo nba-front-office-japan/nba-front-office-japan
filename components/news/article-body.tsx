@@ -1,9 +1,51 @@
+import type { MouseEventHandler } from "react";
+import Link from "next/link";
 import { ARTICLE_CREDIT, showsArticleCredit } from "@/lib/news/credit";
+import { splitInlineLinks } from "@/lib/news/inline-links";
 import type { ArticleKind } from "@/lib/supabase/types";
+
+const LINK_CLASS = "font-semibold text-blue underline decoration-blue/40 underline-offset-2 hover:decoration-blue";
+
+// 段落の中の [文字](URL) を、選択した文字だけのリンクにする(それ以外は文字のまま)。
+// 内部リンクは同じタブ、外部リンクは別タブ(rel="noopener noreferrer")で開く。
+function ParagraphText({ text, onInternalLinkClick }: { text: string; onInternalLinkClick?: MouseEventHandler<HTMLAnchorElement> }) {
+  return (
+    <>
+      {splitInlineLinks(text).map((seg, i) => {
+        if (seg.kind === "text") return <span key={i}>{seg.text}</span>;
+        if (seg.external) {
+          return (
+            <a key={i} href={seg.href} target="_blank" rel="noopener noreferrer" className={LINK_CLASS}>
+              {seg.text}
+              <span aria-hidden className="ml-0.5 text-[0.85em]">
+                ↗
+              </span>
+              <span className="sr-only">（別タブで開きます）</span>
+            </a>
+          );
+        }
+        return (
+          <Link key={i} href={seg.href} className={LINK_CLASS} onClick={onInternalLinkClick}>
+            {seg.text}
+          </Link>
+        );
+      })}
+    </>
+  );
+}
 
 // ニュース記事・コラム記事の本文と、本文直後のクレジット。
 // 公開ページ(/news/[articleId])と管理画面の記事プレビューで同じ表示にするため、この部品を共通で使う。
-export function ArticleBody({ bodyMarkdown, articleKind }: { bodyMarkdown: string; articleKind: ArticleKind }) {
+// onInternalLinkClick は管理画面のプレビュー用(未保存の変更があるときに、内部リンクで画面を離れる前に確認する)。
+export function ArticleBody({
+  bodyMarkdown,
+  articleKind,
+  onInternalLinkClick,
+}: {
+  bodyMarkdown: string;
+  articleKind: ArticleKind;
+  onInternalLinkClick?: MouseEventHandler<HTMLAnchorElement>;
+}) {
   const paragraphs = bodyMarkdown
     // Windows の CRLF 改行でも、空行を段落区切りとして扱う。
     .split(/\r?\n[ \t]*\r?\n/)
@@ -24,7 +66,7 @@ export function ArticleBody({ bodyMarkdown, articleKind }: { bodyMarkdown: strin
       ) : (
         paragraphs.map((paragraph, i) => (
           <p key={i} className="mb-3 text-sm leading-8 text-foreground/90">
-            {paragraph}
+            <ParagraphText text={paragraph} onInternalLinkClick={onInternalLinkClick} />
           </p>
         ))
       )}

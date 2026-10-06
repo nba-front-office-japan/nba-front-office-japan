@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState, type MouseEvent } from "react";
 import { updateDraftAction, rejectDraftAction } from "../actions";
 import { ARTICLE_KIND_OPTIONS, ARTICLE_TYPE_OPTIONS } from "@/lib/news/constants";
 import {
@@ -9,103 +9,136 @@ import {
   GHOST_BUTTON_CLASS,
   StatusMessage,
 } from "@/app/admin/_components/action-ui";
-import type { Database } from "@/lib/supabase/types";
+import type { ArticleKind, Database } from "@/lib/supabase/types";
+import { ArticleBody } from "@/components/news/article-body";
+import { COLUMN_BADGE_CLASS } from "@/lib/news/constants";
+import { BodyEditor } from "./body-editor";
 
 type ArticleDraft = Database["public"]["Tables"]["article_drafts"]["Row"];
+
+// プレビューに使う入力中の値
+type PreviewValues = { kind: ArticleKind; headline: string; dek: string; body: string };
+
+function sameValues(a: PreviewValues, b: PreviewValues): boolean {
+  return a.kind === b.kind && a.headline === b.headline && a.dek === b.dek && a.body === b.body;
+}
 
 export function DraftEditForm({ draft }: { draft: ArticleDraft }) {
   const [state, formAction, isPending] = useActionState(
     updateDraftAction,
     INITIAL_ACTION_STATE
   );
+  const initial: PreviewValues = { kind: draft.article_kind, headline: draft.headline_ja, dek: draft.dek_ja ?? "", body: draft.body_markdown };
+  const [values, setValues] = useState<PreviewValues>(initial);
+  const [submitted, setSubmitted] = useState<PreviewValues | null>(null);
+  const set = (patch: Partial<PreviewValues>) => setValues((v) => ({ ...v, ...patch }));
+  // 保存済みの内容と比べて変更があるか(保存に成功したら、そのとき送った内容を基準にする)
+  const baseline = state.status === "success" && submitted ? submitted : initial;
+  const dirty = !sameValues(values, baseline);
+
+  // プレビューの内部リンクで画面を離れる前に、未保存の変更があれば確認する
+  function confirmLeave(e: MouseEvent<HTMLAnchorElement>) {
+    if (dirty && !window.confirm("保存していない変更があります。このページを離れると変更は失われます。移動しますか？")) e.preventDefault();
+  }
 
   return (
-    <form action={formAction} className="grid grid-cols-1 gap-3">
-      <input type="hidden" name="draftId" value={draft.id} />
-      <fieldset disabled={isPending} className="contents">
-        <label className="grid gap-1 text-[11px] font-bold text-muted">
-          記事種別（COLUMNは公開ページに「COLUMN」ラベルが付きます）
-          <select
-            name="articleKind"
-            defaultValue={draft.article_kind}
-            className="max-w-[200px] border border-line bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-60"
-          >
-            {ARTICLE_KIND_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="grid gap-1 text-[11px] font-bold text-muted">
-          記事形式
-          <select
-            name="articleType"
-            defaultValue={draft.article_type}
-            className="max-w-[200px] border border-line bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-60"
-          >
-            {ARTICLE_TYPE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="grid gap-1 text-[11px] font-bold text-muted">
-          見出し
-          <input
-            type="text"
-            name="headlineJa"
-            defaultValue={draft.headline_ja}
-            required
-            className="border border-line bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-60"
-          />
-        </label>
-        <label className="grid gap-1 text-[11px] font-bold text-muted">
-          サブ見出し（任意）
-          <input
-            type="text"
-            name="dekJa"
-            defaultValue={draft.dek_ja ?? ""}
-            className="border border-line bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-60"
-          />
-        </label>
-        <label className="grid gap-1 text-[11px] font-bold text-muted">
-          本文（Markdown。RSS原文の転載はしないでください）
-          <textarea
-            name="bodyMarkdown"
-            defaultValue={draft.body_markdown}
-            rows={12}
-            required
-            className="border border-line bg-surface px-3 py-2 font-mono text-sm text-foreground disabled:opacity-60"
-          />
-        </label>
-        <label className="grid gap-1 text-[11px] font-bold text-muted">
-          出典表記（任意の補足。原典リンクは上のセクションで自動表示されます）
-          <textarea
-            name="sourceAttributionMarkdown"
-            defaultValue={draft.source_attribution_markdown}
-            rows={4}
-            className="border border-line bg-surface px-3 py-2 font-mono text-sm text-foreground disabled:opacity-60"
-          />
-        </label>
-        <label className="grid gap-1 text-[11px] font-bold text-muted">
-          編集メモ（内部用・非公開）
-          <textarea
-            name="editorNotes"
-            defaultValue={draft.editor_notes ?? ""}
-            rows={2}
-            className="border border-line bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-60"
-          />
-        </label>
-      </fieldset>
-      <div className="flex flex-wrap items-center gap-3">
-        <button type="submit" disabled={isPending} className={PRIMARY_BUTTON_CLASS}>
-          {isPending ? "保存中…" : "保存"}
-        </button>
-        {!isPending && <StatusMessage state={state} />}
+    <>
+      <form action={formAction} onSubmit={() => setSubmitted(values)} className="grid grid-cols-1 gap-3">
+        <input type="hidden" name="draftId" value={draft.id} />
+        <fieldset disabled={isPending} className="contents">
+          <label className="grid gap-1 text-[11px] font-bold text-muted">
+            記事種別（COLUMNは公開ページに「COLUMN」ラベルが付きます）
+            <select
+              name="articleKind"
+              defaultValue={draft.article_kind}
+              onChange={(e) => set({ kind: e.target.value as ArticleKind })}
+              className="max-w-[200px] border border-line bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-60"
+            >
+              {ARTICLE_KIND_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-1 text-[11px] font-bold text-muted">
+            記事形式
+            <select
+              name="articleType"
+              defaultValue={draft.article_type}
+              className="max-w-[200px] border border-line bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-60"
+            >
+              {ARTICLE_TYPE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-1 text-[11px] font-bold text-muted">
+            見出し
+            <input
+              type="text"
+              name="headlineJa"
+              defaultValue={draft.headline_ja}
+              onChange={(e) => set({ headline: e.target.value })}
+              required
+              className="border border-line bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-60"
+            />
+          </label>
+          <label className="grid gap-1 text-[11px] font-bold text-muted">
+            サブ見出し（任意）
+            <input
+              type="text"
+              name="dekJa"
+              defaultValue={draft.dek_ja ?? ""}
+              onChange={(e) => set({ dek: e.target.value })}
+              className="border border-line bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-60"
+            />
+          </label>
+          <BodyEditor name="bodyMarkdown" defaultValue={draft.body_markdown} onChange={(body) => set({ body })} />
+          <label className="grid gap-1 text-[11px] font-bold text-muted">
+            出典表記（任意の補足。原典リンクは上のセクションで自動表示されます）
+            <textarea
+              name="sourceAttributionMarkdown"
+              defaultValue={draft.source_attribution_markdown}
+              rows={4}
+              className="border border-line bg-surface px-3 py-2 font-mono text-sm text-foreground disabled:opacity-60"
+            />
+          </label>
+          <label className="grid gap-1 text-[11px] font-bold text-muted">
+            編集メモ（内部用・非公開）
+            <textarea
+              name="editorNotes"
+              defaultValue={draft.editor_notes ?? ""}
+              rows={2}
+              className="border border-line bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-60"
+            />
+          </label>
+        </fieldset>
+        <div className="flex flex-wrap items-center gap-3">
+          <button type="submit" disabled={isPending} className={PRIMARY_BUTTON_CLASS}>
+            {isPending ? "保存中…" : "保存"}
+          </button>
+          {!isPending && <StatusMessage state={state} />}
+          {dirty && !isPending && <span className="text-xs font-semibold text-[#8a5a00]">未保存の変更があります</span>}
+        </div>
+      </form>
+
+      {/* 公開ページと同じ部品で本文を表示する(リンク・本文末尾のクレジットも公開ページと同じ)。入力中の内容をそのまま映す */}
+      <div className="mt-6 border-t border-line pt-5">
+        <h3 className="mb-1 text-base font-semibold">プレビュー（公開ページでの本文の表示）</h3>
+        <p className="mb-3 text-xs text-muted">
+          入力中の内容を表示しています。リンクは公開ページと同じく、サイト内リンクは同じタブ、外部リンクは別タブで開きます。「保存」を押すまで公開ページには反映されません。
+        </p>
+        <article className="border border-line bg-background p-5 sm:p-6">
+          {values.kind === "column" && <span className={`mb-3 ${COLUMN_BADGE_CLASS}`}>COLUMN</span>}
+          <h4 className="mb-2 text-[24px] font-semibold leading-tight">{values.headline}</h4>
+          {values.dek && <p className="mb-5 text-sm text-muted">{values.dek}</p>}
+          <ArticleBody bodyMarkdown={values.body} articleKind={values.kind} onInternalLinkClick={confirmLeave} />
+        </article>
       </div>
-    </form>
+    </>
   );
 }
 
