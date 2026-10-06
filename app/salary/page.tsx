@@ -19,7 +19,7 @@ const CHOICES = [
     kicker: "Player salary",
     title: "選手サラリー",
     body: `全${SALARY_COUNTS.players}人分の年俸を一覧で。選手名・チーム名で検索し、年度を切り替えて高い順に確認できます。`,
-    meta: `${FIRST}〜${LAST}・保証額・オプション`,
+    meta: `${FIRST}〜${LAST}・保証額・契約状況`,
   },
   {
     href: "/salary/teams",

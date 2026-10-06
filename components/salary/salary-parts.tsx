@@ -1,5 +1,14 @@
 import Link from "next/link";
-import { OPTION_LABEL, OPTION_SHORT, SALARY_SEASONS, SALARY_SOURCE_LABEL, type SalaryOption, type SalarySeason } from "@/lib/salary/types";
+import {
+  CONTRACT_MARKS,
+  CONTRACT_MARK_BY_TYPE,
+  SALARY_SEASONS,
+  SALARY_SOURCE_LABEL,
+  contractMarks,
+  type ContractMarkType,
+  type SalaryPlayer,
+  type SalarySeason,
+} from "@/lib/salary/types";
 
 // サラリーページ(/salary 以下)で共通の部品。
 
@@ -37,43 +46,58 @@ export function SalaryHeading({ kicker, title, lead }: { kicker: string; title: 
   );
 }
 
-/** オプションの目印(PO=選手オプション、TO=チームオプション) */
-export function OptionBadge({ type, season }: { type: SalaryOption["type"]; season?: SalarySeason }) {
-  const color =
-    type === "player"
-      ? "bg-[#e5f0ff] text-[#1d4f9a] dark:bg-[#1d3557] dark:text-[#bcd6ff]"
-      : "bg-[#fff0cd] text-[#7a5200] dark:bg-[#4a3a12] dark:text-[#ffd27a]";
+// 契約状況の目印の配色(文字と背景のコントラスト比はライト・ダークとも4.5以上)
+export const CONTRACT_BADGE_COLOR: Record<ContractMarkType, string> = {
+  player: "bg-[#d6e4ff] text-[#163f8f] dark:bg-[#1c3a70] dark:text-[#cfe0ff]",
+  team: "bg-[#ffd6de] text-[#a01d3a] dark:bg-[#5c1f2d] dark:text-[#ffd0d9]",
+  qo: "bg-[#d2f0dc] text-[#17663a] dark:bg-[#1b4a30] dark:text-[#c4efd3]",
+  "two-way": "bg-[#e6dbff] text-[#5a2aa6] dark:bg-[#3d2a6e] dark:text-[#e0d4ff]",
+};
+
+/** 契約状況の目印(PO・TO・Q・TW) */
+export function ContractBadge({ type, season }: { type: ContractMarkType; season?: SalarySeason }) {
+  const mark = CONTRACT_MARK_BY_TYPE[type];
   return (
-    <span title={`${season ? `${season} ` : ""}${OPTION_LABEL[type]}`} className={`inline-block whitespace-nowrap px-1.5 py-0.5 text-[11px] font-bold ${color}`}>
+    <span title={`${season ? `${season} ` : ""}${mark.label}`} className={`inline-block whitespace-nowrap px-1.5 py-0.5 text-[11px] font-bold ${CONTRACT_BADGE_COLOR[type]}`}>
       {season ? `${season} ` : ""}
-      {OPTION_SHORT[type]}
+      {mark.short}
     </span>
   );
 }
 
-export function OptionList({ options }: { options: SalaryOption[] }) {
-  if (options.length === 0) return <span className="text-muted">—</span>;
+/** 選手ごとの契約状況(年度順)。何もなければ「—」 */
+export function ContractList({ player }: { player: SalaryPlayer }) {
+  const marks = contractMarks(player);
+  if (marks.length === 0) return <span className="text-muted">—</span>;
   return (
     <span className="flex flex-wrap gap-1">
-      {options.map((o) => (
-        <OptionBadge key={o.season} type={o.type} season={o.season} />
+      {marks.map((m) => (
+        <ContractBadge key={`${m.season}-${m.type}`} type={m.type} season={m.season} />
       ))}
     </span>
   );
 }
 
-export function OptionLegend() {
+/** 契約状況の凡例。statusCount は Q・TW が付いている選手の数 */
+export function ContractLegend({ statusCount }: { statusCount: number }) {
   return (
-    <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
-      <span className="flex items-center gap-1.5">
-        <OptionBadge type="player" />
-        選手オプション（選手が契約を続けるか選べる年）
-      </span>
-      <span className="flex items-center gap-1.5">
-        <OptionBadge type="team" />
-        チームオプション（チームが契約を続けるか選べる年）
-      </span>
-    </p>
+    <div className="text-xs text-muted">
+      <p className="mb-1 font-bold text-foreground">契約状況の見方</p>
+      <ul className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+        {CONTRACT_MARKS.map((m) => (
+          <li key={m.type} className="flex items-center gap-1.5">
+            <ContractBadge type={m.type} />
+            <span>
+              <span className="font-semibold text-foreground">{m.label}</span>（{m.description}）
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-1.5 text-[11px]">
+        Q・TWは、出典で確認できた選手だけに表示します。
+        {statusCount === 0 ? "現在の出典データには該当する情報がないため、表示している選手はいません。" : `現在${statusCount}人に表示しています。`}
+      </p>
+    </div>
   );
 }
 
@@ -119,7 +143,7 @@ export function SalarySourceNote() {
       </p>
       <ul className="mt-1 list-disc space-y-0.5 pl-5">
         <li>金額は米ドル（各年度の年俸）。空欄は「—」で表示しています。</li>
-        <li>オプションは、出典で選手・年度・金額が一致したものだけを表示しています。「—」でもオプションがないとは限りません。</li>
+        <li>契約状況のオプション（PO・TO）は、出典で選手・年度・金額が一致したものだけを表示しています。「—」でもオプションがないとは限りません。</li>
         <li>契約の状況は今後のトレード・契約・解雇などで変わります。</li>
       </ul>
     </footer>

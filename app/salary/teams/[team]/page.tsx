@@ -3,9 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageShell } from "@/components/page-shell";
 import { TeamColorChip } from "@/components/team-color-chip";
-import { OptionLegend, SalaryBreadcrumb, SalarySourceNote } from "@/components/salary/salary-parts";
+import { ContractLegend, SalaryBreadcrumb, SalarySourceNote } from "@/components/salary/salary-parts";
 import { PlayerSalaryTable } from "@/components/salary/player-salary-table";
-import { playerSalarySums, salaryPlayerRows, salaryTeamBySlug, salaryTeams } from "@/lib/salary/data";
+import { SALARY_COUNTS, playerSalarySums, salaryPlayerRows, salaryTeamBySlug, salaryTeams } from "@/lib/salary/data";
 import { SALARY_SEASONS, formatUsd, teamSlug } from "@/lib/salary/types";
 
 // 30チーム分を事前に生成する(それ以外のURLは404)
@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: PageProps<"/salary/teams/[tea
   if (!t) return {};
   return {
     title: `${t.name}のサラリー | チームサラリー | NBA Front Office Japan`,
-    description: `${t.name}の総年俸と、選手別の年俸・保証額・オプション（2026-27〜2031-32）。`,
+    description: `${t.name}の総年俸と、選手別の年俸・保証額・契約状況（2026-27〜2031-32）。`,
   };
 }
 
@@ -44,7 +44,7 @@ export default async function TeamSalaryDetailPage({ params }: PageProps<"/salar
           <TeamColorChip abbreviation={t.abbr} />
           {t.name}
         </h1>
-        <p className="mt-2 text-sm text-muted">総年俸と、選手別の年俸・保証額・オプション（{players.length}人）</p>
+        <p className="mt-2 text-sm text-muted">総年俸と、選手別の年俸・保証額・契約状況（{players.length}人）</p>
       </div>
 
       <section aria-labelledby="salary-totals" className="mb-8">
@@ -72,7 +72,7 @@ export default async function TeamSalaryDetailPage({ params }: PageProps<"/salar
           選手別の年俸
         </h2>
         <div className="mb-3">
-          <OptionLegend />
+          <ContractLegend statusCount={SALARY_COUNTS.statuses} />
         </div>
         <PlayerSalaryTable rows={players} showTeam={false} />
       </section>

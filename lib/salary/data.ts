@@ -24,4 +24,9 @@ export function playerSalarySums(team: string): number[] {
   return [0, 1, 2, 3, 4, 5].map((i) => players.reduce((sum, p) => sum + (p.salaries[i] ?? 0), 0));
 }
 
-export const SALARY_COUNTS = { teams: SALARY_TEAMS.length, players: SALARY_PLAYERS.length };
+export const SALARY_COUNTS = {
+  teams: SALARY_TEAMS.length,
+  players: SALARY_PLAYERS.length,
+  /** Q・TW(補助CSVで登録したもの)が付いている選手の数 */
+  statuses: SALARY_PLAYERS.filter((p) => (p.statuses ?? []).length > 0).length,
+};

@@ -8,7 +8,13 @@
 #   All Teams Summary : 30チームの年度別総年俸(5行目が見出し: Rk, Team, 2026-27 … 2031-32)
 #   各チームのシート   : 5行目が見出し(Player, Age, 2026-27 … 2031-32, Guaranteed, Options, Option Source)、
 #                        6行目から選手、最後が Team Totals
+#   data/salary/contract-status.csv(任意): Qualifying Offer(Q)・Two-Way Contract(TW)の補助データ。
+#                        Excelには Q・TW を判定できる情報がないため、出典で確認できた選手だけをここに1行ずつ登録する。
+#                        列: team(チーム略称 例 NYK), player(Excelと同じ選手名), season(例 2026-27), status(Q または TW), source(出典のURLなど)
+#                        Excelに載っていない選手・チーム、出典が空欄の行はエラーにする(推測では付けない)。
+import csv
 import io
+import os
 import json
 import re
 import sys
@@ -17,6 +23,8 @@ import openpyxl
 
 SRC = sys.argv[1] if len(sys.argv) > 1 else "C:/Users/user/OneDrive/デスクトップ/NBA DATA BASE/NBA_Payroll_2026-27_to_2031-32.xlsx"
 OUT = "lib/salary/payroll-data.ts"
+STATUS_CSV = "data/salary/contract-status.csv"
+STATUS_TYPES = {"Q": "qo", "TW": "two-way"}
 SEASONS = ["2026-27", "2027-28", "2028-29", "2029-30", "2030-31", "2031-32"]
 
 # Excelのチーム名 → 当サイトのチーム略称(lib/team-colors.ts・teams.abbreviation と同じ)
@@ -112,7 +120,31 @@ for t in teams:
     # Excelの順(2026-27の年俸が高い順)を保つ
     players.extend(team_players)
 
-print("teams:", len(teams), "players:", len(players))
+# --- Q・TW の補助データ ---
+status_count = 0
+if os.path.exists(STATUS_CSV):
+    with io.open(STATUS_CSV, encoding="utf-8-sig", newline="") as f:
+        reader = csv.DictReader(f)
+        if reader.fieldnames != ["team", "player", "season", "status", "source"]:
+            raise SystemExit(f"{STATUS_CSV} の列名が想定外です: {reader.fieldnames}")
+        for line, row in enumerate(reader, start=2):
+            values = {k: (v or "").strip() for k, v in row.items()}
+            if not any(values.values()):
+                continue
+            where = f"{STATUS_CSV} {line}行目"
+            if values["status"] not in STATUS_TYPES:
+                raise SystemExit(f"{where}: status は Q または TW です: {values['status']!r}")
+            if values["season"] not in SEASONS:
+                raise SystemExit(f"{where}: season が正しくありません: {values['season']!r}")
+            if not values["source"]:
+                raise SystemExit(f"{where}: source(出典)が空欄です")
+            target = [p for p in players if p["team"] == values["team"] and p["name"] == values["player"]]
+            if len(target) != 1:
+                raise SystemExit(f"{where}: Excelの {values['team']} に選手「{values['player']}」が見つかりません")
+            target[0].setdefault("statuses", []).append({"season": values["season"], "type": STATUS_TYPES[values["status"]], "source": values["source"]})
+            status_count += 1
+
+print("teams:", len(teams), "players:", len(players), "Q/TW:", status_count)
 print("選手の合計と All Teams Summary の差:", checks or "なし")
 
 ts = (

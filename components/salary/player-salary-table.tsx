@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { TeamColorChip } from "@/components/team-color-chip";
 import { SALARY_SEASONS, formatUsd, optionFor, seasonIndex, teamSlug, type SalaryPlayer, type SalarySeason } from "@/lib/salary/types";
-import { OptionBadge, OptionList, SeasonTabs } from "./salary-parts";
+import { ContractBadge, ContractList, SeasonTabs } from "./salary-parts";
 
 // 全選手のサラリー一覧(選手名・チーム名で検索、年度の切り替え)。
 // 「全年度」は2026-27〜2031-32をすべて並べ、年度を選ぶとその年度に年俸がある選手を高い順に並べる。
@@ -18,9 +18,10 @@ function normalize(text: string): string {
     .trim();
 }
 
+// 全年度の表で、オプションの年の年俸セルに付ける薄い色(目印の色と同じ系統)
 const OPTION_CELL: Record<"player" | "team", string> = {
-  player: "bg-[#e5f0ff] dark:bg-[#1d3557]",
-  team: "bg-[#fff0cd] dark:bg-[#4a3a12]",
+  player: "bg-[#e6efff] dark:bg-[#1c3a70]/70",
+  team: "bg-[#ffe6eb] dark:bg-[#5c1f2d]/70",
 };
 
 const TH = "whitespace-nowrap px-2 py-2.5 text-left text-[11px] font-bold text-muted";
@@ -108,7 +109,7 @@ export function PlayerSalaryTable({ rows, showTeam = true, initialSeason = "all"
                 保証額
               </th>
               <th scope="col" className={TH}>
-                オプション
+                契約状況
               </th>
             </tr>
           </thead>
@@ -148,14 +149,14 @@ export function PlayerSalaryTable({ rows, showTeam = true, initialSeason = "all"
                     ) : (
                       <td className={`${TD} text-right font-bold tabular-nums`}>
                         <span className="inline-flex items-center gap-1.5">
-                          {opt && <OptionBadge type={opt} />}
+                          {opt && <ContractBadge type={opt} />}
                           {formatUsd(r.salaries[idx])}
                         </span>
                       </td>
                     )}
                     <td className={`${TD} text-right tabular-nums ${r.guaranteed === null ? "text-muted" : ""}`}>{formatUsd(r.guaranteed)}</td>
                     <td className={TD}>
-                      <OptionList options={r.options} />
+                      <ContractList player={r} />
                     </td>
                   </tr>
                 );
