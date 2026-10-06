@@ -13,7 +13,7 @@ const navItems = [
   { href: "/awards", label: "AWARDS" },
   { href: "/players", label: `選手名鑑 ${seasonLabel(ROSTER_SEASON)}` },
   { href: "/draft", label: "DRAFT" },
-  { href: "/contracts", label: "CONTRACTS" },
+  { href: "/salary", label: "サラリー" },
   { href: "/rankings", label: "ランキング" },
   { href: "/guide", label: "ガイド" },
   { href: "/premium", label: "PREMIUM" },

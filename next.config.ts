@@ -9,6 +9,12 @@ const nextConfig: NextConfig = {
         destination: "/rankings/team-valuations",
         permanent: true,
       },
+      // CONTRACTS は「サラリー」(/salary)に変わった(旧URLは公開済みのため恒久転送)
+      {
+        source: "/contracts",
+        destination: "/salary",
+        permanent: true,
+      },
     ];
   },
 };
