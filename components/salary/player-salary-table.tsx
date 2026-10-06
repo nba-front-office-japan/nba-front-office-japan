@@ -23,8 +23,8 @@ const OPTION_CELL: Record<"player" | "team", string> = {
   team: "bg-[#fff0cd] dark:bg-[#4a3a12]",
 };
 
-const TH = "whitespace-nowrap px-3 py-2.5 text-left text-[11px] font-bold text-muted";
-const TD = "whitespace-nowrap px-3 py-2.5";
+const TH = "whitespace-nowrap px-2 py-2.5 text-left text-[11px] font-bold text-muted";
+const TD = "whitespace-nowrap px-2 py-2.5";
 const STICKY = "sticky left-0 z-10 bg-surface";
 
 export type PlayerSalaryRow = SalaryPlayer & { teamName: string };
