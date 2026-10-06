@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import { ARTICLE_DRAFT_STATUS_LABEL, isLowConfidence } from "@/lib/news/constants";
+import { ARTICLE_DRAFT_STATUS_LABEL, COLUMN_BADGE_CLASS, isLowConfidence } from "@/lib/news/constants";
+import { ArticleBody } from "@/components/news/article-body";
 import { LINK_CLASS } from "@/app/admin/_components/action-ui";
 import { DraftEditForm, RejectButton } from "./draft-forms";
 import { PublishButton } from "./publish-button";
@@ -108,6 +109,18 @@ export default async function AdminNewsDraftDetailPage({
         <section className="mb-8 border border-line bg-surface p-6">
           <h2 className="mb-4 text-lg font-semibold">本文</h2>
           <DraftEditForm draft={draft} />
+        </section>
+
+        {/* 公開ページと同じ部品で本文を表示する(本文末尾のクレジットも公開ページと同じく自動で付く) */}
+        <section className="mb-8 border border-line bg-surface p-6">
+          <h2 className="mb-1 text-lg font-semibold">プレビュー（公開ページでの本文の表示）</h2>
+          <p className="mb-4 text-xs text-muted">保存済みの内容を表示しています。編集後は「保存」を押すと反映されます。</p>
+          <article className="border border-line bg-background p-5 sm:p-6">
+            {draft.article_kind === "column" && <span className={`mb-3 ${COLUMN_BADGE_CLASS}`}>COLUMN</span>}
+            <h3 className="mb-2 text-[24px] font-semibold leading-tight">{draft.headline_ja}</h3>
+            {draft.dek_ja && <p className="mb-5 text-sm text-muted">{draft.dek_ja}</p>}
+            <ArticleBody bodyMarkdown={draft.body_markdown} articleKind={draft.article_kind} />
+          </article>
         </section>
 
         <section className="flex flex-wrap items-center gap-4 border border-line bg-surface p-6">

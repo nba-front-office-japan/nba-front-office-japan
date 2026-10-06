@@ -10,6 +10,7 @@ import {
   SINGLE_SOURCE_BADGE_CLASS,
 } from "@/lib/news/constants";
 import { PageShell } from "@/components/page-shell";
+import { ArticleBody } from "@/components/news/article-body";
 
 export const dynamic = "force-dynamic";
 
@@ -39,12 +40,6 @@ export default async function NewsArticlePage({
   }
 
   const lowConfidence = isRumorOrUnverified(article.verificationStatus);
-  const paragraphs = article.bodyMarkdown
-    // Windows の CRLF 改行でも、空行を段落区切りとして扱う。
-    .split(/\r?\n[ \t]*\r?\n/)
-    .map((p) => p.trim())
-    .filter(Boolean);
-
   return (
     <PageShell>
       <article className="border border-line bg-surface p-6 sm:p-8">
@@ -74,17 +69,8 @@ export default async function NewsArticlePage({
         {article.dekJa && <p className="mb-3 text-sm text-muted">{article.dekJa}</p>}
         <p className="mb-6 text-xs text-muted">{formatDate(article.publishedAt)}</p>
 
-        <div className="mb-6">
-          {paragraphs.length === 0 ? (
-            <p className="text-sm text-muted">本文がありません。</p>
-          ) : (
-            paragraphs.map((paragraph, i) => (
-              <p key={i} className="mb-3 text-sm leading-8 text-foreground/90">
-                {paragraph}
-              </p>
-            ))
-          )}
-        </div>
+        {/* 本文の直後に「構成●NBA Front Office Japan編集部」を自動で表示する(情報源・関連リンクより前) */}
+        <ArticleBody bodyMarkdown={article.bodyMarkdown} articleKind={article.articleKind} />
 
         <div className="border-t border-line pt-5">
           <h2 className="mb-2 text-sm font-bold text-muted">情報源</h2>
