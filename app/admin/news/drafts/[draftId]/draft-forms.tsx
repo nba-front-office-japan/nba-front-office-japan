@@ -10,9 +10,10 @@ import {
   StatusMessage,
 } from "@/app/admin/_components/action-ui";
 import type { ArticleKind, Database } from "@/lib/supabase/types";
-import { ArticleBody } from "@/components/news/article-body";
 import { COLUMN_BADGE_CLASS } from "@/lib/news/constants";
 import { BodyEditor } from "./body-editor";
+import { BodyPreview, endsWithCredit } from "./body-preview";
+import { ARTICLE_CREDIT, showsArticleCredit } from "@/lib/news/credit";
 
 type ArticleDraft = Database["public"]["Tables"]["article_drafts"]["Row"];
 
@@ -125,18 +126,21 @@ export function DraftEditForm({ draft }: { draft: ArticleDraft }) {
         </div>
       </form>
 
-      {/* 公開ページと同じ部品で本文を表示する(リンク・本文末尾のクレジットも公開ページと同じ)。入力中の内容をそのまま映す */}
+      {/* 入力中の内容をそのまま映すプレビュー。本文は入力欄と同じ文字組み(BODY_TEXT_CLASS)で、改行・折り返しの位置を揃える */}
       <div className="mt-6 border-t border-line pt-5">
-        <h3 className="mb-1 text-base font-semibold">プレビュー（公開ページでの本文の表示）</h3>
+        <h3 className="mb-1 text-base font-semibold">プレビュー（入力中の内容）</h3>
         <p className="mb-3 text-xs text-muted">
-          入力中の内容を表示しています。リンクは公開ページと同じく、サイト内リンクは同じタブ、外部リンクは別タブで開きます。「保存」を押すまで公開ページには反映されません。
+          本文は入力欄と同じ幅・文字組みで表示するため、改行と折り返しの位置が入力欄と一致します（リンクを含む行は、入力欄の URL の分だけ折り返しが変わります）。
+          リンクは公開ページと同じく、サイト内リンクは同じタブ、外部リンクは別タブで開きます。「保存」を押すまで公開ページには反映されません。
         </p>
-        <article className="border border-line bg-background p-5 sm:p-6">
-          {values.kind === "column" && <span className={`mb-3 ${COLUMN_BADGE_CLASS}`}>COLUMN</span>}
-          <h4 className="mb-2 text-[24px] font-semibold leading-tight">{values.headline}</h4>
-          {values.dek && <p className="mb-5 text-sm text-muted">{values.dek}</p>}
-          <ArticleBody bodyMarkdown={values.body} articleKind={values.kind} onInternalLinkClick={confirmLeave} />
-        </article>
+        {values.kind === "column" && <span className={`mb-3 ${COLUMN_BADGE_CLASS}`}>COLUMN</span>}
+        <h4 className="mb-2 text-[24px] font-semibold leading-tight">{values.headline}</h4>
+        {values.dek && <p className="mb-4 text-sm text-muted">{values.dek}</p>}
+        <BodyPreview body={values.body} onInternalLinkClick={confirmLeave} />
+        {/* 本文末尾のクレジット(公開ページと同じく自動で付く。本文に手入力済みなら、公開ページでは1回だけ表示される) */}
+        {showsArticleCredit(values.kind) && !endsWithCredit(values.body) && (
+          <p className="mt-3 text-right text-sm font-semibold text-foreground/80">{ARTICLE_CREDIT}</p>
+        )}
       </div>
     </>
   );

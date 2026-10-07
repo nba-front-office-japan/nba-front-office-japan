@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { GHOST_BUTTON_CLASS, PRIMARY_BUTTON_CLASS } from "@/app/admin/_components/action-ui";
 import { classifyLinkUrl, linkTextProblem, toLinkMarkup } from "@/lib/news/inline-links";
+import { BODY_TEXT_CLASS } from "./body-preview";
 
 // 記事本文の入力欄と「リンク」ボタン。
 // 本文中の文字を選択 →「リンク」→ URLを貼り付けて「確定」で、選択した文字を [文字](URL) の形にする(生のHTMLは使わない)。
@@ -19,6 +20,20 @@ export function BodyEditor({ name, defaultValue, onChange }: { name: string; def
   const [url, setUrl] = useState("");
   const [message, setMessage] = useState<{ text: string; error: boolean } | null>(null);
   const fail = (text: string) => setMessage({ text, error: true });
+
+  // 入力欄はスクロールバーを出さず、内容に合わせて高さを伸ばす(スクロールバーの分だけ幅が狭くなり、
+  // プレビューと折り返し位置がずれるのを防ぐ)
+  function autosize() {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight + 2}px`; // 上下の枠線(1px×2)の分を足す
+  }
+  useLayoutEffect(autosize, []);
+  useEffect(() => {
+    window.addEventListener("resize", autosize);
+    return () => window.removeEventListener("resize", autosize);
+  }, []);
 
   function rememberSelection() {
     const el = ref.current;
@@ -59,6 +74,7 @@ export function BodyEditor({ name, defaultValue, onChange }: { name: string; def
     const markup = toLinkMarkup(pending.text, url.trim());
     el.value = el.value.slice(0, pending.start) + markup + el.value.slice(pending.end);
     onChange(el.value);
+    autosize();
     setPending(null);
     setMessage({
       text: `「${pending.text}」を${link.external ? "外部リンク（別タブで開く）" : "サイト内リンク（同じタブで開く）"}にしました。下のプレビューで確認し、「保存」を押してください。`,
@@ -83,12 +99,15 @@ export function BodyEditor({ name, defaultValue, onChange }: { name: string; def
         defaultValue={defaultValue}
         rows={12}
         required
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => {
+          onChange(e.target.value);
+          autosize();
+        }}
         onSelect={rememberSelection}
         onKeyUp={rememberSelection}
         onMouseUp={rememberSelection}
         onTouchEnd={rememberSelection}
-        className="border border-line bg-surface px-3 py-2 font-mono text-sm font-normal text-foreground disabled:opacity-60"
+        className={`${BODY_TEXT_CLASS} min-h-[12rem] resize-none overflow-hidden bg-surface text-foreground disabled:opacity-60`}
       />
       <p className="font-normal">
         リンクにしたい文字を選択して「リンク」を押し、URLを貼り付けて確定します。本文には <code>[文字](URL)</code> の形で入り、公開ページでは選択した文字だけがリンクになります。
