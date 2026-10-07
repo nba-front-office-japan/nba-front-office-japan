@@ -33,7 +33,7 @@ export default async function AdminNewsEventsPage() {
     sourceCountByEvent.set(row.event_id, (sourceCountByEvent.get(row.event_id) ?? 0) + 1);
   }
   const draftByEvent = new Map<string, ArticleDraftStatus>(
-    (drafts ?? []).map((d) => [d.event_id, d.status])
+    (drafts ?? []).flatMap((d) => (d.event_id ? [[d.event_id, d.status] as const] : []))
   );
 
   return (

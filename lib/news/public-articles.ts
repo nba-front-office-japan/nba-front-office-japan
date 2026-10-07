@@ -22,7 +22,8 @@ export interface PublicArticleSummary {
   articleType: ArticleType;
   articleKind: ArticleKind;
   category: NewsEventCategory;
-  verificationStatus: VerificationStatus;
+  /** 独自コラム(イベントなし)は確認状況の対象外のため null(未確定情報などのラベルを出さない) */
+  verificationStatus: VerificationStatus | null;
   publishedAt: string | null;
 }
 
@@ -38,20 +39,33 @@ export async function fetchPublishedArticles(
 ): Promise<PublicArticleSummary[]> {
   const { data: drafts } = await supabase
     .from("article_drafts")
-    .select("id, headline_ja, dek_ja, article_type, article_kind, published_at, event_id")
+    .select("id, headline_ja, dek_ja, article_type, article_kind, published_at, event_id, category")
     .eq("status", "published")
     .order("published_at", { ascending: false });
 
   if (!drafts || drafts.length === 0) return [];
 
-  const eventIds = [...new Set(drafts.map((d) => d.event_id))];
-  const { data: events } = await supabase
-    .from("news_events")
-    .select("id, category, verification_status")
-    .in("id", eventIds);
+  const eventIds = [...new Set(drafts.flatMap((d) => (d.event_id ? [d.event_id] : [])))];
+  const { data: events } =
+    eventIds.length > 0
+      ? await supabase.from("news_events").select("id, category, verification_status").in("id", eventIds)
+      : { data: [] };
   const eventById = new Map((events ?? []).map((e) => [e.id, e]));
 
   return drafts.map((d) => {
+    // 独自コラム(イベントなし)は、下書きに保存したカテゴリを使い、確認状況は対象外(null)
+    if (!d.event_id) {
+      return {
+        id: d.id,
+        headlineJa: d.headline_ja,
+        dekJa: d.dek_ja,
+        articleType: d.article_type,
+        articleKind: d.article_kind,
+        category: d.category ?? "other",
+        verificationStatus: null,
+        publishedAt: d.published_at,
+      };
+    }
     const event = eventById.get(d.event_id);
     return {
       id: d.id,
@@ -78,6 +92,22 @@ export async function fetchPublishedArticleById(
     .maybeSingle();
 
   if (!draft) return null;
+
+  // 独自コラム(イベントなし)には外部の情報源がないため、情報源は空にする(公開ページでは「情報源」欄を出さない)
+  if (!draft.event_id) {
+    return {
+      id: draft.id,
+      headlineJa: draft.headline_ja,
+      dekJa: draft.dek_ja,
+      articleType: draft.article_type,
+      articleKind: draft.article_kind,
+      bodyMarkdown: draft.body_markdown,
+      category: draft.category ?? "other",
+      verificationStatus: null,
+      publishedAt: draft.published_at,
+      sources: [],
+    };
+  }
 
   const { data: event } = await supabase
     .from("news_events")

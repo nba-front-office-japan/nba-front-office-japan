@@ -3,8 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import type { ArticleType } from "@/lib/supabase/types";
-import { isArticleKind } from "@/lib/news/constants";
+import type { ArticleType, NewsEventCategory } from "@/lib/supabase/types";
+import { CATEGORY_OPTIONS, isArticleKind } from "@/lib/news/constants";
+
+function isCategory(value: string): value is NewsEventCategory {
+  return CATEGORY_OPTIONS.some((o) => o.value === value);
+}
 import type { ActionState } from "@/app/admin/_components/action-ui";
 
 export async function createDraftAction(
@@ -64,6 +68,49 @@ export async function createDraftAction(
   redirect(`/admin/news/drafts/${draft.id}?created=1`);
 }
 
+/**
+ * 独自コラムを作成する(取得ニュース・イベント・外部媒体を使わない下書き)。
+ * 入力は日本語タイトル・カテゴリ(必須)と記事種別。本文は作成後の編集画面で入力する。
+ */
+export async function createOriginalDraftAction(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const headlineJa = String(formData.get("headlineJa") ?? "").trim();
+  const category = String(formData.get("category") ?? "");
+  const articleKindValue = String(formData.get("articleKind") ?? "column");
+
+  if (!headlineJa) {
+    return { status: "error", message: "日本語タイトルを入力してください。" };
+  }
+  if (!isCategory(category)) {
+    return { status: "error", message: "カテゴリを選んでください。" };
+  }
+  const articleKind = isArticleKind(articleKindValue) ? articleKindValue : "column";
+
+  const supabase = createAdminSupabaseClient();
+  const { data: draft, error } = await supabase
+    .from("article_drafts")
+    .insert({
+      event_id: null,
+      category,
+      article_type: "standard",
+      article_kind: articleKind,
+      headline_ja: headlineJa,
+      body_markdown: "",
+      source_attribution_markdown: "",
+    })
+    .select("id")
+    .single();
+
+  if (error || !draft) {
+    return { status: "error", message: `独自コラムの作成に失敗しました: ${error?.message}` };
+  }
+
+  revalidatePath("/admin/news/drafts");
+  redirect(`/admin/news/drafts/${draft.id}?created=1`);
+}
+
 export async function updateDraftAction(
   _prevState: ActionState,
   formData: FormData
@@ -78,6 +125,8 @@ export async function updateDraftAction(
     formData.get("sourceAttributionMarkdown") ?? ""
   );
   const editorNotes = String(formData.get("editorNotes") ?? "").trim();
+  // 独自コラムの編集画面だけがカテゴリを送る(イベントありの記事はイベントのカテゴリを使う)
+  const categoryValue = formData.get("category");
 
   if (!draftId || !headlineJa) {
     return { status: "error", message: "見出しは必須です。" };
@@ -86,10 +135,15 @@ export async function updateDraftAction(
     return { status: "error", message: "記事種別（通常記事 / COLUMN）を選んでください。" };
   }
 
+  if (categoryValue !== null && !isCategory(String(categoryValue))) {
+    return { status: "error", message: "カテゴリを選んでください。" };
+  }
+
   const supabase = createAdminSupabaseClient();
   const { error } = await supabase
     .from("article_drafts")
     .update({
+      ...(categoryValue !== null ? { category: String(categoryValue) as NewsEventCategory } : {}),
       article_type: articleType,
       article_kind: articleKindValue,
       headline_ja: headlineJa,

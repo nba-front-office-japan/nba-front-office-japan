@@ -26,16 +26,15 @@ export default async function AdminNewsDraftDetailPage({
     notFound();
   }
 
-  const { data: event } = await supabase
-    .from("news_events")
-    .select("*")
-    .eq("id", draft.event_id)
-    .single();
+  // 独自コラム(イベントなし)には、イベント・原典がない
+  const isOriginal = draft.event_id === null;
+  const { data: event } = draft.event_id
+    ? await supabase.from("news_events").select("*").eq("id", draft.event_id).single()
+    : { data: null };
 
-  const { data: eventSources } = await supabase
-    .from("news_event_sources")
-    .select("news_item_id")
-    .eq("event_id", draft.event_id);
+  const { data: eventSources } = draft.event_id
+    ? await supabase.from("news_event_sources").select("news_item_id").eq("event_id", draft.event_id)
+    : { data: [] };
 
   const itemIds = (eventSources ?? []).map((s) => s.news_item_id);
   const { data: items } =
@@ -81,7 +80,11 @@ export default async function AdminNewsDraftDetailPage({
 
         <section className="mb-8 border border-line bg-surface p-6">
           <h2 className="mb-4 text-lg font-semibold">原典（公開ページに必ず表示されます）</h2>
-          {(items ?? []).length === 0 ? (
+          {isOriginal ? (
+            <p className="text-sm text-muted">
+              独自コラム（イベント・取得ニュースなし）のため、原典はありません。公開ページには「情報源」欄を表示しません。
+            </p>
+          ) : (items ?? []).length === 0 ? (
             <p className="text-sm text-muted">原典が見つかりません。</p>
           ) : (
             <ul className="space-y-2 text-sm">

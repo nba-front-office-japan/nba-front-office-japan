@@ -80,11 +80,12 @@ export function isLowConfidence(
 }
 
 // 公開ページ用：reliability_scoreを見せない代わりに検証状態だけで判定する。
-export function isRumorOrUnverified(verificationStatus: VerificationStatus): boolean {
+// verificationStatus が null のもの(独自コラム。確認状況の対象外)はどちらも false
+export function isRumorOrUnverified(verificationStatus: VerificationStatus | null): boolean {
   return verificationStatus === "rumor" || verificationStatus === "unverified";
 }
 
-export function isSingleSource(verificationStatus: VerificationStatus): boolean {
+export function isSingleSource(verificationStatus: VerificationStatus | null): boolean {
   return verificationStatus === "single_source";
 }
 

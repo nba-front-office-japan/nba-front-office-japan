@@ -72,11 +72,10 @@ export default async function NewsArticlePage({
         {/* 本文の直後に「構成●NBA Front Office Japan編集部」を自動で表示する(情報源・関連リンクより前) */}
         <ArticleBody bodyMarkdown={article.bodyMarkdown} articleKind={article.articleKind} />
 
-        <div className="border-t border-line pt-5">
-          <h2 className="mb-2 text-sm font-bold text-muted">情報源</h2>
-          {article.sources.length === 0 ? (
-            <p className="text-sm text-muted">情報源が登録されていません。</p>
-          ) : (
+        {/* 情報源が登録されていない記事(独自コラムなど)では、「情報源」欄そのものを表示しない */}
+        {article.sources.length > 0 && (
+          <div className="border-t border-line pt-5">
+            <h2 className="mb-2 text-sm font-bold text-muted">情報源</h2>
             <ul className="space-y-1.5 text-sm">
               {article.sources.map((source, i) => (
                 <li key={i}>
@@ -92,8 +91,8 @@ export default async function NewsArticlePage({
                 </li>
               ))}
             </ul>
-          )}
-        </div>
+          </div>
+        )}
 
         <Link href="/news" className="mt-6 inline-block text-sm font-extrabold text-blue">
           ← News一覧に戻る

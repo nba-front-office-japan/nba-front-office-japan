@@ -880,7 +880,10 @@ export interface Database {
       article_drafts: {
         Row: {
           id: string;
-          event_id: string;
+          /** 独自コラム(イベントなし)は null */
+          event_id: string | null;
+          /** 独自コラムのカテゴリ。イベントありの記事はイベントのカテゴリを使うため null */
+          category: NewsEventCategory | null;
           article_type: ArticleType;
           article_kind: ArticleKind;
           headline_ja: string;
@@ -898,7 +901,8 @@ export interface Database {
         };
         Insert: {
           id?: string;
-          event_id: string;
+          event_id?: string | null;
+          category?: NewsEventCategory | null;
           article_type: ArticleType;
           article_kind?: ArticleKind;
           headline_ja: string;

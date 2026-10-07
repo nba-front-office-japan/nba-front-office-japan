@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { ARTICLE_DRAFT_STATUS_LABEL } from "@/lib/news/constants";
 import { CreateDraftForm } from "./create-draft-form";
+import { CreateOriginalForm } from "./create-original-form";
 import { LINK_CLASS } from "@/app/admin/_components/action-ui";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +28,7 @@ export default async function AdminNewsDraftsPage() {
   ]);
 
   const eventHeadlineById = new Map((events ?? []).map((e) => [e.id, e.headline_en]));
-  const eventIdsWithDraft = new Set((drafts ?? []).map((d) => d.event_id));
+  const eventIdsWithDraft = new Set((drafts ?? []).flatMap((d) => (d.event_id ? [d.event_id] : [])));
   const eventsWithoutDraft = (events ?? []).filter((e) => !eventIdsWithDraft.has(e.id));
 
   return (
@@ -45,7 +46,15 @@ export default async function AdminNewsDraftsPage() {
         )}
 
         <section className="mb-8 border border-line bg-surface p-6">
-          <h2 className="mb-3 text-lg font-semibold">新規下書きを作成</h2>
+          <h2 className="mb-1 text-lg font-semibold">独自コラムを作成</h2>
+          <p className="mb-3 text-xs text-muted">
+            取得ニュース・イベントを使わずに、タイトルとカテゴリだけで下書きを作成します。
+          </p>
+          <CreateOriginalForm />
+        </section>
+
+        <section className="mb-8 border border-line bg-surface p-6">
+          <h2 className="mb-3 text-lg font-semibold">イベントから下書きを作成</h2>
           {eventsWithoutDraft.length === 0 ? (
             <p className="text-sm text-muted">
               下書き未作成のイベントがありません。先に「イベント」画面でイベントを作成してください。
@@ -84,7 +93,7 @@ export default async function AdminNewsDraftsPage() {
                         </Link>
                       </td>
                       <td className="px-3 py-2.5 text-muted">
-                        {eventHeadlineById.get(draft.event_id) ?? "-"}
+                        {draft.event_id ? (eventHeadlineById.get(draft.event_id) ?? "-") : "独自コラム（イベントなし）"}
                       </td>
                       <td className="px-3 py-2.5 text-muted">
                         {draft.article_kind === "column" && (

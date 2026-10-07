@@ -2,7 +2,7 @@
 
 import { useActionState, useState, type MouseEvent } from "react";
 import { updateDraftAction, rejectDraftAction } from "../actions";
-import { ARTICLE_KIND_OPTIONS, ARTICLE_TYPE_OPTIONS } from "@/lib/news/constants";
+import { ARTICLE_KIND_OPTIONS, ARTICLE_TYPE_OPTIONS, CATEGORY_OPTIONS } from "@/lib/news/constants";
 import {
   INITIAL_ACTION_STATE,
   PRIMARY_BUTTON_CLASS,
@@ -62,6 +62,24 @@ export function DraftEditForm({ draft }: { draft: ArticleDraft }) {
               ))}
             </select>
           </label>
+          {/* 独自コラム(イベントなし)はカテゴリを下書きに持つため、ここで変更できる */}
+          {draft.event_id === null && (
+            <label className="grid gap-1 text-[11px] font-bold text-muted">
+              カテゴリ（独自コラム）
+              <select
+                name="category"
+                defaultValue={draft.category ?? "other"}
+                required
+                className="max-w-[200px] border border-line bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-60"
+              >
+                {CATEGORY_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <label className="grid gap-1 text-[11px] font-bold text-muted">
             記事形式
             <select
