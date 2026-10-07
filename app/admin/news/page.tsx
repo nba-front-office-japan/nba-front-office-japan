@@ -1,6 +1,6 @@
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { isSourceDegraded } from "@/lib/news/health";
-import { summarizeSourceRuns, toRunView } from "@/lib/news/job-log";
+import { summarizeSourceRuns } from "@/lib/news/job-log";
 import { deriveProcessingStage } from "@/lib/news/processing-stage";
 import { registerManualOfficialUrlAction } from "./actions";
 import { CollectButton } from "./collect-button";
@@ -8,7 +8,6 @@ import { ItemsSelector, type SelectableNewsItem } from "./items-selector";
 import type { Database } from "@/lib/supabase/types";
 
 const ITEMS_FETCH_LIMIT = 500;
-const JOB_LOG_LIMIT = 20;
 const ERROR_PERIOD_DAYS = 7;
 // vercel.json の /api/cron/news-collect("0 21 * * *")に合わせた説明。Hobbyプランでは最大59分ずれる
 const AUTO_COLLECT_LABEL = "毎日1回（日本時間6時台）";
@@ -55,7 +54,6 @@ export default async function AdminNewsPage() {
   const sourceById = new Map((sources ?? []).map((s) => [s.id, s]));
   const rssSources = (sources ?? []).filter((s) => s.kind !== "manual_official");
   const manualSources = (sources ?? []).filter((s) => s.kind === "manual_official");
-  const runViews = (recentRuns ?? []).map(toRunView);
 
   const runsBySource = new Map<string, JobRun[]>();
   for (const run of recentRuns ?? []) {
@@ -196,52 +194,6 @@ export default async function AdminNewsPage() {
               ほかに「{manualSources.map((s) => s.name).join("・")}」（下の手動登録で使うソース。自動取得はしません）があります。
             </p>
           )}
-        </section>
-
-        <section className="mb-8 border border-line bg-surface p-6">
-          <h2 className="mb-1 text-lg font-semibold">直近の取得履歴</h2>
-          <p className="mb-4 text-xs text-muted">
-            直近{JOB_LOG_LIMIT}回分。「重複で除外」は、すでに取得済みだったため追加しなかった件数です（失敗した回は途中で止まるため表示しません）。
-          </p>
-          <p className="mb-2 text-xs text-muted sm:hidden">→ 横にスクロールできます</p>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-line text-left text-[11px] font-bold text-muted">
-                  <th className="px-3 py-2">取得日時</th>
-                  <th className="px-3 py-2">ソース</th>
-                  <th className="px-3 py-2">結果</th>
-                  <th className="px-3 py-2 text-right">取得</th>
-                  <th className="px-3 py-2 text-right">新規追加</th>
-                  <th className="px-3 py-2 text-right">重複で除外</th>
-                  <th className="px-3 py-2">エラー内容</th>
-                </tr>
-              </thead>
-              <tbody>
-                {runViews.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-3 py-6 text-center text-muted">
-                      まだ取得履歴がありません。
-                    </td>
-                  </tr>
-                ) : (
-                  runViews.slice(0, JOB_LOG_LIMIT).map((run) => (
-                    <tr key={run.id} className="border-b border-line/60">
-                      <td className="whitespace-nowrap px-3 py-2.5 text-muted">{formatDateTime(run.startedAt)}</td>
-                      <td className="px-3 py-2.5 font-semibold">{sourceById.get(run.sourceId)?.name ?? "-"}</td>
-                      <td className="px-3 py-2.5">
-                        {run.success ? <span className="text-[#218c68]">成功</span> : <span className="font-bold text-[#cf4a51]">失敗</span>}
-                      </td>
-                      <td className="px-3 py-2.5 text-right tabular-nums">{run.found}件</td>
-                      <td className="px-3 py-2.5 text-right tabular-nums">{run.inserted}件</td>
-                      <td className="px-3 py-2.5 text-right tabular-nums text-muted">{run.duplicates != null ? `${run.duplicates}件` : "-"}</td>
-                      <td className="px-3 py-2.5 text-[#cf4a51]">{run.error ?? ""}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
         </section>
 
         <section className="mb-8 border border-line bg-surface p-6">
