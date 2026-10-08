@@ -10,15 +10,19 @@ export function StatusBadge({ game }: { game: GameSummary }) {
         ? "bg-navy text-white"
         : "border border-line text-muted";
   return (
-    <span className={`inline-block px-1.5 py-0.5 text-[11px] font-extrabold ${style}`}>
-      {GAME_STATUS_LABEL[game.status]}
-      {game.status === "in_progress" && game.statusDetail ? `・${game.statusDetail}` : ""}
+    <span className="inline-flex flex-wrap items-center gap-1.5">
+      {game.preseason && <span className="inline-block border border-gold px-1.5 py-0.5 text-[11px] font-extrabold text-[#8a5a00] dark:text-gold">プレシーズン</span>}
+      <span className={`inline-block px-1.5 py-0.5 text-[11px] font-extrabold ${style}`}>
+        {GAME_STATUS_LABEL[game.status]}
+        {game.status === "in_progress" && game.statusDetail ? `・${game.statusDetail}` : ""}
+      </span>
     </span>
   );
 }
 
 export function TipoffTime({ game }: { game: GameSummary }) {
-  if (!game.tipoffAt) return <span className="text-xs text-muted">開始時刻未定</span>;
+  // プレシーズン(Excel取り込み)は開始時刻のデータがない
+  if (!game.tipoffAt) return <span className="text-xs text-muted">{game.preseason ? "開始時刻の掲載なし" : "開始時刻未定"}</span>;
   return <span className="text-xs text-muted">{formatJstTime(game.tipoffAt)} 開始（日本時間）</span>;
 }
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { GameDetail, GameDetailResponse } from "@/lib/games/types";
 import { BoxScoreTable } from "./box-score-table";
+import { PreseasonBoxScoreTable } from "./preseason-box-score-table";
 import { NotReadyNotice, SpoilerGate, StatusBadge, TipoffTime } from "./game-parts";
 import { isGameRevealed } from "./reveal-store";
 import { ScoreTable } from "./score-table";
@@ -65,7 +66,7 @@ export function GameDetailView({ gameId }: { gameId: string }) {
     );
   }
 
-  const { game, homePlayers, awayPlayers } = state.detail;
+  const { game, homePlayers, awayPlayers, preseason } = state.detail;
   return (
     <div className="space-y-5">
       <section className="border border-line bg-surface p-5">
@@ -75,7 +76,14 @@ export function GameDetailView({ gameId }: { gameId: string }) {
         </div>
         <ScoreTable game={game} />
       </section>
-      {homePlayers.length === 0 && awayPlayers.length === 0 ? (
+      {preseason ? (
+        // プレシーズン(Excelから取り込み)。選手名は出典の表記のまま、選手ページへのリンクなし
+        <>
+          <PreseasonBoxScoreTable side="アウェー" team={game.away} rows={preseason.away} totals={preseason.awayTotals} />
+          <PreseasonBoxScoreTable side="ホーム" team={game.home} rows={preseason.home} totals={preseason.homeTotals} />
+          <p className="text-xs leading-6 text-muted">プレシーズンの選手名は出典の表記のまま表示しています（選手ページへのリンクはありません）。</p>
+        </>
+      ) : homePlayers.length === 0 && awayPlayers.length === 0 ? (
         <p className="border border-line bg-surface px-5 py-6 text-center text-sm text-muted">ボックススコアは準備中です。</p>
       ) : (
         <>

@@ -6,12 +6,15 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
 import { jstDateOf, jstDayRangeUtc } from "./date";
-import type { BoxScoreRow, GameDetailResponse, GameSummary, GameTeamLine, GamesResponse } from "./types";
+import type { BoxScoreRow, GameDetailResponse, GameSummary, GameTeamLine, GamesResponse, PreseasonBoxRow, PreseasonBoxTotals } from "./types";
 
 type Client = SupabaseClient<Database>;
 type GameRow = Database["public"]["Tables"]["games"]["Row"];
 type TeamRow = Database["public"]["Tables"]["teams"]["Row"];
 type StatRow = Database["public"]["Tables"]["game_player_stats"]["Row"];
+type PreseasonGameRow = Database["public"]["Tables"]["preseason_games"]["Row"];
+type PreseasonStatRow = Database["public"]["Tables"]["preseason_player_stats"]["Row"];
+type PreseasonTotalRow = Database["public"]["Tables"]["preseason_team_totals"]["Row"];
 
 // テーブルが存在しないときにPostgREST/Postgresが返すエラーコード
 const MISSING_TABLE_CODES = new Set(["PGRST205", "42P01"]);
@@ -42,6 +45,7 @@ function toSummary(g: GameRow, teams: Map<string, TeamRow>): GameSummary {
     statusDetail: g.status_detail,
     period: g.period,
     postseason: g.postseason,
+    preseason: false,
     home: teamLine(teams.get(g.home_team_id), "home", g),
     away: teamLine(teams.get(g.away_team_id), "away", g),
   };
@@ -68,8 +72,127 @@ export async function fetchGamesForJstDate(supabase: Client, date: string): Prom
   if (error) throw new Error(`gamesの取得に失敗しました: ${error.message}`);
 
   const games = data ?? [];
-  const teams = await fetchTeams(supabase, [...new Set(games.flatMap((g) => [g.home_team_id, g.away_team_id]))]);
-  return { status: "ok", date, games: games.map((g) => toSummary(g, teams)) };
+  // プレシーズン(Excel取り込み)の試合。開始時刻がないため、日本時間のその日の試合の後ろに並べる
+  const preseason = await fetchPreseasonGamesForDate(supabase, date);
+  const teams = await fetchTeams(supabase, [...new Set([...games, ...preseason].flatMap((g) => [g.home_team_id, g.away_team_id]))]);
+  return { status: "ok", date, games: [...games.map((g) => toSummary(g, teams)), ...preseason.map((g) => preseasonSummary(g, teams))] };
+}
+
+// ==========================================================================
+// プレシーズン(preseason_* テーブル。管理画面の Excel から取り込み)
+// ==========================================================================
+
+async function fetchPreseasonGamesForDate(supabase: Client, date: string): Promise<PreseasonGameRow[]> {
+  const { data, error } = await supabase.from("preseason_games").select("*").eq("game_date", date).order("game_key");
+  // テーブル未作成のときは、プレシーズンの試合がないものとして扱う
+  if (isMissingTable(error)) return [];
+  if (error) throw new Error(`preseason_gamesの取得に失敗しました: ${error.message}`);
+  return data ?? [];
+}
+
+function preseasonSummary(g: PreseasonGameRow, teams: Map<string, TeamRow>): GameSummary {
+  const line = (side: "home" | "away"): GameTeamLine => {
+    const team = teams.get(side === "home" ? g.home_team_id : g.away_team_id);
+    return {
+      teamId: side === "home" ? g.home_team_id : g.away_team_id,
+      abbreviation: team?.abbreviation ?? "—",
+      name: team?.name ?? (side === "home" ? g.home_team_label : g.away_team_label),
+      city: team?.city ?? "",
+      score: side === "home" ? g.home_score : g.away_score,
+      quarters: side === "home" ? [g.home_q1, g.home_q2, g.home_q3, g.home_q4] : [g.away_q1, g.away_q2, g.away_q3, g.away_q4],
+      overtimes: [],
+    };
+  };
+  return {
+    id: g.id,
+    jstDate: g.game_date,
+    tipoffAt: null,
+    status: g.status,
+    statusDetail: g.status_detail,
+    period: null,
+    postseason: false,
+    preseason: true,
+    home: line("home"),
+    away: line("away"),
+  };
+}
+
+function toPreseasonRow(s: PreseasonStatRow): PreseasonBoxRow {
+  return {
+    playerName: s.player_name,
+    position: s.position,
+    played: s.played,
+    minutes: s.minutes,
+    pts: s.pts,
+    fgm: s.fgm,
+    fga: s.fga,
+    fg3m: s.fg3m,
+    fg3a: s.fg3a,
+    ftm: s.ftm,
+    fta: s.fta,
+    reb: s.reb,
+    ast: s.ast,
+    stl: s.stl,
+    blk: s.blk,
+    tov: s.tov,
+    pf: s.pf,
+  };
+}
+
+function toPreseasonTotals(t: PreseasonTotalRow | undefined): PreseasonBoxTotals | null {
+  if (!t) return null;
+  return {
+    pts: t.pts,
+    fgm: t.fgm,
+    fga: t.fga,
+    fg3m: t.fg3m,
+    fg3a: t.fg3a,
+    ftm: t.ftm,
+    fta: t.fta,
+    reb: t.reb,
+    ast: t.ast,
+    stl: t.stl,
+    blk: t.blk,
+    tov: t.tov,
+    pf: t.pf,
+    fgPct: t.fg_pct,
+    fg3Pct: t.fg3_pct,
+    ftPct: t.ft_pct,
+  };
+}
+
+/** プレシーズンの試合の詳細。見つからなければ null */
+async function fetchPreseasonGameDetail(supabase: Client, gameId: string): Promise<GameDetailResponse | null> {
+  const { data: game, error } = await supabase.from("preseason_games").select("*").eq("id", gameId).maybeSingle();
+  if (isMissingTable(error)) return null;
+  if (error) throw new Error(`preseason_gamesの取得に失敗しました: ${error.message}`);
+  if (!game) return null;
+
+  const [teams, statsResult, totalsResult] = await Promise.all([
+    fetchTeams(supabase, [game.home_team_id, game.away_team_id]),
+    supabase.from("preseason_player_stats").select("*").eq("game_id", gameId).order("row_order"),
+    supabase.from("preseason_team_totals").select("*").eq("game_id", gameId),
+  ]);
+  if (statsResult.error) throw new Error(`preseason_player_statsの取得に失敗しました: ${statsResult.error.message}`);
+  if (totalsResult.error) throw new Error(`preseason_team_totalsの取得に失敗しました: ${totalsResult.error.message}`);
+
+  const stats = statsResult.data ?? [];
+  const totals = totalsResult.data ?? [];
+  return {
+    status: "ok",
+    detail: {
+      game: preseasonSummary(game, teams),
+      homePlayers: [],
+      awayPlayers: [],
+      preseason: {
+        // 出典(Excel)の並び順のまま(先発 → 控え → 出場なし)
+        away: stats.filter((s) => s.side === "away").map(toPreseasonRow),
+        home: stats.filter((s) => s.side === "home").map(toPreseasonRow),
+        awayTotals: toPreseasonTotals(totals.find((t) => t.side === "away")),
+        homeTotals: toPreseasonTotals(totals.find((t) => t.side === "home")),
+      },
+    },
+  };
 }
 
 function toBoxRow(s: StatRow): BoxScoreRow {
@@ -97,7 +220,7 @@ export async function fetchGameDetail(supabase: Client, gameId: string): Promise
   const { data: game, error } = await supabase.from("games").select("*").eq("id", gameId).maybeSingle();
   if (isMissingTable(error)) return { status: "not_ready" };
   if (error) throw new Error(`gamesの取得に失敗しました: ${error.message}`);
-  if (!game) return { status: "not_found" };
+  if (!game) return (await fetchPreseasonGameDetail(supabase, gameId)) ?? { status: "not_found" };
 
   const [teams, statsResult] = await Promise.all([
     fetchTeams(supabase, [game.home_team_id, game.away_team_id]),

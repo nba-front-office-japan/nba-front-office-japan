@@ -23,6 +23,8 @@ export type GameSummary = {
   statusDetail: string | null;
   period: number | null;
   postseason: boolean;
+  /** プレシーズンの試合(管理画面のExcelから取り込んだもの)。開始時刻はなく、個人成績は PreseasonBox で持つ */
+  preseason: boolean;
   home: GameTeamLine;
   away: GameTeamLine;
 };
@@ -45,9 +47,46 @@ export type BoxScoreRow = {
   plusMinus: number | null;
 };
 
+/** プレシーズンの個人成績の1行(選手名は出典の表記のまま。選手ページへのリンクは付けない) */
+export type PreseasonBoxRow = {
+  playerName: string;
+  position: string | null;
+  played: boolean;
+  minutes: number | null;
+  pts: number | null;
+  fgm: number | null;
+  fga: number | null;
+  fg3m: number | null;
+  fg3a: number | null;
+  ftm: number | null;
+  fta: number | null;
+  reb: number | null;
+  ast: number | null;
+  stl: number | null;
+  blk: number | null;
+  tov: number | null;
+  pf: number | null;
+};
+
+/** プレシーズンのチーム合計(Team Totals の Total 行と 成功率 行) */
+export type PreseasonBoxTotals = Omit<PreseasonBoxRow, "playerName" | "position" | "played" | "minutes"> & {
+  fgPct: string | null;
+  fg3Pct: string | null;
+  ftPct: string | null;
+};
+
+export type PreseasonBox = {
+  away: PreseasonBoxRow[];
+  home: PreseasonBoxRow[];
+  awayTotals: PreseasonBoxTotals | null;
+  homeTotals: PreseasonBoxTotals | null;
+};
+
 export type GameDetail = {
   game: GameSummary;
   homePlayers: BoxScoreRow[];
+  /** プレシーズンの試合だけ。あれば homePlayers / awayPlayers の代わりにこちらで表示する */
+  preseason?: PreseasonBox;
   awayPlayers: BoxScoreRow[];
 };
 

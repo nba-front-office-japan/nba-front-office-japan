@@ -489,6 +489,114 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["games"]["Insert"]>;
         Relationships: [];
       };
+      preseason_games: {
+        Row: {
+          id: string;
+          game_key: string;
+          game_date: string;
+          away_team_id: string;
+          home_team_id: string;
+          away_team_label: string;
+          home_team_label: string;
+          status: GameStatus;
+          status_detail: string | null;
+          away_score: number | null;
+          home_score: number | null;
+          away_q1: number | null;
+          away_q2: number | null;
+          away_q3: number | null;
+          away_q4: number | null;
+          home_q1: number | null;
+          home_q2: number | null;
+          home_q3: number | null;
+          home_q4: number | null;
+          game_info: string | null;
+          venue: string | null;
+          source_notes: string | null;
+          source_url: string | null;
+          last_imported_at: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      preseason_player_stats: {
+        Row: {
+          id: string;
+          game_id: string;
+          side: "away" | "home";
+          row_order: number;
+          player_name: string;
+          position: string | null;
+          played: boolean;
+          minutes: number | null;
+          pts: number | null;
+          fgm: number | null;
+          fga: number | null;
+          fg3m: number | null;
+          fg3a: number | null;
+          ftm: number | null;
+          fta: number | null;
+          oreb: number | null;
+          dreb: number | null;
+          reb: number | null;
+          ast: number | null;
+          stl: number | null;
+          blk: number | null;
+          tov: number | null;
+          pf: number | null;
+          created_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      preseason_team_totals: {
+        Row: {
+          id: string;
+          game_id: string;
+          side: "away" | "home";
+          pts: number | null;
+          fgm: number | null;
+          fga: number | null;
+          fg3m: number | null;
+          fg3a: number | null;
+          ftm: number | null;
+          fta: number | null;
+          oreb: number | null;
+          dreb: number | null;
+          reb: number | null;
+          ast: number | null;
+          stl: number | null;
+          blk: number | null;
+          tov: number | null;
+          pf: number | null;
+          fg_pct: string | null;
+          fg3_pct: string | null;
+          ft_pct: string | null;
+          created_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      preseason_coverage: {
+        Row: {
+          game_date: string;
+          scheduled_games: number | null;
+          linked_games: number | null;
+          final_games: number | null;
+          monthly_completed_games: number | null;
+          source_notes: string | null;
+          source_url: string | null;
+          last_imported_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       game_player_stats: {
         Row: {
           id: string;
@@ -1011,6 +1119,10 @@ export interface Database {
     };
     Views: Record<string, never>;
     Functions: {
+      import_preseason: {
+        Args: { p_games: unknown; p_players: unknown; p_totals: unknown; p_coverage: unknown };
+        Returns: { inserted: number; updated: number };
+      };
       apply_player_team_history_import: {
         Args: { p_operations: unknown };
         Returns: unknown;

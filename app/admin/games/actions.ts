@@ -9,10 +9,16 @@ import { MAX_CSV_BYTES } from "@/lib/games/box-score-csv";
 import { applyTeamBoxScore, isTeamSide, prepareTeamBoxScore, type CheckReport, type TeamSide } from "@/lib/games/box-score-import";
 import { MAX_SYNC_DAYS, syncGamesFromBalldontlie, type SyncResult } from "@/lib/games/balldontlie-sync";
 import { addDays, isValidDateString } from "@/lib/games/date";
+import { importPreseasonWorkbook, type PreseasonImportResult } from "@/lib/games/preseason-import";
 
 export type CheckResult = { ok: true; report: CheckReport } | { ok: false; message: string };
 
 export type SaveResult = { ok: true; count: number; replaced: number } | { ok: false; message: string; report?: CheckReport };
+
+export type PreseasonState = { status: "idle" } | { status: "error"; message: string } | { status: "done"; fileName: string; result: PreseasonImportResult };
+
+// サーバーアクションの送信サイズ上限(既定1MB)に収まる大きさ
+const MAX_PRESEASON_BYTES = 900_000;
 
 export type SyncState = { status: "idle" } | { status: "error"; message: string } | { status: "done"; result: SyncResult };
 
@@ -82,5 +88,21 @@ export async function syncGamesAction(_prev: SyncState, formData: FormData): Pro
     return { status: "done", result };
   } catch (err) {
     return { status: "error", message: `取り込みに失敗しました: ${errorMessage(err)}` };
+  }
+}
+
+/** プレシーズン Excel更新(Game Summary・Player Stats・Team Totals・Coverage を取り込む) */
+export async function importPreseasonAction(_prev: PreseasonState, formData: FormData): Promise<PreseasonState> {
+  const file = formData.get("xlsx");
+  if (!(file instanceof File) || file.size === 0) return { status: "error", message: "Excelファイル（.xlsx）を選んでください。" };
+  if (!/\.xlsx$/i.test(file.name)) return { status: "error", message: "拡張子が .xlsx のファイルを選んでください。" };
+  if (file.size > MAX_PRESEASON_BYTES) return { status: "error", message: `ファイルが大きすぎます（上限 ${Math.round(MAX_PRESEASON_BYTES / 1000)}KB）。` };
+
+  try {
+    const result = await importPreseasonWorkbook(createAdminSupabaseClient(), Buffer.from(await file.arrayBuffer()));
+    revalidatePath("/admin/games");
+    return { status: "done", fileName: file.name, result };
+  } catch (err) {
+    return { status: "error", message: `取り込みに失敗しました（データは変更されていません）：${errorMessage(err)}` };
   }
 }
