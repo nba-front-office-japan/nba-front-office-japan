@@ -60,6 +60,9 @@ export type PreseasonBoxRow = {
   fg3a: number | null;
   ftm: number | null;
   fta: number | null;
+  /** オフェンス・ディフェンス・合計リバウンド(Excel の「O-D-合計」) */
+  oreb: number | null;
+  dreb: number | null;
   reb: number | null;
   ast: number | null;
   stl: number | null;

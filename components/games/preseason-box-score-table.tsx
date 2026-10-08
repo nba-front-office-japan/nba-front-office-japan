@@ -12,6 +12,12 @@ function pair(made: number | null, att: number | null): string {
   return made === null || att === null ? "–" : `${made}-${att}`;
 }
 
+/** リバウンドを「オフェンス-ディフェンス-合計」(例: 1-2-3)で表す。内訳がなければ合計だけ */
+function rebounds(o: number | null, d: number | null, total: number | null): string {
+  if (o !== null && d !== null && total !== null) return `${o}-${d}-${total}`;
+  return total === null ? "–" : String(total);
+}
+
 function num(v: number | null): string {
   return v === null ? "–" : String(v);
 }
@@ -71,7 +77,7 @@ export function PreseasonBoxScoreTable({
                       <td className={CELL}>{pair(r.fgm, r.fga)}</td>
                       <td className={CELL}>{pair(r.fg3m, r.fg3a)}</td>
                       <td className={CELL}>{pair(r.ftm, r.fta)}</td>
-                      <td className={CELL}>{num(r.reb)}</td>
+                      <td className={CELL}>{rebounds(r.oreb, r.dreb, r.reb)}</td>
                       <td className={CELL}>{num(r.ast)}</td>
                       <td className={CELL}>{num(r.stl)}</td>
                       <td className={CELL}>{num(r.blk)}</td>
@@ -98,7 +104,7 @@ export function PreseasonBoxScoreTable({
                   <td className={CELL}>{pair(totals.fgm, totals.fga)}</td>
                   <td className={CELL}>{pair(totals.fg3m, totals.fg3a)}</td>
                   <td className={CELL}>{pair(totals.ftm, totals.fta)}</td>
-                  <td className={CELL}>{num(totals.reb)}</td>
+                  <td className={CELL}>{rebounds(totals.oreb, totals.dreb, totals.reb)}</td>
                   <td className={CELL}>{num(totals.ast)}</td>
                   <td className={CELL}>{num(totals.stl)}</td>
                   <td className={CELL}>{num(totals.blk)}</td>
