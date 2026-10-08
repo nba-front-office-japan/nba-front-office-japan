@@ -1,16 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import type { GameDetail, GameDetailResponse } from "@/lib/games/types";
 import { BoxScoreTable } from "./box-score-table";
 import { PreseasonBoxScoreTable } from "./preseason-box-score-table";
 import { NotReadyNotice, SpoilerGate, StatusBadge, TipoffTime } from "./game-parts";
-import { isGameRevealed } from "./reveal-store";
+import { getCached, isGameRevealed, markGameRevealed, setCached, subscribeNoop, unknownOnServer } from "./reveal-store";
 import { ScoreTable } from "./score-table";
 
 type State =
-  | { kind: "hidden" }
-  | { kind: "loading" }
   | { kind: "ready"; detail: GameDetail }
   | { kind: "not_ready" }
   | { kind: "not_found" }
@@ -29,31 +27,47 @@ async function fetchDetail(gameId: string): Promise<State> {
 }
 
 // 試合の詳細(スコアと両チームのボックススコア)。
-// 一覧で結果を表示してからカードを押した場合だけ、そのまま表示する。
-// 詳細ページを直接開いた場合は結果を隠し、「結果を表示する」を押したときだけ取得する。
+// 一覧で結果を表示してからカードを押した試合は、非表示画面を挟まずにそのまま表示する。
+// 詳細ページを直接開いた場合(共有されたリンクなど)は結果を隠し、「結果を表示する」を押したときだけ取得する。
 export function GameDetailView({ gameId }: { gameId: string }) {
-  const [state, setState] = useState<State>({ kind: "hidden" });
-
-  async function load() {
-    setState({ kind: "loading" });
-    setState(await fetchDetail(gameId));
-  }
+  // このタブで結果を表示済みの試合か(サーバー側・最初の描画では分からないため null)
+  const revealedBefore = useSyncExternalStore(subscribeNoop, () => isGameRevealed(gameId), unknownOnServer);
+  const [clicked, setClicked] = useState(false);
+  // 一度取得した結果は、このタブのページ間移動の間だけ保持する
+  const [loaded, setLoaded] = useState<State | null>(() => getCached<State>(`detail:${gameId}`) ?? null);
+  const show = clicked || revealedBefore === true;
 
   useEffect(() => {
-    // 一覧で結果を表示してから来た試合だけ自動で表示する(sessionStorageはブラウザでしか読めないため、表示後に判定する)
-    if (!isGameRevealed(gameId)) return;
+    if (!show || loaded) return;
     let cancelled = false;
     void fetchDetail(gameId).then((next) => {
-      if (!cancelled) setState(next);
+      if (cancelled) return;
+      if (next.kind === "ready") setCached(`detail:${gameId}`, next);
+      setLoaded(next);
     });
     return () => {
       cancelled = true;
     };
-  }, [gameId]);
+  }, [show, loaded, gameId]);
 
-  if (state.kind === "hidden" || state.kind === "loading") {
-    return <SpoilerGate message="この試合の結果は非表示です" onReveal={load} loading={state.kind === "loading"} />;
+  function reveal() {
+    markGameRevealed(gameId);
+    setClicked(true);
   }
+
+  if (!show) {
+    // まだ判定できない間(ページを開いた直後の一瞬)は、非表示画面も結果も出さない
+    if (revealedBefore === null) return <p className="border border-line bg-surface px-5 py-10 text-center text-sm text-muted">読み込み中…</p>;
+    return <SpoilerGate message="この試合の結果は非表示です" onReveal={reveal} loading={false} />;
+  }
+  if (!loaded) {
+    return clicked ? (
+      <SpoilerGate message="この試合の結果は非表示です" onReveal={reveal} loading />
+    ) : (
+      <p className="border border-line bg-surface px-5 py-10 text-center text-sm text-muted">読み込み中…</p>
+    );
+  }
+  const state = loaded;
   if (state.kind === "not_ready") return <NotReadyNotice />;
   if (state.kind === "not_found") {
     return <p className="border border-line bg-surface px-5 py-6 text-sm text-muted">試合が見つかりませんでした。</p>;
