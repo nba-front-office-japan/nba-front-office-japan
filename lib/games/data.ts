@@ -5,7 +5,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
-import { jstDateOf, jstDayRangeUtc } from "./date";
+import { addDays, jstDateOf, jstDayRangeUtc } from "./date";
 import type { BoxScoreRow, GameDetailResponse, GameSummary, GameTeamLine, GamesResponse, PreseasonBoxRow, PreseasonBoxTotals } from "./types";
 
 type Client = SupabaseClient<Database>;
@@ -82,8 +82,21 @@ export async function fetchGamesForJstDate(supabase: Client, date: string): Prom
 // プレシーズン(preseason_* テーブル。管理画面の Excel から取り込み)
 // ==========================================================================
 
-async function fetchPreseasonGamesForDate(supabase: Client, date: string): Promise<PreseasonGameRow[]> {
-  const { data, error } = await supabase.from("preseason_games").select("*").eq("game_date", date).order("game_key");
+// Excel の Game Date は米国側の日付。日本時間ではその翌日に行われるため、公開側(試合センターの日付・
+// 今日/前日/翌日の判定・試合詳細の日付)では1日加えた日付を日本時間の日付として使う。
+// 保存している game_date(管理画面・Excel取込・Game ID・Coverage の元の日付)は変えない。
+// レギュラーシーズン(games.tipoff_at から日本時間を計算)には関係しない。
+const PRESEASON_JST_OFFSET_DAYS = 1;
+
+/** プレシーズンの試合の、日本時間の日付(Excel の Game Date + 1日) */
+function preseasonJstDate(gameDate: string): string {
+  return addDays(gameDate, PRESEASON_JST_OFFSET_DAYS);
+}
+
+/** 日本時間のその日に表示するプレシーズンの試合(= Excel の Game Date がその前日の試合) */
+async function fetchPreseasonGamesForDate(supabase: Client, jstDate: string): Promise<PreseasonGameRow[]> {
+  const gameDate = addDays(jstDate, -PRESEASON_JST_OFFSET_DAYS);
+  const { data, error } = await supabase.from("preseason_games").select("*").eq("game_date", gameDate).order("game_key");
   // テーブル未作成のときは、プレシーズンの試合がないものとして扱う
   if (isMissingTable(error)) return [];
   if (error) throw new Error(`preseason_gamesの取得に失敗しました: ${error.message}`);
@@ -105,7 +118,7 @@ function preseasonSummary(g: PreseasonGameRow, teams: Map<string, TeamRow>): Gam
   };
   return {
     id: g.id,
-    jstDate: g.game_date,
+    jstDate: preseasonJstDate(g.game_date),
     tipoffAt: null,
     status: g.status,
     statusDetail: g.status_detail,

@@ -1,4 +1,4 @@
-import { formatJstTime } from "@/lib/games/date";
+import { formatJstDateLabel, formatJstTime } from "@/lib/games/date";
 import { GAME_STATUS_LABEL, type GameSummary } from "@/lib/games/types";
 
 // 試合状態のバッジ(試合前・試合中・試合終了・延期)
@@ -22,7 +22,11 @@ export function StatusBadge({ game }: { game: GameSummary }) {
 
 export function TipoffTime({ game }: { game: GameSummary }) {
   // プレシーズン(Excel取り込み)は開始時刻のデータがない
-  if (!game.tipoffAt) return <span className="text-xs text-muted">{game.preseason ? "開始時刻の掲載なし" : "開始時刻未定"}</span>;
+  if (game.preseason && !game.tipoffAt) {
+    // プレシーズン(Excel取り込み)は開始時刻のデータがないため、日本時間の試合日だけを表示する
+    return <span className="text-xs text-muted">{game.jstDate ? `${formatJstDateLabel(game.jstDate)}（日本時間）・` : ""}開始時刻の掲載なし</span>;
+  }
+  if (!game.tipoffAt) return <span className="text-xs text-muted">開始時刻未定</span>;
   return <span className="text-xs text-muted">{formatJstTime(game.tipoffAt)} 開始（日本時間）</span>;
 }
 

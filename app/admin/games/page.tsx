@@ -158,7 +158,7 @@ export default async function AdminGamesPage({ searchParams }: PageProps<"/admin
         <ul className="list-disc space-y-1 pl-5 text-xs text-muted">
           <li>選手名は Excel の表記のまま表示し、選手ページへのリンクは付けません（選手データとは照合しません）。</li>
           <li>Coverage シートは公開ページには使わず、下の「Coverage との照合」でだけ表示します。</li>
-          <li>Game Date は出典（日本のサイト）の日付として、試合センターでは日本時間のその日に表示します。</li>
+          <li>Game Date は米国側の日付として保存し（この画面・Game ID・Coverage はその日付のまま）、試合センターでは1日加えた日本時間の日付に表示します（例: Game Date 10/7 → 試合センターの 10/8）。</li>
           <li>レギュラーシーズンの試合（下の balldontlie・CSV の仕組み）には影響しません。</li>
         </ul>
         {!preseason.ready ? (
