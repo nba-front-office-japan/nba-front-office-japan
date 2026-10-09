@@ -8,6 +8,8 @@ import {
   type PlayerStatRow,
 } from "@/components/player-season-stats";
 import { AWARDS_SEASON, getAwardLabel } from "@/lib/awards/constants";
+import { summarizeAwards } from "@/lib/awards/history";
+import { PlayerAwardHistory } from "@/components/player-award-history";
 import { ROSTER_SEASON } from "@/lib/seasons";
 
 const CURRENT_SEASON = ROSTER_SEASON;
@@ -112,6 +114,14 @@ export default async function PlayerDetailPage({
     getAwardLabel(a.award_key, a.selection_team)
   );
 
+  // 個人賞・表彰の履歴(管理画面のExcelから取り込んだもの)。表彰歴がない選手には表示しない。
+  // テーブルが未作成・取得に失敗した場合も、プロフィールのほかの表示は変えない
+  const { data: awardHistory } =
+    selectedView === "profile"
+      ? await supabase.from("player_award_records").select("award_key, season, selection_team").eq("player_id", playerId)
+      : { data: null };
+  const awardSummaries = summarizeAwards(awardHistory ?? []);
+
   return (
     <PageShell>
       <PlayerHeader
@@ -135,6 +145,7 @@ export default async function PlayerDetailPage({
           </Link>
         ))}
       </div>
+      {selectedView === "profile" && awardSummaries.length > 0 && <PlayerAwardHistory summaries={awardSummaries} />}
       {selectedView === "profile" && awardLabels.length > 0 && (
         <div className="mt-8 border border-line bg-surface p-6">
           <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">

@@ -489,6 +489,23 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["games"]["Insert"]>;
         Relationships: [];
       };
+      player_award_records: {
+        Row: {
+          id: string;
+          player_id: string;
+          season: number;
+          award_key: string;
+          selection_team: number | null;
+          award_team: string | null;
+          source: string | null;
+          source_player_name: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       preseason_games: {
         Row: {
           id: string;
@@ -1119,6 +1136,10 @@ export interface Database {
     };
     Views: Record<string, never>;
     Functions: {
+      apply_player_award_import: {
+        Args: { p_rows: unknown; p_delete_ids: string[] };
+        Returns: { inserted: number; updated: number; deleted: number };
+      };
       import_preseason: {
         Args: { p_games: unknown; p_players: unknown; p_totals: unknown; p_coverage: unknown };
         Returns: { inserted: number; updated: number };

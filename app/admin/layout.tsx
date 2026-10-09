@@ -6,6 +6,7 @@ const NAV_ITEMS = [
   { href: "/admin/news/events", label: "イベント" },
   { href: "/admin/news/drafts", label: "記事下書き" },
   { href: "/admin/games", label: "試合データ" },
+  { href: "/admin/awards", label: "表彰データ" },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
