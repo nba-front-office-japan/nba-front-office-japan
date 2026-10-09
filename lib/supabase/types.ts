@@ -1151,7 +1151,58 @@ export interface Database {
         Relationships: [];
       };
     };
-    Views: Record<string, never>;
+    Views: {
+      player_stats_list: {
+        Row: {
+          id: string;
+          player_id: string;
+          season: number;
+          season_type: "regular_season" | "playoffs";
+          player_name: string;
+          position: string | null;
+          team_count: number;
+          has_total_row: boolean;
+          team_ids: string[];
+          team_label: string;
+          games_played: number;
+          minutes_played: number;
+          points: number;
+          rebounds_offensive: number;
+          rebounds_defensive: number;
+          rebounds_total: number;
+          assists: number;
+          steals: number;
+          blocks: number;
+          turnovers: number;
+          personal_fouls: number;
+          field_goals_made: number;
+          field_goals_attempted: number;
+          three_pointers_made: number;
+          three_pointers_attempted: number;
+          free_throws_made: number;
+          free_throws_attempted: number;
+          mpg: number | null;
+          ppg: number | null;
+          orb_pg: number | null;
+          drb_pg: number | null;
+          rpg: number | null;
+          apg: number | null;
+          stl_pg: number | null;
+          blk_pg: number | null;
+          tov_pg: number | null;
+          pf_pg: number | null;
+          fg_pct: number | null;
+          three_pct: number | null;
+          ft_pct: number | null;
+          ts_pct: number | null;
+        };
+        Relationships: [];
+      };
+      player_stats_list_seasons: {
+        Row: { season: number; season_type: "regular_season" | "playoffs" };
+        Relationships: [];
+      };
+    };
     Functions: {
       apply_nba_season_award_import: {
         Args: { p_rows: unknown; p_delete_ids: string[] };

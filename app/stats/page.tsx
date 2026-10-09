@@ -1,212 +1,71 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import { PageShell } from "@/components/page-shell";
-import { StatsTable, type StatRow, type SortKey } from "@/components/stats-table";
-import { aggregatePlayerSeasonStats } from "@/lib/stats";
-import type { Database } from "@/lib/supabase/types";
+import { StatsListFilters } from "@/components/stats-list-filters";
+import { StatsListTable } from "@/components/stats-list-table";
+import { fetchStatsPage, fetchStatsSeasons, parseStatsQuery } from "@/lib/stats-list";
 import { STATS_SEASON, ROSTER_SEASON, seasonLabel } from "@/lib/seasons";
 
-type PlayerStatsRow = Database["public"]["Tables"]["player_stats"]["Row"];
+const STATS_LABEL = seasonLabel(STATS_SEASON);
 
-const PLAYER_STATS_SEASON = STATS_SEASON;
-const CURRENT_ROSTER_SEASON = ROSTER_SEASON;
-const STATS_LABEL = seasonLabel(PLAYER_STATS_SEASON);
-
-// ?sort= で受け付ける並べ替えキー(ホームの「人気検索」のリンクもこの値を使う)。
-// StatsTable の列を増やしたら、ここにも追加する。
-const MIN_GAMES_VALUES = [20, 50] as const;
-
-const SORT_KEYS: readonly SortKey[] = [
-  "playerName",
-  "position",
-  "gamesPlayed",
-  "mpg",
-  "ppg",
-  "orbPg",
-  "drbPg",
-  "rpg",
-  "apg",
-  "stlPg",
-  "blkPg",
-  "fgPct",
-  "threePct",
-  "ftPct",
-  "tsPct",
-  "tovPg",
-  "pfPg",
-  "teamLabel",
-];
-
-// 2025-26レギュラーシーズンは選手1人につき1行に合算する（移籍していればチーム別の
-// 部分成績を合算し、どれか1チーム行を任意に選ぶ処理はしない）。
-function labelForSeasonGroup(
-  rows: PlayerStatsRow[],
-  teamAbbrById: Map<string, string>
-): string {
-  const teamRows = rows.filter((r) => r.team_id !== null);
-  if (teamRows.length === 0) return "TOT";
-  if (teamRows.length === 1) return teamAbbrById.get(teamRows[0].team_id!) ?? "-";
-  return `${teamRows.length}TM`;
+// 選手スタッツ一覧。並べ替え・絞り込み・100人ずつの取得はDB(player_stats_list ビュー)で行い、
+// このページには表示する100人分だけを取得する。条件・ページは URL の検索パラメータ
+// (?type= / season= / team= / pos= / minGames= / sort= / dir= / page=)で持つ。
+// 1行 = 選手 × シーズン × 種別。シーズン中に複数チームでプレーした選手は、そのシーズンの合計成績を1行で表示する。
+async function loadStats(params: Record<string, string | string[] | undefined>) {
+  const supabase = createServerSupabaseClient();
+  const [seasonsByType, { data: teams }] = await Promise.all([
+    fetchStatsSeasons(supabase),
+    supabase.from("teams").select("id, abbreviation, name").order("abbreviation"),
+  ]);
+  const typeParam = Array.isArray(params.type) ? params.type[0] : params.type;
+  const seasons = typeParam === "playoffs" ? seasonsByType.playoffs : seasonsByType.regular_season;
+  const latestSeason = seasons[0] ?? null;
+  const query = parseStatsQuery(params, latestSeason);
+  const teamId = query.team ? ((teams ?? []).find((t) => t.abbreviation === query.team)?.id ?? null) : null;
+  const result = await fetchStatsPage(supabase, query, teamId);
+  return {
+    seasons,
+    latestSeason,
+    teams: (teams ?? []).map((t) => ({ abbreviation: t.abbreviation, name: t.name })),
+    query: { ...query, page: result.page },
+    result,
+  };
 }
 
-export default async function StatsPage({
-  searchParams,
-}: PageProps<"/stats">) {
+export default async function StatsPage({ searchParams }: PageProps<"/stats">) {
   const params = await searchParams;
-  const sortParam = Array.isArray(params.sort) ? params.sort[0] : params.sort;
-  const initialSortKey = SORT_KEYS.find((key) => key === sortParam);
-  // ?minGames= は最低出場試合数(20/50のみ有効。表の MINIMUM GAMES の選択肢と同じ)
-  const minGamesParam = Array.isArray(params.minGames) ? params.minGames[0] : params.minGames;
-  const initialMinGames = MIN_GAMES_VALUES.find((g) => String(g) === minGamesParam) ?? 0;
+  let data: Awaited<ReturnType<typeof loadStats>> | null = null;
+  let errorMessage: string | null = null;
+  try {
+    data = await loadStats(params);
+  } catch (err) {
+    errorMessage = err instanceof Error ? err.message : String(err);
+  }
 
-  const supabase = createServerSupabaseClient();
-
-  const { data: stats, error } = await fetchAllRows((from, to) =>
-    supabase.from("player_stats").select("*").range(from, to)
-  );
-
-  if (error) {
+  if (!data) {
     return (
       <PageShell>
         <h1 className="mb-6 text-2xl font-semibold">選手スタッツ</h1>
-        <p className="text-sm text-red-600 dark:text-red-400">
-          スタッツデータの取得に失敗しました: {error.message}
-        </p>
+        <p className="text-sm text-red-600 dark:text-red-400">スタッツデータの取得に失敗しました: {errorMessage}</p>
       </PageShell>
     );
   }
-
-  // player_statsの選手数はteamsと違って多くなり得るため、.in()でIDを直接渡すと
-  // URLが長くなりすぎて失敗することがある（実際に発生した不具合）。
-  // players全件を取得してMapで引く方式にする。
-  const [
-    { data: players, error: playersError },
-    { data: teams, error: teamsError },
-    { data: currentRosterRows },
-  ] = await Promise.all([
-    fetchAllRows((from, to) =>
-      supabase
-        .from("players")
-        .select("id, full_name, full_name_ja")
-        .range(from, to)
-    ),
-    fetchAllRows((from, to) =>
-      supabase.from("teams").select("id, abbreviation").range(from, to)
-    ),
-    // position列は本機能のマイグレーション実行前は存在しないため、失敗しても
-    // ページ全体は落とさず「—」表示にフォールバックする(他ページの既存パターンと同様)。
-    fetchAllRows((from, to) =>
-      supabase
-        .from("player_season_rosters")
-        .select("player_id, position")
-        .eq("season", CURRENT_ROSTER_SEASON)
-        .range(from, to)
-    ),
-  ]);
-
-  if (playersError || teamsError) {
-    return (
-      <PageShell>
-        <h1 className="mb-6 text-2xl font-semibold">選手スタッツ</h1>
-        <p className="text-sm text-red-600 dark:text-red-400">
-          選手・チームデータの取得に失敗しました:{" "}
-          {playersError?.message ?? teamsError?.message}
-        </p>
-      </PageShell>
-    );
-  }
-
-  const playerById = new Map(players.map((p) => [p.id, p]));
-  const teamAbbrById = new Map(teams.map((t) => [t.id, t.abbreviation]));
-  // POS表示・絞り込みは2026-27ロスター(NBA_2026_2027ロスター.xlsx由来)のPosだけを
-  // 基準にする。旧player_stats/players側のG/F/C等の分類は使わない。
-  // ロスター未登録の選手はnull(表示側で「—」)のままにし、推測・補完はしない。
-  const currentPositionByPlayerId = new Map(
-    currentRosterRows.map((r) => [r.player_id, r.position])
-  );
-
-  const isPlayerStatsRegularSeason = (s: PlayerStatsRow) =>
-    s.season === PLAYER_STATS_SEASON && s.season_type === "regular_season";
-
-  const regularSeasonRowsByPlayer = new Map<string, PlayerStatsRow[]>();
-  const otherRows: PlayerStatsRow[] = [];
-  for (const s of stats) {
-    if (isPlayerStatsRegularSeason(s)) {
-      const list = regularSeasonRowsByPlayer.get(s.player_id) ?? [];
-      list.push(s);
-      regularSeasonRowsByPlayer.set(s.player_id, list);
-    } else {
-      otherRows.push(s);
-    }
-  }
-
-  // 2025-26レギュラーシーズン：選手1人につき1行（移籍していれば合算）。
-  const aggregatedRegularSeasonRows: StatRow[] = [...regularSeasonRowsByPlayer.entries()].map(
-    ([playerId, rows]) => {
-      const player = playerById.get(playerId);
-      const totals = aggregatePlayerSeasonStats(rows);
-      return {
-        id: playerId,
-        playerName: player?.full_name_ja ?? player?.full_name ?? "不明な選手",
-        position: currentPositionByPlayerId.get(playerId) ?? null,
-        season: PLAYER_STATS_SEASON,
-        teamLabel: labelForSeasonGroup(rows, teamAbbrById),
-        seasonType: "regular_season",
-        ...totals!,
-      };
-    }
-  );
-
-  // それ以外（プレーオフ・他シーズン）は従来どおり行単位のまま扱う。
-  const otherStatRows: StatRow[] = otherRows.map((s) => {
-    const player = playerById.get(s.player_id);
-    return {
-      id: s.id,
-      playerName: player?.full_name_ja ?? player?.full_name ?? "不明な選手",
-      position: currentPositionByPlayerId.get(s.player_id) ?? null,
-      season: s.season,
-      teamLabel: s.team_id ? teamAbbrById.get(s.team_id) ?? "-" : "TOT",
-      seasonType: s.season_type,
-      gamesPlayed: s.games_played,
-      minutesPlayed: s.minutes_played,
-      points: s.points,
-      reboundsOffensive: s.rebounds_offensive,
-      reboundsDefensive: s.rebounds_defensive,
-      reboundsTotal: s.rebounds_total,
-      assists: s.assists,
-      steals: s.steals,
-      blocks: s.blocks,
-      turnovers: s.turnovers,
-      personalFouls: s.personal_fouls,
-      fieldGoalsMade: s.field_goals_made,
-      fieldGoalsAttempted: s.field_goals_attempted,
-      threePointersMade: s.three_pointers_made,
-      threePointersAttempted: s.three_pointers_attempted,
-      freeThrowsMade: s.free_throws_made,
-      freeThrowsAttempted: s.free_throws_attempted,
-    };
-  });
-
-  const rows: StatRow[] = [...aggregatedRegularSeasonRows, ...otherStatRows];
 
   return (
     <PageShell>
-      <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
-        Player Stats · {STATS_LABEL} Season
-      </p>
+      <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">Player Stats · {STATS_LABEL} Season</p>
       {/* 現在は選手スタッツの一覧・並べ替え。比較・独自指標などの分析機能を追加したら「Stats Lab」等の表記を検討する */}
-      <h1 className="mb-2 text-[36px] font-semibold tracking-tight">
-        選手スタッツ
-      </h1>
-      <p className="mb-2 text-sm text-muted">
-        収録選手の基本スタッツを、シーズン・ポジション・出場試合数で検索する。
-      </p>
-      <p className="mb-7 border border-line bg-[#eaf1ff] px-4 py-3 text-xs leading-6 text-[#264c8a] dark:bg-white/[.06]">
-        選手スタッツは{STATS_LABEL}レギュラーシーズン・プレーオフの成績を対象にしています。
-        {CURRENT_ROSTER_SEASON > PLAYER_STATS_SEASON &&
-          `${seasonLabel(CURRENT_ROSTER_SEASON)}シーズンの成績はまだ収録していません。`}
-      </p>
-      <StatsTable rows={rows} initialSortKey={initialSortKey} initialMinGames={initialMinGames} />
+      <h1 className="mb-2 text-[36px] font-semibold tracking-tight">選手スタッツ</h1>
+      <p className="mb-2 text-sm text-muted">収録選手の基本スタッツを、シーズン・チーム・ポジション・出場試合数で検索する。</p>
+      <div className="mb-7 space-y-1 border border-line bg-[#eaf1ff] px-4 py-3 text-xs leading-6 text-[#264c8a] dark:bg-white/[.06]">
+        <p>
+          選手スタッツは{STATS_LABEL}までのレギュラーシーズン・プレーオフの成績を対象にしています。
+          {ROSTER_SEASON > STATS_SEASON && `${seasonLabel(ROSTER_SEASON)}シーズンの成績はまだ収録していません。`}
+        </p>
+        <p>複数チームに所属した選手は、そのシーズンの合計成績です（チーム欄に「2チーム合計」などと表示）。チームで絞り込むと、そのチームに所属した選手の合計成績を表示します。</p>
+      </div>
+      <StatsListFilters query={data.query} latestSeason={data.latestSeason} seasons={data.seasons} teams={data.teams} />
+      <StatsListTable query={data.query} latestSeason={data.latestSeason} result={data.result} />
     </PageShell>
   );
 }
