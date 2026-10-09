@@ -18,3 +18,11 @@ export function ageAt(birthDate: string | null, reference: AgeReference): number
   }
   return age;
 }
+
+// 表示した日(日本時間)を基準日にする。選手名鑑・選手プロフィールの「現在の年齢」に使う
+// (保存した値ではなく、ページを表示するたびに生年月日から計算するため、誕生日を過ぎると自動で1つ増える)。
+export function todayInJapan(now: Date = new Date()): AgeReference {
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(now);
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+  return { year: get("year"), month: get("month"), day: get("day") };
+}

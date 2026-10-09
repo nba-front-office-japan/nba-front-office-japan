@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Database } from "@/lib/supabase/types";
 import { formatDraftInfo } from "@/lib/draft-format";
+import { ageAt, todayInJapan } from "@/lib/age";
 
 type Player = Database["public"]["Tables"]["players"]["Row"];
 type Team = Database["public"]["Tables"]["teams"]["Row"];
@@ -20,6 +21,7 @@ export function PlayerHeader({
 }) {
   const displayName = player.full_name_ja ?? player.full_name;
   const showEnglishSubtitle = Boolean(player.full_name_ja);
+  const age = ageAt(player.birth_date, todayInJapan());
 
   return (
     <div>
@@ -71,12 +73,21 @@ export function PlayerHeader({
             <dd className="font-semibold">{player.birth_date ?? "-"}</dd>
           </div>
           <div>
+            <dt className="text-muted">年齢</dt>
+            {/* 保存値ではなく、表示した日(日本時間)時点で生年月日から計算する */}
+            <dd className="font-semibold">{age !== null ? `${age}歳` : "-"}</dd>
+          </div>
+          <div>
             <dt className="text-muted">国籍</dt>
             <dd className="font-semibold">{player.nationality ?? "-"}</dd>
           </div>
           <div>
             <dt className="text-muted">ドラフト</dt>
             <dd className="font-semibold">{formatDraft(player)}</dd>
+          </div>
+          <div>
+            <dt className="text-muted">最終在籍校／直前所属</dt>
+            <dd className="font-semibold">{player.pre_draft_team ?? "-"}</dd>
           </div>
         </dl>
       </div>

@@ -14,8 +14,8 @@ import {
 import { TeamProfileView } from "@/components/team-profile-view";
 import { deriveStats, aggregatePlayerSeasonStats } from "@/lib/stats";
 import { formatDraftInfo, draftSortValue } from "@/lib/draft-format";
-import { ageAt } from "@/lib/age";
-import { ROSTER_SEASON, STATS_SEASON, seasonLabel, ageReferenceFor } from "@/lib/seasons";
+import { ageAt, todayInJapan } from "@/lib/age";
+import { ROSTER_SEASON, STATS_SEASON, seasonLabel } from "@/lib/seasons";
 import { fetchTeamProfileData } from "@/lib/team-profile-data";
 import type { Database } from "@/lib/supabase/types";
 
@@ -170,7 +170,8 @@ export default async function PlayerGuideTeamPage({
     position: positionByPlayerId.get(player.id) ?? null,
     jerseyNumber: jerseyByPlayerId.get(player.id) ?? null,
     birthDate: player.birth_date,
-    age: ageAt(player.birth_date, ageReferenceFor(CURRENT_ROSTER_SEASON)),
+    // 年齢は表示した日(日本時間)時点で生年月日から計算する
+    age: ageAt(player.birth_date, todayInJapan()),
     heightCm: player.height_cm,
     weightKg: player.weight_kg,
     preDraftTeam: player.pre_draft_team ?? null,
