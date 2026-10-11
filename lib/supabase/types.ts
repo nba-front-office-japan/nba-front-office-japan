@@ -544,6 +544,8 @@ export interface Database {
           home_q2: number | null;
           home_q3: number | null;
           home_q4: number | null;
+          away_ot: number | null;
+          home_ot: number | null;
           game_info: string | null;
           venue: string | null;
           source_notes: string | null;

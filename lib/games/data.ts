@@ -113,7 +113,8 @@ function preseasonSummary(g: PreseasonGameRow, teams: Map<string, TeamRow>): Gam
       city: team?.city ?? "",
       score: side === "home" ? g.home_score : g.away_score,
       quarters: side === "home" ? [g.home_q1, g.home_q2, g.home_q3, g.home_q4] : [g.away_q1, g.away_q2, g.away_q3, g.away_q4],
-      overtimes: [],
+      // プレシーズンのExcelは延長の合計得点だけを持つ(延長の回ごとの内訳はない)。OT列追加前のデータは undefined
+      overtimes: (side === "home" ? g.home_ot : g.away_ot) != null ? [(side === "home" ? g.home_ot : g.away_ot)!] : [],
     };
   };
   return {

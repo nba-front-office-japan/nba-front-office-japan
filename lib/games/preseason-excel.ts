@@ -52,8 +52,21 @@ function normalizeTeamLabel(label: string): string {
   return label.normalize("NFKC").toUpperCase().replace(/[\s・･]/g, "");
 }
 
+// 出典(プレシーズンExcel)で確認済みの表記ゆれ → 正しい表記。プレシーズン取り込みだけで使う。
+// ここにない未登録の表記は推測で変換せず、従来どおりエラーにする。
+const PRESEASON_TEAM_LABEL_FIXES: Record<string, string> = {
+  セルティクス: "セルティックス",
+  マーベリクス: "マーベリックス",
+};
+
+/** 確認済みの表記ゆれを正しい表記に直す。直したときは fixedFrom に元の表記を返す */
+export function fixPreseasonTeamLabel(label: string): { label: string; fixedFrom: string | null } {
+  const fixed = PRESEASON_TEAM_LABEL_FIXES[normalizeTeamLabel(label)];
+  return fixed ? { label: fixed, fixedFrom: label } : { label, fixedFrom: null };
+}
+
 export function teamAbbrFromLabel(label: string): string | null {
-  return TEAM_NAME_TO_ABBR[normalizeTeamLabel(label)] ?? null;
+  return TEAM_NAME_TO_ABBR[normalizeTeamLabel(fixPreseasonTeamLabel(label).label)] ?? null;
 }
 
 export type ImportIssue = { sheet: string; row: number | null; message: string };
@@ -96,6 +109,9 @@ export type PreseasonGameRow = {
   home_q2: number | null;
   home_q3: number | null;
   home_q4: number | null;
+  /** 延長の合計得点(Excel の Away OT / Home OT。延長なしは null) */
+  away_ot: number | null;
+  home_ot: number | null;
   game_info: string | null;
   venue: string | null;
   source_notes: string | null;
@@ -289,8 +305,13 @@ export function parsePreseasonWorkbook(sheets: Map<string, SheetRows>): ParsedPr
     if (gameByKey.has(key)) problems.push(`Game ID「${key}」が重複しています`);
     const date = dateOf(get("Game Date"));
     if (!date) problems.push(`Game Date「${get("Game Date")}」が日付ではありません`);
-    const awayLabel = str(get("Away Team")) ?? "";
-    const homeLabel = str(get("Home Team")) ?? "";
+    const awayFix = fixPreseasonTeamLabel(str(get("Away Team")) ?? "");
+    const homeFix = fixPreseasonTeamLabel(str(get("Home Team")) ?? "");
+    const awayLabel = awayFix.label;
+    const homeLabel = homeFix.label;
+    for (const [col, fix] of [["Away Team", awayFix], ["Home Team", homeFix]] as const) {
+      if (fix.fixedFrom) warnings.push({ sheet: "Game Summary", row: i + 1, message: `${key}：${col}「${fix.fixedFrom}」を「${fix.label}」として取り込みました（表記ゆれの自動変換）` });
+    }
     const awayAbbr = teamAbbrFromLabel(awayLabel);
     const homeAbbr = teamAbbrFromLabel(homeLabel);
     if (!awayAbbr) problems.push(`Away Team「${awayLabel}」がどのチームか判定できません`);
@@ -326,6 +347,9 @@ export function parsePreseasonWorkbook(sheets: Map<string, SheetRows>): ParsedPr
       home_q2: n("Home 2Q"),
       home_q3: n("Home 3Q"),
       home_q4: n("Home 4Q"),
+      // OT列は任意(古いExcelにはない)
+      away_ot: gs.has("Away OT") ? n("Away OT") : null,
+      home_ot: gs.has("Home OT") ? n("Home OT") : null,
       game_info: str(get("Game Information")),
       venue: str(get("Venue / Location")),
       source_notes: str(get("Source Consistency Notes")),
@@ -336,13 +360,24 @@ export function parsePreseasonWorkbook(sheets: Map<string, SheetRows>): ParsedPr
       badGames.add(key);
       continue;
     }
-    // クオーター合計と最終スコア(延長があれば一致しないため、注意として表示する)
+    // クオーター合計と最終スコア。OTが入力されている試合は 4Q までの合計 ＋ OT と比べる
+    // (4Qまでの合計だけが最終スコアと違うのは延長があるためなので、警告しない)
     for (const side of ["away", "home"] as const) {
       const q = [g[`${side}_q1`], g[`${side}_q2`], g[`${side}_q3`], g[`${side}_q4`]];
+      const ot = g[`${side}_ot`];
       const score = g[`${side}_score`];
-      if (score !== null && q.every((v) => v !== null) && q.reduce((a, b) => a! + b!, 0) !== score) {
-        warnings.push({ sheet: "Game Summary", row: i + 1, message: `${key}：${side === "away" ? "アウェー" : "ホーム"}のクオーター合計が最終スコア ${score} と一致しません（延長の可能性）` });
-      }
+      if (score === null || !q.every((v) => v !== null)) continue;
+      const sum = q.reduce((a, b) => a! + b!, 0)! + (ot ?? 0);
+      if (sum === score) continue;
+      const label = side === "away" ? "アウェー" : "ホーム";
+      warnings.push({
+        sheet: "Game Summary",
+        row: i + 1,
+        message:
+          ot !== null
+            ? `${key}：${label}のクオーター合計＋OT（${sum}）が最終スコア ${score} と一致しません`
+            : `${key}：${label}のクオーター合計が最終スコア ${score} と一致しません（延長の可能性。OT列が空欄です）`,
+      });
     }
     if (g.source_notes) warnings.push({ sheet: "Game Summary", row: i + 1, message: `${key}：出典の注記「${g.source_notes}」` });
     gameByKey.set(key, g);
@@ -375,7 +410,8 @@ export function parsePreseasonWorkbook(sheets: Map<string, SheetRows>): ParsedPr
     if (!name) problems.push("Player（選手名）が空欄です");
     const g = gameByKey.get(key);
     if (g && side) {
-      const label = str(get("Team"));
+      const raw = str(get("Team"));
+      const label = raw ? fixPreseasonTeamLabel(raw).label : null;
       const expected = side === "away" ? g.away_team_label : g.home_team_label;
       if (label && normalizeTeamLabel(label) !== normalizeTeamLabel(expected)) problems.push(`Team「${label}」が Game Summary の${side === "away" ? "Away" : "Home"} Team（${expected}）と一致しません`);
     }
