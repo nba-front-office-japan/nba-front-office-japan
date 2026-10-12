@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 // ガイドのカテゴリーと、各カテゴリーで扱う内容の例。
 // 詳細ページがある項目だけ GUIDE_PAGES(lib/guide-official.ts)にURLを登録してリンクにする(未作成のページへはリンクしない)。
-// RFA / UFA・MLE は「契約」と「NBA用語」の両方に載せる(詳細ページを作ったら同じページへリンクする想定)。
+// 契約・サラリーの用語は「契約」の「契約用語」に、それ以外の用語は「用語一覧」(/guide/glossary)にまとめ、同じ用語を両方に載せない。
 
 const GUIDE_CATEGORIES: { category: string; examples: string[] }[] = [
   // 最初に読む導入ページ
@@ -19,7 +19,7 @@ const GUIDE_CATEGORIES: { category: string; examples: string[] }[] = [
     category: "NBA制度",
     examples: ["サラリーキャップ", "ラグジュアリータックス", "1st Apron / 2nd Apron", "Revenue Sharing"],
   },
-  { category: "契約", examples: ["MAX契約", "ミニマム契約", "Bird Rights", "RFA / UFA", "MLE", "ロスター契約・短期契約"] },
+  { category: "契約", examples: ["MAX契約", "ミニマム契約", "Bird Rights", "RFA / UFA", "MLE", "ロスター契約・短期契約", "契約用語"] },
   { category: "ドラフト", examples: ["ドラフト指名権", "ロッタリー", "指名権の価値"] },
   {
     category: "トレード・ロスター移動",
@@ -30,7 +30,7 @@ const GUIDE_CATEGORIES: { category: string; examples: string[] }[] = [
     category: "過去事件",
     examples: ["ジョー・スミス事件", "タンパリング", "サラリーキャップ迂回に関する処分"],
   },
-  { category: "NBA用語", examples: ["2-way", "RFA", "UFA", "MLE", "NBA用語集"] },
+  { category: "用語一覧", examples: ["ドラフト・制度", "怪我・インジュリー用語", "プレー用語"] },
 ];
 
 // 例を「、」区切りで並べる。1項目(例:「1st Apron / 2nd Apron」)が行の途中で折り返さないよう、

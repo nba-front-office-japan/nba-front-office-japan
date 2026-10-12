@@ -103,15 +103,11 @@ export const GUIDE_PAGES: Record<string, string> = {
   MAX契約: "/guide/max-contract",
   ミニマム契約: "/guide/minimum-contract",
   "Bird Rights": "/guide/bird-rights",
-  // 「契約」の「RFA / UFA」と、「NBA用語」の「RFA」「UFA」は同じ詳細ページへリンクする
   "RFA / UFA": "/guide/rfa-ufa",
-  RFA: "/guide/rfa-ufa",
-  UFA: "/guide/rfa-ufa",
-  // 「契約」と「NBA用語」の「MLE」は同じ詳細ページへリンクする
   MLE: "/guide/mle",
-  // 「契約」の「ロスター契約・短期契約」と、「NBA用語」の「2-way」は同じ詳細ページへリンクする
   "ロスター契約・短期契約": "/guide/roster-contracts",
-  "2-way": "/guide/roster-contracts",
+  // 「契約」の「契約用語」(契約・サラリーの用語の一覧。もとは用語集にあった用語)
+  契約用語: "/guide/contract-terms",
   トレードの基本: "/guide/trade-basics",
   サラリーマッチング: "/guide/salary-matching",
   Buyout: "/guide/buyout",
@@ -122,8 +118,10 @@ export const GUIDE_PAGES: Record<string, string> = {
   "ジョー・スミス事件": "/guide/joe-smith-case",
   タンパリング: "/guide/tampering-cases",
   サラリーキャップ迂回に関する処分: "/guide/salary-cap-circumvention",
-  // 「NBA用語」の「NBA用語集」は用語集ページへリンクする
-  NBA用語集: "/guide/glossary",
+  // 「用語一覧」(URL は /guide/glossary のまま)の各分類へリンクする
+  "ドラフト・制度": "/guide/glossary#draft-system",
+  "怪我・インジュリー用語": "/guide/glossary#injury",
+  プレー用語: "/guide/glossary#play",
   ドラフト指名権: "/guide/draft-picks",
   ロッタリー: "/guide/draft-lottery",
   指名権の価値: "/guide/draft-pick-value",

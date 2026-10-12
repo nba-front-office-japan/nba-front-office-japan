@@ -14,8 +14,9 @@ import {
 // 1文字だけの行ができないようにする(text-wrap: balance)。
 export const HEADING_WRAP = "text-balance [word-break:auto-phrase]";
 
-// 「NBAガイド › カテゴリー › ページ名」の現在地表示と、カテゴリー・ページ名のラベル
-export function GuideHeader({ category, current }: { category: string; current: string }) {
+// 「NBAガイド › カテゴリー › ページ名」の現在地表示と、カテゴリー・ページ名のラベル。
+// カテゴリーとページ名が同じ(例: 用語一覧)ときは current を省き、「NBAガイド › カテゴリー」とする
+export function GuideHeader({ category, current }: { category: string; current?: string }) {
   return (
     <>
       <nav aria-label="パンくずリスト" className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
@@ -23,13 +24,19 @@ export function GuideHeader({ category, current }: { category: string; current: 
           NBAガイド
         </Link>
         <span aria-hidden>›</span>
-        <span>{category}</span>
-        <span aria-hidden>›</span>
-        <span className="font-semibold text-foreground">{current}</span>
+        {current ? (
+          <>
+            <span>{category}</span>
+            <span aria-hidden>›</span>
+            <span className="font-semibold text-foreground">{current}</span>
+          </>
+        ) : (
+          <span className="font-semibold text-foreground">{category}</span>
+        )}
       </nav>
       <div className="mb-3 flex flex-wrap gap-2">
         <span className="inline-block bg-[#eaf1ff] px-1.5 py-1 text-[11px] font-extrabold text-[#2457b7]">{category}</span>
-        <span className="inline-block border border-line px-1.5 py-1 text-[11px] font-extrabold text-muted">{current}</span>
+        {current && <span className="inline-block border border-line px-1.5 py-1 text-[11px] font-extrabold text-muted">{current}</span>}
       </div>
     </>
   );
