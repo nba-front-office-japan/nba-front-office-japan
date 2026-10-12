@@ -29,6 +29,8 @@ export interface PublicArticleSummary {
 
 export interface PublicArticleDetail extends PublicArticleSummary {
   bodyMarkdown: string;
+  /** 関連メディア(Xポスト・YouTube動画)の URL。表示時に lib/news/related-media.ts で再検証する */
+  relatedMediaUrls: string[];
   sources: PublicArticleSource[];
 }
 
@@ -102,6 +104,7 @@ export async function fetchPublishedArticleById(
       articleType: draft.article_type,
       articleKind: draft.article_kind,
       bodyMarkdown: draft.body_markdown,
+      relatedMediaUrls: draft.related_media_urls ?? [],
       category: draft.category ?? "other",
       verificationStatus: null,
       publishedAt: draft.published_at,
@@ -150,6 +153,7 @@ export async function fetchPublishedArticleById(
     articleType: draft.article_type,
     articleKind: draft.article_kind,
     bodyMarkdown: draft.body_markdown,
+    relatedMediaUrls: draft.related_media_urls ?? [],
     category: event?.category ?? "other",
     verificationStatus: event?.verification_status ?? "unverified",
     publishedAt: draft.published_at,

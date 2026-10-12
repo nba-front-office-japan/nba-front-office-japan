@@ -14,14 +14,15 @@ import { COLUMN_BADGE_CLASS } from "@/lib/news/constants";
 import { BodyEditor } from "./body-editor";
 import { BodyPreview, endsWithCredit } from "./body-preview";
 import { ARTICLE_CREDIT, showsArticleCredit } from "@/lib/news/credit";
+import { MAX_RELATED_MEDIA } from "@/lib/news/related-media";
 
 type ArticleDraft = Database["public"]["Tables"]["article_drafts"]["Row"];
 
 // プレビューに使う入力中の値
-type PreviewValues = { kind: ArticleKind; headline: string; dek: string; body: string };
+type PreviewValues = { kind: ArticleKind; headline: string; dek: string; body: string; media: string[] };
 
 function sameValues(a: PreviewValues, b: PreviewValues): boolean {
-  return a.kind === b.kind && a.headline === b.headline && a.dek === b.dek && a.body === b.body;
+  return a.kind === b.kind && a.headline === b.headline && a.dek === b.dek && a.body === b.body && a.media.join("|") === b.media.join("|");
 }
 
 export function DraftEditForm({ draft }: { draft: ArticleDraft }) {
@@ -29,7 +30,14 @@ export function DraftEditForm({ draft }: { draft: ArticleDraft }) {
     updateDraftAction,
     INITIAL_ACTION_STATE
   );
-  const initial: PreviewValues = { kind: draft.article_kind, headline: draft.headline_ja, dek: draft.dek_ja ?? "", body: draft.body_markdown };
+  const savedMedia = draft.related_media_urls ?? [];
+  const initial: PreviewValues = {
+    kind: draft.article_kind,
+    headline: draft.headline_ja,
+    dek: draft.dek_ja ?? "",
+    body: draft.body_markdown,
+    media: Array.from({ length: MAX_RELATED_MEDIA }, (_, i) => savedMedia[i] ?? ""),
+  };
   const [values, setValues] = useState<PreviewValues>(initial);
   const [submitted, setSubmitted] = useState<PreviewValues | null>(null);
   const set = (patch: Partial<PreviewValues>) => setValues((v) => ({ ...v, ...patch }));
@@ -116,6 +124,25 @@ export function DraftEditForm({ draft }: { draft: ArticleDraft }) {
             />
           </label>
           <BodyEditor name="bodyMarkdown" defaultValue={draft.body_markdown} onChange={(body) => set({ body })} />
+          <fieldset className="grid min-w-0 gap-1.5">
+            <legend className="mb-1 text-[11px] font-bold text-muted">関連メディアURL（X・YouTube／任意）</legend>
+            <p className="text-xs text-muted">
+              Xの公開ポスト（x.com / twitter.com の …/status/数字）と、YouTubeの動画・Shorts のURLを、合わせて{MAX_RELATED_MEDIA}件まで登録できます。公開ページでは本文の後に表示します。空欄は登録しません。
+            </p>
+            {values.media.map((_, i) => (
+              <input
+                key={i}
+                type="text"
+                name="relatedMediaUrl"
+                inputMode="url"
+                defaultValue={initial.media[i]}
+                onChange={(e) => set({ media: values.media.map((v, j) => (j === i ? e.target.value : v)) })}
+                placeholder={i === 0 ? "例：https://x.com/NBA/status/1234567890" : i === 1 ? "例：https://www.youtube.com/watch?v=動画ID" : ""}
+                aria-label={`関連メディアURL ${i + 1}件目`}
+                className="min-w-0 border border-line bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-60"
+              />
+            ))}
+          </fieldset>
           <label className="grid gap-1 text-[11px] font-bold text-muted">
             出典表記（任意の補足。原典リンクは上のセクションで自動表示されます）
             <textarea

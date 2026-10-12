@@ -1040,6 +1040,8 @@ export interface Database {
           published_at: string | null;
           reviewed_by: string | null;
           reviewed_at: string | null;
+          /** 関連メディア(Xポスト・YouTube動画)の正規化済み URL。最大3件 */
+          related_media_urls: string[];
           created_at: string;
           updated_at: string;
         };
@@ -1059,6 +1061,7 @@ export interface Database {
           published_at?: string | null;
           reviewed_by?: string | null;
           reviewed_at?: string | null;
+          related_media_urls?: string[];
         };
         Update: Partial<
           Database["public"]["Tables"]["article_drafts"]["Insert"]

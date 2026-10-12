@@ -10,6 +10,7 @@ function isCategory(value: string): value is NewsEventCategory {
   return CATEGORY_OPTIONS.some((o) => o.value === value);
 }
 import type { ActionState } from "@/app/admin/_components/action-ui";
+import { validateRelatedMediaInputs } from "@/lib/news/related-media";
 
 export async function createDraftAction(
   _prevState: ActionState,
@@ -127,6 +128,8 @@ export async function updateDraftAction(
   const editorNotes = String(formData.get("editorNotes") ?? "").trim();
   // 独自コラムの編集画面だけがカテゴリを送る(イベントありの記事はイベントのカテゴリを使う)
   const categoryValue = formData.get("category");
+  // 関連メディアURL(X・YouTube／任意)。検証して正規化した URL だけを保存する
+  const media = validateRelatedMediaInputs(formData.getAll("relatedMediaUrl").map(String));
 
   if (!draftId || !headlineJa) {
     return { status: "error", message: "見出しは必須です。" };
@@ -137,6 +140,9 @@ export async function updateDraftAction(
 
   if (categoryValue !== null && !isCategory(String(categoryValue))) {
     return { status: "error", message: "カテゴリを選んでください。" };
+  }
+  if ("error" in media) {
+    return { status: "error", message: media.error };
   }
 
   const supabase = createAdminSupabaseClient();
@@ -151,6 +157,7 @@ export async function updateDraftAction(
       body_markdown: bodyMarkdown,
       source_attribution_markdown: sourceAttributionMarkdown,
       editor_notes: editorNotes || null,
+      related_media_urls: media.urls,
     })
     .eq("id", draftId);
 
