@@ -2,6 +2,9 @@ import type { MouseEventHandler } from "react";
 import Link from "next/link";
 import { ARTICLE_CREDIT, showsArticleCredit } from "@/lib/news/credit";
 import { splitInlineLinks } from "@/lib/news/inline-links";
+import { splitParagraphs, toBodyBlocks } from "@/lib/news/body-media";
+import { MediaEmbed } from "./related-media";
+import { XWidgetsLoader } from "./x-widgets-loader";
 import type { ArticleKind } from "@/lib/supabase/types";
 
 const LINK_CLASS = "font-semibold text-blue underline decoration-blue/40 underline-offset-2 hover:decoration-blue";
@@ -35,6 +38,8 @@ function ParagraphText({ text, onInternalLinkClick }: { text: string; onInternal
 }
 
 // ニュース記事・コラム記事の本文と、本文直後のクレジット。
+// 本文中の [[media:URL]] だけの段落(管理画面の「メディア挿入」で入れたもの)は、その位置にXポスト・YouTube動画を埋め込む
+// (対応する URL のものだけ。それ以外は文字のまま。lib/news/body-media.ts)。
 // 公開ページ(/news/[articleId])と管理画面の記事プレビューで同じ表示にするため、この部品を共通で使う。
 // onInternalLinkClick は管理画面のプレビュー用(未保存の変更があるときに、内部リンクで画面を離れる前に確認する)。
 export function ArticleBody({
@@ -46,11 +51,8 @@ export function ArticleBody({
   articleKind: ArticleKind;
   onInternalLinkClick?: MouseEventHandler<HTMLAnchorElement>;
 }) {
-  const paragraphs = bodyMarkdown
-    // Windows の CRLF 改行でも、空行を段落区切りとして扱う。
-    .split(/\r?\n[ \t]*\r?\n/)
-    .map((p) => p.trim())
-    .filter(Boolean);
+  // Windows の CRLF 改行でも、空行を段落区切りとして扱う。
+  const paragraphs = splitParagraphs(bodyMarkdown);
 
   const showCredit = showsArticleCredit(articleKind);
   // 本文の末尾にクレジットを手入力している記事もあるため、二重に表示しないよう末尾の同じ一行は除く(保存データは変更しない)
@@ -59,17 +61,27 @@ export function ArticleBody({
     while (paragraphs.length > 0 && compact(paragraphs[paragraphs.length - 1]) === compact(ARTICLE_CREDIT)) paragraphs.pop();
   }
 
+  const blocks = toBodyBlocks(paragraphs);
+
   return (
-    <div className="mb-6">
-      {paragraphs.length === 0 ? (
+    <div className="mb-6 min-w-0">
+      {blocks.length === 0 ? (
         <p className="text-sm text-muted">本文がありません。</p>
       ) : (
-        paragraphs.map((paragraph, i) => (
-          <p key={i} className="mb-3 text-sm leading-8 text-foreground/90">
-            <ParagraphText text={paragraph} onInternalLinkClick={onInternalLinkClick} />
-          </p>
-        ))
+        blocks.map((block, i) =>
+          block.kind === "media" ? (
+            <div key={i} className="my-6">
+              <MediaEmbed media={block.media} />
+            </div>
+          ) : (
+            // 本文にそのまま書いた長い URL などがスマホで枠からはみ出さないよう、長い英数字は途中で折り返す
+            <p key={i} className="mb-3 text-sm leading-8 text-foreground/90 [overflow-wrap:anywhere]">
+              <ParagraphText text={block.text} onInternalLinkClick={onInternalLinkClick} />
+            </p>
+          )
+        )
       )}
+      {blocks.some((b) => b.kind === "media" && b.media.kind === "x") && <XWidgetsLoader />}
       {showCredit && (
         <p className="mt-5 text-right text-sm font-semibold text-foreground/80">{ARTICLE_CREDIT}</p>
       )}

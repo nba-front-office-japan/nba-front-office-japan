@@ -4,6 +4,8 @@ import type { MouseEventHandler } from "react";
 import Link from "next/link";
 import { ARTICLE_CREDIT } from "@/lib/news/credit";
 import { splitInlineLinks } from "@/lib/news/inline-links";
+import { bodyMediaOf, markerUrlOf } from "@/lib/news/body-media";
+import { parseRelatedMediaUrl } from "@/lib/news/related-media";
 
 // 本文入力欄とプレビューで共通の文字組み。
 // 同じ画面幅なら手入力の改行も自動の折り返しも同じ位置になるよう、幅・余白・フォント・文字サイズ・太さ・
@@ -26,7 +28,7 @@ export function BodyPreview({ body, onInternalLinkClick }: { body: string; onInt
   return (
     <div className={`relative ${BODY_TEXT_CLASS}`}>
       {splitInlineLinks(text).map((seg, i) => {
-        if (seg.kind === "text") return <span key={i}>{seg.text}</span>;
+        if (seg.kind === "text") return <MediaMarkedText key={i} text={seg.text} />;
         if (seg.external) {
           return (
             <a key={i} href={seg.href} target="_blank" rel="noopener noreferrer" className={LINK_CLASS}>
@@ -42,6 +44,56 @@ export function BodyPreview({ body, onInternalLinkClick }: { body: string; onInt
           </Link>
         );
       })}
+    </div>
+  );
+}
+
+// 本文中のメディア([[media:URL]])。入力欄と折り返し位置が変わらないよう、文字はそのままで背景色だけを付ける
+const MEDIA_MARKER_RE = /(\[\[media:[^\s[\]]+\]\])/;
+
+function isUsableMarker(marker: string): boolean {
+  const url = markerUrlOf(marker);
+  const media = url ? parseRelatedMediaUrl(url) : null;
+  return Boolean(media && media.url === url);
+}
+
+function MediaMarkedText({ text }: { text: string }) {
+  return (
+    <>
+      {text.split(MEDIA_MARKER_RE).map((part, i) =>
+        i % 2 === 1 ? (
+          // 使えない URL の場合は赤くし、保存時にエラーになることを示す
+          isUsableMarker(part) ? (
+            <mark key={i} className="bg-[#fff0d9] text-foreground dark:bg-[#5a4320]" title="公開ページでは、この位置にXポスト・YouTube動画が表示されます">
+              {part}
+            </mark>
+          ) : (
+            <mark key={i} className="bg-[#fde8e8] text-[#b0392f] dark:bg-red-950 dark:text-red-300" title="使えないURLです(保存時にエラーになります)">
+              {part}
+            </mark>
+          )
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </>
+  );
+}
+
+/** 本文中で埋め込まれるメディアの一覧(プレビューの下に表示する) */
+export function BodyMediaList({ body }: { body: string }) {
+  const media = bodyMediaOf(body);
+  if (media.length === 0) return null;
+  return (
+    <div className="mt-3 border border-line p-3 text-xs">
+      <p className="mb-1 font-bold">本文中のメディア（{media.length}件・公開ページでは色付きの行の位置に表示）</p>
+      <ol className="list-decimal space-y-0.5 pl-5 text-muted">
+        {media.map((m) => (
+          <li key={m.url} className="break-all">
+            {m.kind === "x" ? `Xポスト（@${m.user}）` : m.shorts ? "YouTube Shorts" : "YouTube動画"}：{m.url}
+          </li>
+        ))}
+      </ol>
     </div>
   );
 }

@@ -12,7 +12,7 @@ import {
 import { PageShell } from "@/components/page-shell";
 import { ArticleBody } from "@/components/news/article-body";
 import { RelatedMediaSection } from "@/components/news/related-media";
-import { readStoredRelatedMedia } from "@/lib/news/related-media";
+import { trailingRelatedMedia } from "@/lib/news/body-media";
 
 export const dynamic = "force-dynamic";
 
@@ -74,8 +74,8 @@ export default async function NewsArticlePage({
         {/* 本文の直後に「構成●NBA Front Office Japan編集部」を自動で表示する(情報源・関連リンクより前) */}
         <ArticleBody bodyMarkdown={article.bodyMarkdown} articleKind={article.articleKind} />
 
-        {/* 関連メディア(Xポスト・YouTube動画)。登録がない記事では何も表示しない */}
-        <RelatedMediaSection media={readStoredRelatedMedia(article.relatedMediaUrls)} />
+        {/* 関連メディア(Xポスト・YouTube動画)。本文中に入れたものは除いて表示し、登録がない記事では何も表示しない */}
+        <RelatedMediaSection media={trailingRelatedMedia(article.bodyMarkdown, article.relatedMediaUrls)} />
 
         {/* 情報源が登録されていない記事(独自コラムなど)では、「情報源」欄そのものを表示しない */}
         {article.sources.length > 0 && (

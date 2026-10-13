@@ -11,6 +11,7 @@ function isCategory(value: string): value is NewsEventCategory {
 }
 import type { ActionState } from "@/app/admin/_components/action-ui";
 import { validateRelatedMediaInputs } from "@/lib/news/related-media";
+import { bodyMediaProblem } from "@/lib/news/body-media";
 
 export async function createDraftAction(
   _prevState: ActionState,
@@ -143,6 +144,11 @@ export async function updateDraftAction(
   }
   if ("error" in media) {
     return { status: "error", message: media.error };
+  }
+  // 本文中のメディア([[media:URL]])の URL と、本文中・本文末を合わせた件数を確かめる
+  const bodyMediaError = bodyMediaProblem(bodyMarkdown, media.urls);
+  if (bodyMediaError) {
+    return { status: "error", message: bodyMediaError };
   }
 
   const supabase = createAdminSupabaseClient();

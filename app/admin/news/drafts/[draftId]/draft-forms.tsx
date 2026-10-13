@@ -12,7 +12,7 @@ import {
 import type { ArticleKind, Database } from "@/lib/supabase/types";
 import { COLUMN_BADGE_CLASS } from "@/lib/news/constants";
 import { BodyEditor } from "./body-editor";
-import { BodyPreview, endsWithCredit } from "./body-preview";
+import { BodyMediaList, BodyPreview, endsWithCredit } from "./body-preview";
 import { ARTICLE_CREDIT, showsArticleCredit } from "@/lib/news/credit";
 import { MAX_RELATED_MEDIA } from "@/lib/news/related-media";
 
@@ -127,7 +127,7 @@ export function DraftEditForm({ draft }: { draft: ArticleDraft }) {
           <fieldset className="grid min-w-0 gap-1.5">
             <legend className="mb-1 text-[11px] font-bold text-muted">関連メディアURL（X・YouTube／任意）</legend>
             <p className="text-xs text-muted">
-              Xの公開ポスト（x.com / twitter.com の …/status/数字）と、YouTubeの動画・Shorts のURLを、合わせて{MAX_RELATED_MEDIA}件まで登録できます。公開ページでは本文の後に表示します。空欄は登録しません。
+              Xの公開ポスト（x.com / twitter.com の …/status/数字）と、YouTubeの動画・Shorts のURLを登録できます。公開ページでは本文の後に表示します（本文中に「メディア挿入」で入れたものと合わせて{MAX_RELATED_MEDIA}件まで。本文中に入れたものは末尾には重ねて表示しません）。空欄は登録しません。
             </p>
             {values.media.map((_, i) => (
               <input
@@ -182,6 +182,7 @@ export function DraftEditForm({ draft }: { draft: ArticleDraft }) {
         <h4 className="mb-2 text-[24px] font-semibold leading-tight">{values.headline}</h4>
         {values.dek && <p className="mb-4 text-sm text-muted">{values.dek}</p>}
         <BodyPreview body={values.body} onInternalLinkClick={confirmLeave} />
+        <BodyMediaList body={values.body} />
         {/* 本文末尾のクレジット(公開ページと同じく自動で付く。本文に手入力済みなら、公開ページでは1回だけ表示される) */}
         {showsArticleCredit(values.kind) && !endsWithCredit(values.body) && (
           <p className="mt-3 text-right text-sm font-semibold text-foreground/80">{ARTICLE_CREDIT}</p>

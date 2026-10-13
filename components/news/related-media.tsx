@@ -59,6 +59,11 @@ function YouTubeVideo({ media }: { media: Extract<RelatedMedia, { kind: "youtube
   );
 }
 
+/** メディア1件の埋め込み(本文中のメディアと本文末の関連メディアで共通) */
+export function MediaEmbed({ media }: { media: RelatedMedia }) {
+  return media.kind === "x" ? <XPost media={media} /> : <YouTubeVideo media={media} />;
+}
+
 export function RelatedMediaSection({ media }: { media: RelatedMedia[] }) {
   if (media.length === 0) return null;
   return (
@@ -67,7 +72,9 @@ export function RelatedMediaSection({ media }: { media: RelatedMedia[] }) {
         関連メディア
       </h2>
       <div className="space-y-6">
-        {media.map((m) => (m.kind === "x" ? <XPost key={m.url} media={m} /> : <YouTubeVideo key={m.url} media={m} />))}
+        {media.map((m) => (
+          <MediaEmbed key={m.url} media={m} />
+        ))}
       </div>
       {media.some((m) => m.kind === "x") && <XWidgetsLoader />}
     </section>
