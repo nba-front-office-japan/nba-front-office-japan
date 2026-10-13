@@ -4,12 +4,12 @@ import type { Database } from "@/lib/supabase/types";
 import { parseRssFeed } from "@/lib/news/rss";
 import { canonicalizeUrl } from "@/lib/news/canonical-url";
 import { computeContentHash } from "@/lib/news/hash";
+import { SITE_URL } from "@/lib/site";
 
 type SupabaseAdmin = ReturnType<typeof createAdminSupabaseClient>;
 type NewsSourceRow = Database["public"]["Tables"]["news_sources"]["Row"];
 
-const USER_AGENT =
-  "NBAFrontOfficeJapanNewsCollector/1.0 (+https://nba-front-office-japan.vercel.app)";
+const USER_AGENT = `NBAFrontOfficeJapanNewsCollector/1.0 (+${SITE_URL})`;
 const FETCH_TIMEOUT_MS = 15000;
 
 export interface CollectResult {
