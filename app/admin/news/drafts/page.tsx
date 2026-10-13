@@ -4,6 +4,8 @@ import { ARTICLE_DRAFT_STATUS_LABEL } from "@/lib/news/constants";
 import { CreateDraftForm } from "./create-draft-form";
 import { CreateOriginalForm } from "./create-original-form";
 import { LINK_CLASS } from "@/app/admin/_components/action-ui";
+import type { ArticleDraftStatus } from "@/lib/supabase/types";
+import { RejectedDraftsSelector } from "./rejected-selector";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +18,17 @@ function formatDateTime(iso: string | null): string {
   });
 }
 
-export default async function AdminNewsDraftsPage() {
+// 下書き一覧の状態での絞り込み(URL の ?status=)。「却下」では確認・選択だけができ、削除はできない
+const STATUS_FILTERS: ArticleDraftStatus[] = ["pending_review", "approved", "published", "rejected"];
+
+function isDraftStatus(v: string | undefined): v is ArticleDraftStatus {
+  return STATUS_FILTERS.some((s) => s === v);
+}
+
+export default async function AdminNewsDraftsPage({ searchParams }: PageProps<"/admin/news/drafts">) {
+  const { status: statusParam } = await searchParams;
+  const statusValue = Array.isArray(statusParam) ? statusParam[0] : statusParam;
+  const statusFilter = isDraftStatus(statusValue) ? statusValue : null;
   const supabase = createAdminSupabaseClient();
 
   const [{ data: drafts, error }, { data: events }] = await Promise.all([
@@ -30,6 +42,11 @@ export default async function AdminNewsDraftsPage() {
   const eventHeadlineById = new Map((events ?? []).map((e) => [e.id, e.headline_en]));
   const eventIdsWithDraft = new Set((drafts ?? []).flatMap((d) => (d.event_id ? [d.event_id] : [])));
   const eventsWithoutDraft = (events ?? []).filter((e) => !eventIdsWithDraft.has(e.id));
+  const countByStatus = new Map<string, number>();
+  for (const d of drafts ?? []) countByStatus.set(d.status, (countByStatus.get(d.status) ?? 0) + 1);
+  const shownDrafts = statusFilter ? (drafts ?? []).filter((d) => d.status === statusFilter) : (drafts ?? []);
+  const filterLinkClass = (active: boolean) =>
+    `border px-3 py-1.5 text-xs font-bold ${active ? "border-blue bg-blue text-white" : "border-line text-foreground hover:border-blue"}`;
 
   return (
     <div className="px-4 py-8 sm:px-8">
@@ -65,7 +82,33 @@ export default async function AdminNewsDraftsPage() {
         </section>
 
         <section className="border border-line bg-surface p-6">
-          <h2 className="mb-4 text-lg font-semibold">下書き一覧</h2>
+          <h2 className="mb-3 text-lg font-semibold">下書き一覧</h2>
+          <nav aria-label="状態で絞り込み" className="mb-4 flex flex-wrap gap-2">
+            <Link href="/admin/news/drafts" scroll={false} className={filterLinkClass(statusFilter === null)} aria-current={statusFilter === null ? "page" : undefined}>
+              すべて（{(drafts ?? []).length}）
+            </Link>
+            {STATUS_FILTERS.map((s) => (
+              <Link
+                key={s}
+                href={`/admin/news/drafts?status=${s}`}
+                scroll={false}
+                className={filterLinkClass(statusFilter === s)}
+                aria-current={statusFilter === s ? "page" : undefined}
+              >
+                {ARTICLE_DRAFT_STATUS_LABEL[s]}（{countByStatus.get(s) ?? 0}）
+              </Link>
+            ))}
+          </nav>
+          {statusFilter === "rejected" ? (
+            <RejectedDraftsSelector
+              drafts={shownDrafts.map((d) => ({
+                id: d.id,
+                headline: d.headline_ja,
+                createdAtLabel: formatDateTime(d.created_at),
+                source: d.event_id ? "イベント" : "独自コラム",
+              }))}
+            />
+          ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[680px] border-collapse text-sm">
               <thead>
@@ -78,14 +121,14 @@ export default async function AdminNewsDraftsPage() {
                 </tr>
               </thead>
               <tbody>
-                {(drafts ?? []).length === 0 ? (
+                {shownDrafts.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-3 py-6 text-center text-muted">
-                      まだ下書きがありません。
+                      {statusFilter ? "この状態の下書きはありません。" : "まだ下書きがありません。"}
                     </td>
                   </tr>
                 ) : (
-                  (drafts ?? []).map((draft) => (
+                  shownDrafts.map((draft) => (
                     <tr key={draft.id} className="border-b border-line/60">
                       <td className="max-w-[240px] px-3 py-2.5">
                         <Link href={`/admin/news/drafts/${draft.id}`} className={LINK_CLASS}>
@@ -113,6 +156,7 @@ export default async function AdminNewsDraftsPage() {
               </tbody>
             </table>
           </div>
+          )}
         </section>
       </div>
     </div>

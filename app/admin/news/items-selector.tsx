@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
+import type { DateFilter, InitialDateFilter } from "@/lib/news/date-filter";
 import Link from "next/link";
 import { createEventFromItemsAction } from "./actions";
 import { BulkActions } from "./bulk-actions";
@@ -36,7 +37,6 @@ export interface SelectableNewsItem {
   eventHeadline: string | null;
 }
 
-type DateFilter = "all" | "today" | "7days" | "30days" | "custom";
 type StageFilter = "all" | ProcessingStage;
 type VisibilityFilter = "visible" | "hidden" | "all";
 
@@ -83,13 +83,14 @@ function isWithinDateFilter(fetchedAt: string | null, filter: DateFilter, from: 
   return diffDays <= 30;
 }
 
-export function ItemsSelector({ items }: { items: SelectableNewsItem[] }) {
+// 取得日フィルターは初回表示だけ initialDate(既定は「今日」)を使い、その後はユーザーの選択をそのまま保つ
+export function ItemsSelector({ items, initialDate }: { items: SelectableNewsItem[]; initialDate: InitialDateFilter }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [stageFilter, setStageFilter] = useState<StageFilter>("unprocessed");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
-  const [dateFilter, setDateFilter] = useState<DateFilter>("all");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [dateFilter, setDateFilter] = useState<DateFilter>(initialDate.filter);
+  const [dateFrom, setDateFrom] = useState(initialDate.from);
+  const [dateTo, setDateTo] = useState(initialDate.to);
   const [visibility, setVisibility] = useState<VisibilityFilter>("visible");
   const [keyword, setKeyword] = useState("");
 

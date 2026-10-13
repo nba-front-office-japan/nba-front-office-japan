@@ -5,6 +5,7 @@ import { deriveProcessingStage } from "@/lib/news/processing-stage";
 import { registerManualOfficialUrlAction } from "./actions";
 import { CollectButton } from "./collect-button";
 import { ItemsSelector, type SelectableNewsItem } from "./items-selector";
+import { parseInitialDateFilter } from "@/lib/news/date-filter";
 import type { Database } from "@/lib/supabase/types";
 
 const ITEMS_FETCH_LIMIT = 500;
@@ -33,7 +34,11 @@ const KIND_LABEL: Record<string, string> = {
   manual_official: "手動登録",
 };
 
-export default async function AdminNewsPage() {
+export default async function AdminNewsPage({ searchParams }: PageProps<"/admin/news">) {
+  const params = await searchParams;
+  const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
+  // 「最近取得したニュース」の取得日フィルターの初期値(URL で指定がなければ「今日」)
+  const initialDate = parseInitialDateFilter(one(params.date), one(params.from), one(params.to));
   const supabase = createAdminSupabaseClient();
 
   const [{ data: sources, error: sourcesError }, { data: recentRuns }, { data: recentItems }] =
@@ -259,7 +264,7 @@ export default async function AdminNewsPage() {
             直近{ITEMS_FETCH_LIMIT}件を表示しています。同じ出来事を報じている記事を選んでイベントを作成するほか、選んだ記事を「非掲載」（この一覧とイベント作成の対象から外す）や「完全に削除」にできます。
             収集したニュースは公開ページの一覧には出ず、公開記事の出典としてだけ表示されます。そのため、イベントで使われている記事は非掲載・削除の対象外です。
           </p>
-          <ItemsSelector items={itemsForSelector} />
+          <ItemsSelector items={itemsForSelector} initialDate={initialDate} />
         </section>
       </div>
     </div>
