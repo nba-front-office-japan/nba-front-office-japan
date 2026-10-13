@@ -1040,7 +1040,7 @@ export interface Database {
           published_at: string | null;
           reviewed_by: string | null;
           reviewed_at: string | null;
-          /** 関連メディア(Xポスト・YouTube動画)の正規化済み URL。最大3件 */
+          /** 関連メディア(Xポスト・YouTube動画)の正規化済み URL。最大5件 */
           related_media_urls: string[];
           created_at: string;
           updated_at: string;

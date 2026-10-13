@@ -7,7 +7,7 @@
 // 保存する形(DB の制約と同じ): https://x.com/ユーザー名/status/数字 ／ https://www.youtube.com/watch?v=動画ID ／ https://www.youtube.com/shorts/動画ID
 
 /** 記事ごとに登録できる関連メディアの上限(X・YouTube合計) */
-export const MAX_RELATED_MEDIA = 3;
+export const MAX_RELATED_MEDIA = 5;
 
 export type RelatedMedia =
   | { kind: "x"; url: string; user: string; postId: string }
