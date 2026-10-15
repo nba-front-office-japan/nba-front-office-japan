@@ -86,3 +86,51 @@ export function bodyMediaProblem(body: string, relatedUrls: string[]): string | 
   }
   return null;
 }
+
+export type BodySegment = { kind: "text"; text: string } | { kind: "media"; media: RelatedMedia };
+
+/**
+ * 本文を、表示する文字の部分と埋め込むメディアに分ける(公開ページ・プレビュー用)。
+ * 文字の部分は改行・空行を入力したとおりに残す(本文の入力欄と同じ見え方にするため)。改行は LF にそろえる。
+ * 埋め込むメディアの判定は toBodyBlocks と同じ(空行で区切った段落全体が対応する [[media:URL]] のものだけ)。
+ * メディアの前後の空行はメディアの上下の余白で表す。末尾のクレジット行(trailingCredit)と末尾の空白は除く。
+ */
+export function toBodySegments(body: string, trailingCredit: string | null): BodySegment[] {
+  // 段落と、段落の間の区切り(空行を含む改行)を交互に持つ。偶数番目が段落、奇数番目が区切り
+  const parts = body.replace(/\r\n?/g, "\n").split(/(\n[ \t]*\n(?:[ \t]*\n)*)/);
+  // 本文の末尾に手入力したクレジットは、公開ページでは本文の後に1回だけ表示するため除く(保存データは変更しない)
+  const compact = (text: string) => text.replace(/\s+/g, "");
+  const trimTail = () => {
+    while (parts.length > 0 && parts[parts.length - 1].trim() === "") parts.pop();
+  };
+  trimTail();
+  while (trailingCredit && parts.length > 0 && compact(parts[parts.length - 1]) === compact(trailingCredit)) {
+    parts.pop();
+    trimTail();
+  }
+  if (parts.length > 0) parts[parts.length - 1] = parts[parts.length - 1].trimEnd();
+
+  const blocks = toBodyBlocks(parts.filter((_, i) => i % 2 === 0).map((p) => p.trim()).filter(Boolean));
+  const mediaByMarker = new Map<string, RelatedMedia>();
+  for (const b of blocks) if (b.kind === "media") mediaByMarker.set(toMediaMarker(b.media.url), b.media);
+
+  const segments: BodySegment[] = [];
+  let text = "";
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i];
+    const media = i % 2 === 0 ? mediaByMarker.get(part.trim()) : undefined;
+    if (media) {
+      // メディアの直前の区切り(空行)は除き、メディアの上下の余白で表す
+      text = text.replace(/\n[ \t\n]*$/, "");
+      if (text) segments.push({ kind: "text", text });
+      segments.push({ kind: "media", media });
+      mediaByMarker.delete(part.trim());
+      text = "";
+      i++; // メディアの直後の区切り(空行)も除く
+      continue;
+    }
+    text += part;
+  }
+  if (text.trim()) segments.push({ kind: "text", text });
+  return segments;
+}

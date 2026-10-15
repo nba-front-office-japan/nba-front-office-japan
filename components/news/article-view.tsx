@@ -12,6 +12,9 @@ import { RelatedMediaSection } from "./related-media";
 /** 公開ページの本文欄の枠(components/page-shell.tsx の main と同じ横幅・左右の余白) */
 export const ARTICLE_PAGE_FRAME_CLASS = "mx-auto w-full max-w-6xl px-4 sm:px-7";
 
+/** 記事の枠(枠線・余白)。本文の入力欄も同じ枠に置き、本文の横幅を公開ページとそろえる */
+export const ARTICLE_FRAME_CLASS = "border border-line bg-surface p-6 sm:p-8";
+
 export type ArticleViewSource = { title: string; url: string; mediaName: string };
 
 /** 記事の日付の表示(日本時間。例: 2026年10月16日) */
@@ -51,7 +54,7 @@ export function NewsArticleView({
   onInternalLinkClick?: MouseEventHandler<HTMLAnchorElement>;
 }) {
   return (
-    <article className="border border-line bg-surface p-6 sm:p-8">
+    <article className={ARTICLE_FRAME_CLASS}>
       <div className="mb-3 flex flex-wrap gap-2">
         {/* 自作の解説・コラム記事だけに出す(通常記事には区分ラベルを出さない) */}
         {articleKind === "column" && <span className={COLUMN_BADGE_CLASS}>COLUMN</span>}

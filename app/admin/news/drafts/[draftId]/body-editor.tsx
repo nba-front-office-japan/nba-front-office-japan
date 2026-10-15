@@ -5,6 +5,8 @@ import { GHOST_BUTTON_CLASS, PRIMARY_BUTTON_CLASS } from "@/app/admin/_component
 import { classifyLinkUrl, linkTextProblem, toLinkMarkup } from "@/lib/news/inline-links";
 import { MAX_RELATED_MEDIA, parseRelatedMediaUrl } from "@/lib/news/related-media";
 import { bodyMediaOf, toMediaMarker } from "@/lib/news/body-media";
+import { ARTICLE_BODY_TEXT_CLASS } from "@/lib/news/body-typography";
+import { ARTICLE_FRAME_CLASS } from "@/components/news/article-view";
 
 // 記事本文の入力欄と「リンク」ボタン。
 // 本文中の文字を選択 →「リンク」→ URLを貼り付けて「確定」で、選択した文字を [文字](URL) の形にする(生のHTMLは使わない)。
@@ -12,9 +14,10 @@ import { bodyMediaOf, toMediaMarker } from "@/lib/news/body-media";
 // 「メディア挿入」は、カーソルの位置に [[media:URL]] の段落(前後を空行で区切る)を入れ、公開ページではその位置に
 // Xポスト・YouTube動画を埋め込む(lib/news/body-media.ts)。URL は対応する形かを確かめ、正規化してから入れる。
 
-// 本文入力欄の文字組み(スクロールバーで幅が変わらないよう、内容に合わせて高さを伸ばす)
-const BODY_TEXT_CLASS =
-  "box-border block w-full border border-line px-3 py-2 text-base font-normal not-italic leading-8 tracking-normal whitespace-pre-wrap break-words [tab-size:4] [word-break:normal] [line-break:auto]";
+// 本文の入力欄は、公開ページの記事枠(components/news/article-view.tsx の article)と同じ枠線・余白の枠の中に、
+// 余白・枠線なしで置き、公開ページの本文と同じ文字組み(ARTICLE_BODY_TEXT_CLASS)にする。
+// そのため同じ画面幅なら、入力欄の文字の横幅・大きさ・行の高さ・改行・空行(段落の間隔)・折り返し位置が公開ページと一致する。
+// (違いが出るのは、入力欄では [文字](URL) や [[media:URL]] の書式がそのまま見える行だけ)
 
 type Selection = { start: number; end: number };
 
@@ -38,7 +41,7 @@ export function BodyEditor({ name, defaultValue, onChange }: { name: string; def
     const el = ref.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = `${el.scrollHeight + 2}px`; // 上下の枠線(1px×2)の分を足す
+    el.style.height = `${el.scrollHeight}px`; // 入力欄自体には余白・枠線がない
   }
   useLayoutEffect(autosize, []);
   useEffect(() => {
@@ -145,116 +148,126 @@ export function BodyEditor({ name, defaultValue, onChange }: { name: string; def
   }
 
   return (
-    <div className="grid gap-1 text-[11px] font-bold text-muted">
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <label htmlFor="bodyMarkdown">本文の入力欄（編集用。RSS原文の転載はしないでください）</label>
-        <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={startLink} className={`${GHOST_BUTTON_CLASS}`} aria-controls="bodyMarkdown">
-            🔗 リンク
-          </button>
-          <button type="button" onClick={startMedia} className={`${GHOST_BUTTON_CLASS}`} aria-controls="bodyMarkdown">
-            ▶ メディア挿入
-          </button>
-        </div>
-      </div>
-      <textarea
-        ref={ref}
-        id="bodyMarkdown"
-        name={name}
-        defaultValue={defaultValue}
-        rows={12}
-        required
-        onChange={(e) => {
-          onChange(e.target.value);
-          autosize();
-        }}
-        onSelect={rememberSelection}
-        onKeyUp={rememberSelection}
-        onMouseUp={rememberSelection}
-        onTouchEnd={rememberSelection}
-        className={`${BODY_TEXT_CLASS} min-h-[12rem] resize-none overflow-hidden bg-surface text-foreground disabled:opacity-60`}
-      />
-      <p className="font-normal">
-        リンクにしたい文字を選択して「リンク」を押し、URLを貼り付けて確定します。本文には <code>[文字](URL)</code> の形で入り、公開ページでは選択した文字だけがリンクになります。
-      </p>
-      <p className="font-normal">
-        Xポスト・YouTube動画を本文の途中に入れるときは、入れたい位置にカーソルを置いて「メディア挿入」を押し、URLを貼り付けて確定します。本文には{" "}
-        <code>[[media:URL]]</code> だけの段落として入り、公開ページではその位置に表示されます（本文中と関連メディアURLを合わせて{MAX_RELATED_MEDIA}件まで）。URLをそのまま書いた行は埋め込みにならず、文字のまま表示されます。
-      </p>
-
-      {mediaAt !== null && (
-        <div className="mt-1 grid gap-2 border border-blue/40 bg-[#f6f9ff] p-3 font-normal text-foreground dark:bg-white/[.04]">
-          <label className="grid gap-1 text-[11px] font-bold text-muted">
-            本文中に入れるメディアのURL（Xの公開ポスト、YouTubeの動画・Shorts）
-            <input
-              ref={mediaUrlRef}
-              type="text"
-              inputMode="url"
-              value={mediaUrl}
-              onChange={(e) => setMediaUrl(e.target.value)}
-              onKeyDown={(e) => {
-                // 本文フォームの送信(保存)にならないよう、Enterは確定として扱う
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  confirmMedia();
-                }
-                if (e.key === "Escape") setMediaAt(null);
-              }}
-              placeholder="https://x.com/…/status/… または https://www.youtube.com/watch?v=…"
-              className="min-w-0 border border-line bg-surface px-3 py-2 text-sm font-normal text-foreground"
-            />
-          </label>
+    <div className="grid gap-2">
+      {/* ボタン・説明・URL入力は、長い本文を入力中も上に表示しておく */}
+      <div className="sticky top-0 z-10 grid gap-1 border border-line bg-surface p-4 text-[11px] font-bold text-muted sm:px-6">
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <label htmlFor="bodyMarkdown">本文（公開ページと同じ幅・文字組みで表示。RSS原文の転載はしないでください）</label>
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={confirmMedia} className={`${PRIMARY_BUTTON_CLASS}`}>
-              確定
+            <button type="button" onClick={startLink} className={`${GHOST_BUTTON_CLASS}`} aria-controls="bodyMarkdown">
+              🔗 リンク
             </button>
-            <button type="button" onClick={() => setMediaAt(null)} className={`${GHOST_BUTTON_CLASS}`}>
-              キャンセル
+            <button type="button" onClick={startMedia} className={`${GHOST_BUTTON_CLASS}`} aria-controls="bodyMarkdown">
+              ▶ メディア挿入
             </button>
           </div>
         </div>
-      )}
-
-      {pending && (
-        <div className="mt-1 grid gap-2 border border-blue/40 bg-[#f6f9ff] p-3 font-normal text-foreground dark:bg-white/[.04]">
-          <p className="text-xs">
-            リンクにする文字：<b className="break-all">{pending.text}</b>
+        <details id="body-editor-help" className="font-normal">
+          <summary className="cursor-pointer font-bold">使い方（リンク・メディア挿入）</summary>
+          <p className="font-normal">
+            リンクにしたい文字を選択して「リンク」を押し、URLを貼り付けて確定します。本文には <code>[文字](URL)</code> の形で入り、公開ページでは選択した文字だけがリンクになります。
           </p>
-          <label className="grid gap-1 text-[11px] font-bold text-muted">
-            URL（サイト内は /guide/… のようなパス、外部は https://…）
-            <input
-              ref={urlRef}
-              type="text"
-              inputMode="url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              onKeyDown={(e) => {
-                // 本文フォームの送信(保存)にならないよう、Enterは確定として扱う
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  confirmLink();
-                }
-                if (e.key === "Escape") setPending(null);
-              }}
-              placeholder="https://… または /guide/…"
-              className="border border-line bg-surface px-3 py-2 text-sm font-normal text-foreground"
-            />
-          </label>
-          <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={confirmLink} className={`${PRIMARY_BUTTON_CLASS}`}>
-              確定
-            </button>
-            <button type="button" onClick={() => setPending(null)} className={`${GHOST_BUTTON_CLASS}`}>
-              キャンセル
-            </button>
+          <p className="font-normal">
+            Xポスト・YouTube動画を本文の途中に入れるときは、入れたい位置にカーソルを置いて「メディア挿入」を押し、URLを貼り付けて確定します。本文には{" "}
+            <code>[[media:URL]]</code> だけの段落として入り、公開ページではその位置に表示されます（本文中と関連メディアURLを合わせて{MAX_RELATED_MEDIA}件まで）。URLをそのまま書いた行は埋め込みにならず、文字のまま表示されます。
+          </p>
+        </details>
+
+        {mediaAt !== null && (
+          <div className="mt-1 grid gap-2 border border-blue/40 bg-[#f6f9ff] p-3 font-normal text-foreground dark:bg-white/[.04]">
+            <label className="grid gap-1 text-[11px] font-bold text-muted">
+              本文中に入れるメディアのURL（Xの公開ポスト、YouTubeの動画・Shorts）
+              <input
+                ref={mediaUrlRef}
+                type="text"
+                inputMode="url"
+                value={mediaUrl}
+                onChange={(e) => setMediaUrl(e.target.value)}
+                onKeyDown={(e) => {
+                  // 本文フォームの送信(保存)にならないよう、Enterは確定として扱う
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    confirmMedia();
+                  }
+                  if (e.key === "Escape") setMediaAt(null);
+                }}
+                placeholder="https://x.com/…/status/… または https://www.youtube.com/watch?v=…"
+                className="min-w-0 border border-line bg-surface px-3 py-2 text-sm font-normal text-foreground"
+              />
+            </label>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={confirmMedia} className={`${PRIMARY_BUTTON_CLASS}`}>
+                確定
+              </button>
+              <button type="button" onClick={() => setMediaAt(null)} className={`${GHOST_BUTTON_CLASS}`}>
+                キャンセル
+              </button>
+            </div>
           </div>
-        </div>
-      )}
-      {message && (
-        <p role={message.error ? "alert" : "status"} aria-live="polite" className={`text-xs font-semibold ${message.error ? "text-[#cf4a51]" : "text-[#218c68]"}`}>
-          {message.text}
-        </p>
-      )}
+        )}
+
+        {pending && (
+          <div className="mt-1 grid gap-2 border border-blue/40 bg-[#f6f9ff] p-3 font-normal text-foreground dark:bg-white/[.04]">
+            <p className="text-xs">
+              リンクにする文字：<b className="break-all">{pending.text}</b>
+            </p>
+            <label className="grid gap-1 text-[11px] font-bold text-muted">
+              URL（サイト内は /guide/… のようなパス、外部は https://…）
+              <input
+                ref={urlRef}
+                type="text"
+                inputMode="url"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                onKeyDown={(e) => {
+                  // 本文フォームの送信(保存)にならないよう、Enterは確定として扱う
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    confirmLink();
+                  }
+                  if (e.key === "Escape") setPending(null);
+                }}
+                placeholder="https://… または /guide/…"
+                className="border border-line bg-surface px-3 py-2 text-sm font-normal text-foreground"
+              />
+            </label>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={confirmLink} className={`${PRIMARY_BUTTON_CLASS}`}>
+                確定
+              </button>
+              <button type="button" onClick={() => setPending(null)} className={`${GHOST_BUTTON_CLASS}`}>
+                キャンセル
+              </button>
+            </div>
+          </div>
+        )}
+        {message && (
+          <p role={message.error ? "alert" : "status"} aria-live="polite" className={`text-xs font-semibold ${message.error ? "text-[#cf4a51]" : "text-[#218c68]"}`}>
+            {message.text}
+          </p>
+        )}
+      </div>
+      {/* 公開ページの記事枠と同じ枠・余白(フォーカス中は枠の外側に線を表示。線は幅に影響しない) */}
+      <div className={`${ARTICLE_FRAME_CLASS} focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-blue`}>
+        <textarea
+          ref={ref}
+          id="bodyMarkdown"
+          name={name}
+          defaultValue={defaultValue}
+          rows={12}
+          required
+          onChange={(e) => {
+            onChange(e.target.value);
+            autosize();
+          }}
+          onSelect={rememberSelection}
+          onKeyUp={rememberSelection}
+          onMouseUp={rememberSelection}
+          onTouchEnd={rememberSelection}
+          aria-describedby="body-editor-help"
+          className={`${ARTICLE_BODY_TEXT_CLASS} box-border block min-h-[12rem] w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-foreground/90 outline-none disabled:opacity-60`}
+        />
+      </div>
     </div>
   );
 }

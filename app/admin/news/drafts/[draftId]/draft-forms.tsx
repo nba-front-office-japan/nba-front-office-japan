@@ -95,11 +95,12 @@ export function DraftEditForm({
   return (
     <div className={ARTICLE_PAGE_FRAME_CLASS}>
           {formHeader}
-          <section className="mb-8 border border-line bg-surface p-6">
-            <h2 className="mb-4 text-lg font-semibold">記事の入力</h2>
-      <form action={formAction} onSubmit={() => setSubmitted(values)} className="grid grid-cols-1 gap-3">
+      {/* 本文の入力欄は、公開ページの記事枠と同じ幅・余白の枠に置く(BodyEditor)。そのためフォームは枠の余白の外側で包む */}
+      <form action={formAction} onSubmit={() => setSubmitted(values)} className="mb-8 grid grid-cols-1 gap-4">
         <input type="hidden" name="draftId" value={draft.id} />
         <fieldset disabled={isPending} className="contents">
+          <section className="grid gap-3 border border-line bg-surface p-6">
+            <h2 className="text-lg font-semibold">記事の入力</h2>
           <label className="grid gap-1 text-[11px] font-bold text-muted">
             記事種別（COLUMNは公開ページに「COLUMN」ラベルが付きます）
             <select
@@ -169,7 +170,9 @@ export function DraftEditForm({
               className="border border-line bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-60"
             />
           </label>
+          </section>
           <BodyEditor name="bodyMarkdown" defaultValue={draft.body_markdown} onChange={(body) => set({ body })} />
+          <section className="grid gap-3 border border-line bg-surface p-6">
           <fieldset className="grid min-w-0 gap-1.5">
             <legend className="mb-1 text-[11px] font-bold text-muted">関連メディアURL（X・YouTube／任意）</legend>
             <p className="text-xs text-muted">
@@ -207,9 +210,10 @@ export function DraftEditForm({
               className="border border-line bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-60"
             />
           </label>
+          </section>
         </fieldset>
         {/* 保存ボタンとプレビューへの移動は、長い本文を入力中も画面の下に表示しておく */}
-        <div className="sticky bottom-0 z-10 -mx-6 -mb-6 flex flex-wrap items-center gap-3 border-t border-line bg-surface px-6 py-3">
+        <div className="sticky bottom-0 z-10 flex flex-wrap items-center gap-3 border border-line bg-surface px-6 py-3">
           <button type="submit" disabled={isPending} className={PRIMARY_BUTTON_CLASS}>
             {isPending ? "保存中…" : "保存"}
           </button>
@@ -220,7 +224,6 @@ export function DraftEditForm({
           {dirty && !isPending && <span className="text-xs font-semibold text-[#8a5a00]">未保存の変更があります</span>}
         </div>
       </form>
-          </section>
 
           {/* 入力中の内容のプレビュー。公開ページと同じ部品・同じ幅で描く(保存するまで公開ページには反映されない) */}
           <section id="draft-preview" aria-labelledby="draft-preview-heading" className="mb-8 scroll-mt-4">
