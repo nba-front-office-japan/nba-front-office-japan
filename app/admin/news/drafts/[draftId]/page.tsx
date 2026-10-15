@@ -61,7 +61,7 @@ export default async function AdminNewsDraftDetailPage({
     })),
   };
 
-  // 入力欄などは管理画面の列(ADMIN_COLUMN_CLASS)に置き、プレビューは公開ページと同じ幅の枠で表示する(DraftEditForm)
+  // 編集画面全体を公開ページの本文欄と同じ幅で表示し、入力欄のすぐ後に公開ページと同じ表示のプレビューを置く(DraftEditForm)
   return (
     <div className="py-8">
       <DraftEditForm

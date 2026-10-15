@@ -147,7 +147,7 @@ export function BodyEditor({ name, defaultValue, onChange }: { name: string; def
   return (
     <div className="grid gap-1 text-[11px] font-bold text-muted">
       <div className="flex flex-wrap items-end justify-between gap-2">
-        <label htmlFor="bodyMarkdown">本文（RSS原文の転載はしないでください）</label>
+        <label htmlFor="bodyMarkdown">本文の入力欄（編集用。RSS原文の転載はしないでください）</label>
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={startLink} className={`${GHOST_BUTTON_CLASS}`} aria-controls="bodyMarkdown">
             🔗 リンク

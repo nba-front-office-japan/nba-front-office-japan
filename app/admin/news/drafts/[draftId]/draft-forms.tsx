@@ -34,8 +34,6 @@ function sameValues(a: PreviewValues, b: PreviewValues): boolean {
 
 const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(CATEGORY_OPTIONS.map((o) => [o.value, o.label]));
 
-/** 編集画面の入力欄などを置く列(管理画面の幅) */
-export const ADMIN_COLUMN_CLASS = "mx-auto max-w-4xl";
 
 /** プレビューで公開ページと同じに表示するための、入力欄以外の情報(イベントのカテゴリ・確認状況・原典) */
 export type DraftPreviewContext = {
@@ -46,10 +44,11 @@ export type DraftPreviewContext = {
   sources: ArticleViewSource[];
 };
 
-// 入力欄(管理画面の列の中)と、公開ページと同じ表示のプレビュー(公開ページの本文欄と同じ幅の枠)。
-// プレビューは公開ページと同じ部品(components/news/article-view.tsx)で描くため、文字組み・1行の文字数・段落の余白・
-// リンク・本文中メディアの表示が公開ページと一致する(同じ画面幅の場合)。
-// formHeader は入力欄の前に、afterForm は入力欄とプレビューの間に置く(管理画面の列の中)。
+// 入力欄と、公開ページと同じ表示のプレビュー。編集画面全体を公開ページの本文欄と同じ幅の枠(ARTICLE_PAGE_FRAME_CLASS)に置き、
+// プレビューは入力欄のすぐ後に、公開ページと同じ部品(components/news/article-view.tsx)で描く。そのため記事枠の幅・
+// 文字の大きさ・行間・段落の余白・改行位置・リンク・本文中メディアの表示が、同じ画面幅の公開ページと一致する。
+// 本文の入力欄は編集しやすい文字の大きさ(16px。スマホで入力時に画面が拡大されないため)のままで、公開ページとは見た目が異なる。
+// formHeader は入力欄の前に、afterForm はプレビューの後に置く。
 export function DraftEditForm({
   draft,
   context,
@@ -94,12 +93,10 @@ export function DraftEditForm({
   const categoryValue = draft.event_id === null ? values.category : context.eventCategory;
 
   return (
-    <>
-      <div className="px-4 sm:px-8">
-        <div className={ADMIN_COLUMN_CLASS}>
+    <div className={ARTICLE_PAGE_FRAME_CLASS}>
           {formHeader}
           <section className="mb-8 border border-line bg-surface p-6">
-            <h2 className="mb-4 text-lg font-semibold">本文</h2>
+            <h2 className="mb-4 text-lg font-semibold">記事の入力</h2>
       <form action={formAction} onSubmit={() => setSubmitted(values)} className="grid grid-cols-1 gap-3">
         <input type="hidden" name="draftId" value={draft.id} />
         <fieldset disabled={isPending} className="contents">
@@ -211,55 +208,57 @@ export function DraftEditForm({
             />
           </label>
         </fieldset>
-        <div className="flex flex-wrap items-center gap-3">
+        {/* 保存ボタンとプレビューへの移動は、長い本文を入力中も画面の下に表示しておく */}
+        <div className="sticky bottom-0 z-10 -mx-6 -mb-6 flex flex-wrap items-center gap-3 border-t border-line bg-surface px-6 py-3">
           <button type="submit" disabled={isPending} className={PRIMARY_BUTTON_CLASS}>
             {isPending ? "保存中…" : "保存"}
           </button>
+          <a href="#draft-preview" className="text-sm font-bold text-blue underline underline-offset-4 hover:no-underline">
+            公開ページと同じ表示で確認 ↓
+          </a>
           {!isPending && <StatusMessage state={state} />}
           {dirty && !isPending && <span className="text-xs font-semibold text-[#8a5a00]">未保存の変更があります</span>}
         </div>
       </form>
-
           </section>
-          {afterForm}
-        </div>
-      </div>
 
-      {/* 入力中の内容のプレビュー。公開ページと同じ部品・同じ幅の枠で描く(保存するまで公開ページには反映されない) */}
-      <section aria-labelledby="draft-preview-heading" className="mt-8 border-t-4 border-gold pb-10 pt-6">
-        <div className="px-4 sm:px-8">
-          <div className={`${ADMIN_COLUMN_CLASS} mb-4`}>
-            <h2 id="draft-preview-heading" className="mb-1 text-lg font-semibold">
-              プレビュー（入力中の内容）
-            </h2>
-            <p className="text-xs leading-6 text-muted">
-              公開記事ページと同じ部品・同じ幅で表示します。同じ画面幅なら、改行の位置・段落の間隔・本文中メディアの位置が公開ページと一致します。
-              「保存」を押すまで公開ページには反映されません。
-            </p>
-          </div>
-        </div>
-        <div className={ARTICLE_PAGE_FRAME_CLASS}>
-          <NewsArticleView
-            articleKind={values.kind}
-            categoryLabel={categoryValue ? (CATEGORY_LABEL[categoryValue] ?? categoryValue) : null}
-            lowConfidence={context.lowConfidence}
-            singleSource={context.singleSource}
-            headline={values.headline}
-            dek={values.dek.trim() || null}
-            dateLabel={draft.published_at ? formatArticleDate(draft.published_at) : "公開日（公開すると表示されます）"}
-            bodyMarkdown={values.body}
-            trailingMedia={trailingRelatedMedia(values.body, relatedUrls)}
-            sources={context.sources}
-            onInternalLinkClick={confirmLeave}
-            footer={
-              <Link href="/news" onClick={confirmLeave} className="mt-6 inline-block text-sm font-extrabold text-blue">
-                ← News一覧に戻る
-              </Link>
-            }
-          />
-        </div>
-      </section>
-    </>
+          {/* 入力中の内容のプレビュー。公開ページと同じ部品・同じ幅で描く(保存するまで公開ページには反映されない) */}
+          <section id="draft-preview" aria-labelledby="draft-preview-heading" className="mb-8 scroll-mt-4">
+            <div className="mb-3 border-l-4 border-gold bg-surface px-4 py-3">
+              <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-[#8a5a00] dark:text-gold">Preview</p>
+              <h2 id="draft-preview-heading" className="text-lg font-semibold">
+                プレビュー（公開ページと同じ表示）
+              </h2>
+              <p className="mt-1 text-xs leading-6 text-muted">
+                下の枠は、公開記事ページと同じ部品・同じ幅・同じ文字組みで、入力中の内容を表示しています（同じ画面幅なら改行位置・段落の間隔も公開ページと一致します）。
+                上の本文の入力欄は編集用の表示のため、文字の大きさや改行位置が公開ページとは異なります。「保存」を押すまで公開ページには反映されません。
+              </p>
+              <a href="#bodyMarkdown" className="mt-1 inline-block text-xs font-bold text-blue underline underline-offset-4 hover:no-underline">
+                ↑ 本文の入力欄に戻る
+              </a>
+            </div>
+            <NewsArticleView
+              articleKind={values.kind}
+              categoryLabel={categoryValue ? (CATEGORY_LABEL[categoryValue] ?? categoryValue) : null}
+              lowConfidence={context.lowConfidence}
+              singleSource={context.singleSource}
+              headline={values.headline}
+              dek={values.dek.trim() || null}
+              dateLabel={draft.published_at ? formatArticleDate(draft.published_at) : "公開日（公開すると表示されます）"}
+              bodyMarkdown={values.body}
+              trailingMedia={trailingRelatedMedia(values.body, relatedUrls)}
+              sources={context.sources}
+              onInternalLinkClick={confirmLeave}
+              footer={
+                <Link href="/news" onClick={confirmLeave} className="mt-6 inline-block text-sm font-extrabold text-blue">
+                  ← News一覧に戻る
+                </Link>
+              }
+            />
+          </section>
+
+          {afterForm}
+    </div>
   );
 }
 
