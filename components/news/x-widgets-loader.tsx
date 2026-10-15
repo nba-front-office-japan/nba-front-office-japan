@@ -10,7 +10,9 @@ const SCRIPT_SRC = "https://platform.twitter.com/widgets.js";
 
 type TwttrWindow = Window & { twttr?: { widgets?: { load: (el?: Element) => void } } };
 
-export function XWidgetsLoader() {
+// watch(表示中のXポストの URL を並べた文字列)が変わったときは、新しく出たポストを変換し直す
+// (管理画面のプレビューで、入力中にポストを追加した場合など)。
+export function XWidgetsLoader({ watch = "" }: { watch?: string }) {
   useEffect(() => {
     const w = window as TwttrWindow;
     if (w.twttr?.widgets) {
@@ -23,6 +25,6 @@ export function XWidgetsLoader() {
     script.async = true;
     script.charset = "utf-8";
     document.body.appendChild(script);
-  }, []);
+  }, [watch]);
   return null;
 }

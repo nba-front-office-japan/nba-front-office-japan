@@ -5,13 +5,16 @@ import { GHOST_BUTTON_CLASS, PRIMARY_BUTTON_CLASS } from "@/app/admin/_component
 import { classifyLinkUrl, linkTextProblem, toLinkMarkup } from "@/lib/news/inline-links";
 import { MAX_RELATED_MEDIA, parseRelatedMediaUrl } from "@/lib/news/related-media";
 import { bodyMediaOf, toMediaMarker } from "@/lib/news/body-media";
-import { BODY_TEXT_CLASS } from "./body-preview";
 
 // 記事本文の入力欄と「リンク」ボタン。
 // 本文中の文字を選択 →「リンク」→ URLを貼り付けて「確定」で、選択した文字を [文字](URL) の形にする(生のHTMLは使わない)。
 // 公開ページでは選択した文字だけがリンクになる(lib/news/inline-links.ts)。
 // 「メディア挿入」は、カーソルの位置に [[media:URL]] の段落(前後を空行で区切る)を入れ、公開ページではその位置に
 // Xポスト・YouTube動画を埋め込む(lib/news/body-media.ts)。URL は対応する形かを確かめ、正規化してから入れる。
+
+// 本文入力欄の文字組み(スクロールバーで幅が変わらないよう、内容に合わせて高さを伸ばす)
+const BODY_TEXT_CLASS =
+  "box-border block w-full border border-line px-3 py-2 text-base font-normal not-italic leading-8 tracking-normal whitespace-pre-wrap break-words [tab-size:4] [word-break:normal] [line-break:auto]";
 
 type Selection = { start: number; end: number };
 
@@ -30,7 +33,7 @@ export function BodyEditor({ name, defaultValue, onChange }: { name: string; def
   const fail = (text: string) => setMessage({ text, error: true });
 
   // 入力欄はスクロールバーを出さず、内容に合わせて高さを伸ばす(スクロールバーの分だけ幅が狭くなり、
-  // プレビューと折り返し位置がずれるのを防ぐ)
+  // 入力中に折り返し位置が変わるのを防ぐ)
   function autosize() {
     const el = ref.current;
     if (!el) return;

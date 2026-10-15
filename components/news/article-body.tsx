@@ -62,6 +62,7 @@ export function ArticleBody({
   }
 
   const blocks = toBodyBlocks(paragraphs);
+  const xUrls = blocks.flatMap((b) => (b.kind === "media" && b.media.kind === "x" ? [b.media.url] : [])).join(" ");
 
   return (
     <div className="mb-6 min-w-0">
@@ -70,7 +71,8 @@ export function ArticleBody({
       ) : (
         blocks.map((block, i) =>
           block.kind === "media" ? (
-            <div key={i} className="my-6">
+            // メディアは URL を key にする(widgets.js が書き換えた要素を、入力中の再描画で React が作り直さないように)
+            <div key={`media:${block.media.url}`} className="my-6">
               <MediaEmbed media={block.media} />
             </div>
           ) : (
@@ -81,7 +83,7 @@ export function ArticleBody({
           )
         )
       )}
-      {blocks.some((b) => b.kind === "media" && b.media.kind === "x") && <XWidgetsLoader />}
+      {xUrls && <XWidgetsLoader watch={xUrls} />}
       {showCredit && (
         <p className="mt-5 text-right text-sm font-semibold text-foreground/80">{ARTICLE_CREDIT}</p>
       )}

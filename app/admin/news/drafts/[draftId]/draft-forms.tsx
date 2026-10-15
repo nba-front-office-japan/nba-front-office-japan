@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState, type MouseEvent } from "react";
+import { useActionState, useState, type MouseEvent, type ReactNode } from "react";
+import Link from "next/link";
 import { updateDraftAction, rejectDraftAction } from "../actions";
 import { ARTICLE_KIND_OPTIONS, ARTICLE_TYPE_OPTIONS, CATEGORY_OPTIONS } from "@/lib/news/constants";
 import {
@@ -10,22 +11,56 @@ import {
   StatusMessage,
 } from "@/app/admin/_components/action-ui";
 import type { ArticleKind, Database } from "@/lib/supabase/types";
-import { COLUMN_BADGE_CLASS } from "@/lib/news/constants";
 import { BodyEditor } from "./body-editor";
-import { BodyMediaList, BodyPreview, endsWithCredit } from "./body-preview";
-import { ARTICLE_CREDIT, showsArticleCredit } from "@/lib/news/credit";
-import { MAX_RELATED_MEDIA } from "@/lib/news/related-media";
+import { MAX_RELATED_MEDIA, parseRelatedMediaUrl } from "@/lib/news/related-media";
+import { trailingRelatedMedia } from "@/lib/news/body-media";
+import { ARTICLE_PAGE_FRAME_CLASS, NewsArticleView, formatArticleDate, type ArticleViewSource } from "@/components/news/article-view";
 
 type ArticleDraft = Database["public"]["Tables"]["article_drafts"]["Row"];
 
 // プレビューに使う入力中の値
-type PreviewValues = { kind: ArticleKind; headline: string; dek: string; body: string; media: string[] };
+type PreviewValues = { kind: ArticleKind; category: string; headline: string; dek: string; body: string; media: string[] };
 
 function sameValues(a: PreviewValues, b: PreviewValues): boolean {
-  return a.kind === b.kind && a.headline === b.headline && a.dek === b.dek && a.body === b.body && a.media.join("|") === b.media.join("|");
+  return (
+    a.kind === b.kind &&
+    a.category === b.category &&
+    a.headline === b.headline &&
+    a.dek === b.dek &&
+    a.body === b.body &&
+    a.media.join("|") === b.media.join("|")
+  );
 }
 
-export function DraftEditForm({ draft }: { draft: ArticleDraft }) {
+const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(CATEGORY_OPTIONS.map((o) => [o.value, o.label]));
+
+/** 編集画面の入力欄などを置く列(管理画面の幅) */
+export const ADMIN_COLUMN_CLASS = "mx-auto max-w-4xl";
+
+/** プレビューで公開ページと同じに表示するための、入力欄以外の情報(イベントのカテゴリ・確認状況・原典) */
+export type DraftPreviewContext = {
+  /** イベントありの記事のカテゴリ(独自コラムは入力中のカテゴリを使うため null) */
+  eventCategory: string | null;
+  lowConfidence: boolean;
+  singleSource: boolean;
+  sources: ArticleViewSource[];
+};
+
+// 入力欄(管理画面の列の中)と、公開ページと同じ表示のプレビュー(公開ページの本文欄と同じ幅の枠)。
+// プレビューは公開ページと同じ部品(components/news/article-view.tsx)で描くため、文字組み・1行の文字数・段落の余白・
+// リンク・本文中メディアの表示が公開ページと一致する(同じ画面幅の場合)。
+// formHeader は入力欄の前に、afterForm は入力欄とプレビューの間に置く(管理画面の列の中)。
+export function DraftEditForm({
+  draft,
+  context,
+  formHeader,
+  afterForm,
+}: {
+  draft: ArticleDraft;
+  context: DraftPreviewContext;
+  formHeader?: ReactNode;
+  afterForm?: ReactNode;
+}) {
   const [state, formAction, isPending] = useActionState(
     updateDraftAction,
     INITIAL_ACTION_STATE
@@ -33,6 +68,7 @@ export function DraftEditForm({ draft }: { draft: ArticleDraft }) {
   const savedMedia = draft.related_media_urls ?? [];
   const initial: PreviewValues = {
     kind: draft.article_kind,
+    category: draft.category ?? "other",
     headline: draft.headline_ja,
     dek: draft.dek_ja ?? "",
     body: draft.body_markdown,
@@ -50,8 +86,20 @@ export function DraftEditForm({ draft }: { draft: ArticleDraft }) {
     if (dirty && !window.confirm("保存していない変更があります。このページを離れると変更は失われます。移動しますか？")) e.preventDefault();
   }
 
+  // 関連メディアURLの入力欄のうち、使える URL(正規化したもの)
+  const relatedUrls = values.media.flatMap((u) => {
+    const m = u.trim() ? parseRelatedMediaUrl(u) : null;
+    return m ? [m.url] : [];
+  });
+  const categoryValue = draft.event_id === null ? values.category : context.eventCategory;
+
   return (
     <>
+      <div className="px-4 sm:px-8">
+        <div className={ADMIN_COLUMN_CLASS}>
+          {formHeader}
+          <section className="mb-8 border border-line bg-surface p-6">
+            <h2 className="mb-4 text-lg font-semibold">本文</h2>
       <form action={formAction} onSubmit={() => setSubmitted(values)} className="grid grid-cols-1 gap-3">
         <input type="hidden" name="draftId" value={draft.id} />
         <fieldset disabled={isPending} className="contents">
@@ -77,6 +125,7 @@ export function DraftEditForm({ draft }: { draft: ArticleDraft }) {
               <select
                 name="category"
                 defaultValue={draft.category ?? "other"}
+                onChange={(e) => set({ category: e.target.value })}
                 required
                 className="max-w-[200px] border border-line bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-60"
               >
@@ -171,23 +220,45 @@ export function DraftEditForm({ draft }: { draft: ArticleDraft }) {
         </div>
       </form>
 
-      {/* 入力中の内容をそのまま映すプレビュー。本文は入力欄と同じ文字組み(BODY_TEXT_CLASS)で、改行・折り返しの位置を揃える */}
-      <div className="mt-6 border-t border-line pt-5">
-        <h3 className="mb-1 text-base font-semibold">プレビュー（入力中の内容）</h3>
-        <p className="mb-3 text-xs text-muted">
-          本文は入力欄と同じ幅・文字組みで表示するため、改行と折り返しの位置が入力欄と一致します（リンクを含む行は、入力欄の URL の分だけ折り返しが変わります）。
-          リンクは公開ページと同じく、サイト内リンクは同じタブ、外部リンクは別タブで開きます。「保存」を押すまで公開ページには反映されません。
-        </p>
-        {values.kind === "column" && <span className={`mb-3 ${COLUMN_BADGE_CLASS}`}>COLUMN</span>}
-        <h4 className="mb-2 text-[24px] font-semibold leading-tight">{values.headline}</h4>
-        {values.dek && <p className="mb-4 text-sm text-muted">{values.dek}</p>}
-        <BodyPreview body={values.body} onInternalLinkClick={confirmLeave} />
-        <BodyMediaList body={values.body} />
-        {/* 本文末尾のクレジット(公開ページと同じく自動で付く。本文に手入力済みなら、公開ページでは1回だけ表示される) */}
-        {showsArticleCredit(values.kind) && !endsWithCredit(values.body) && (
-          <p className="mt-3 text-right text-sm font-semibold text-foreground/80">{ARTICLE_CREDIT}</p>
-        )}
+          </section>
+          {afterForm}
+        </div>
       </div>
+
+      {/* 入力中の内容のプレビュー。公開ページと同じ部品・同じ幅の枠で描く(保存するまで公開ページには反映されない) */}
+      <section aria-labelledby="draft-preview-heading" className="mt-8 border-t-4 border-gold pb-10 pt-6">
+        <div className="px-4 sm:px-8">
+          <div className={`${ADMIN_COLUMN_CLASS} mb-4`}>
+            <h2 id="draft-preview-heading" className="mb-1 text-lg font-semibold">
+              プレビュー（入力中の内容）
+            </h2>
+            <p className="text-xs leading-6 text-muted">
+              公開記事ページと同じ部品・同じ幅で表示します。同じ画面幅なら、改行の位置・段落の間隔・本文中メディアの位置が公開ページと一致します。
+              「保存」を押すまで公開ページには反映されません。
+            </p>
+          </div>
+        </div>
+        <div className={ARTICLE_PAGE_FRAME_CLASS}>
+          <NewsArticleView
+            articleKind={values.kind}
+            categoryLabel={categoryValue ? (CATEGORY_LABEL[categoryValue] ?? categoryValue) : null}
+            lowConfidence={context.lowConfidence}
+            singleSource={context.singleSource}
+            headline={values.headline}
+            dek={values.dek.trim() || null}
+            dateLabel={draft.published_at ? formatArticleDate(draft.published_at) : "公開日（公開すると表示されます）"}
+            bodyMarkdown={values.body}
+            trailingMedia={trailingRelatedMedia(values.body, relatedUrls)}
+            sources={context.sources}
+            onInternalLinkClick={confirmLeave}
+            footer={
+              <Link href="/news" onClick={confirmLeave} className="mt-6 inline-block text-sm font-extrabold text-blue">
+                ← News一覧に戻る
+              </Link>
+            }
+          />
+        </div>
+      </section>
     </>
   );
 }

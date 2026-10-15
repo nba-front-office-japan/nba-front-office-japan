@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import { ARTICLE_DRAFT_STATUS_LABEL, isLowConfidence } from "@/lib/news/constants";
+import { ARTICLE_DRAFT_STATUS_LABEL, isLowConfidence, isRumorOrUnverified, isSingleSource } from "@/lib/news/constants";
 import { LINK_CLASS } from "@/app/admin/_components/action-ui";
 import { DraftEditForm, RejectButton } from "./draft-forms";
 import { PublishButton } from "./publish-button";
@@ -49,75 +49,91 @@ export default async function AdminNewsDraftDetailPage({
       : { data: [] };
   const sourceNameById = new Map((sources ?? []).map((s) => [s.id, s.name]));
 
+  // プレビュー(公開ページと同じ表示)に使う、イベントのカテゴリ・確認状況・原典(公開ページと同じ判定)
+  const previewContext = {
+    eventCategory: event?.category ?? null,
+    lowConfidence: event ? isRumorOrUnverified(event.verification_status) : false,
+    singleSource: event ? isSingleSource(event.verification_status) : false,
+    sources: (items ?? []).map((item) => ({
+      title: item.title,
+      url: item.canonical_url,
+      mediaName: item.author_name ?? sourceNameById.get(item.source_id) ?? "不明",
+    })),
+  };
+
+  // 入力欄などは管理画面の列(ADMIN_COLUMN_CLASS)に置き、プレビューは公開ページと同じ幅の枠で表示する(DraftEditForm)
   return (
-    <div className="px-4 py-8 sm:px-8">
-      <div className="mx-auto max-w-4xl">
-        <Link href="/admin/news/drafts" className={`mb-4 inline-block text-sm ${LINK_CLASS}`}>
-          ← 下書き一覧に戻る
-        </Link>
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-2xl font-semibold">記事下書きの編集</h1>
-          <span className="border border-line px-3 py-1 text-sm font-bold">
-            {ARTICLE_DRAFT_STATUS_LABEL[draft.status]}
-          </span>
-        </div>
+    <div className="py-8">
+      <DraftEditForm
+        draft={draft}
+        context={previewContext}
+        formHeader={
+          // サーバーからクライアントの部品へ渡す要素には key を付ける(付けないと開発時に key の警告が出る)
+          <div key="form-header">
+            <Link href="/admin/news/drafts" className={`mb-4 inline-block text-sm ${LINK_CLASS}`}>
+              ← 下書き一覧に戻る
+            </Link>
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+              <h1 className="text-2xl font-semibold">記事下書きの編集</h1>
+              <span className="border border-line px-3 py-1 text-sm font-bold">
+                {ARTICLE_DRAFT_STATUS_LABEL[draft.status]}
+              </span>
+            </div>
 
-        {created === "1" && (
-          <p
-            role="status"
-            aria-live="polite"
-            className="mb-4 border border-[#218c68] bg-[#e9f7f1] px-4 py-3 text-sm font-bold text-[#186b4f] dark:bg-white/[.06]"
-          >
-            下書きを作成しました
-          </p>
-        )}
+            {created === "1" && (
+              <p
+                role="status"
+                aria-live="polite"
+                className="mb-4 border border-[#218c68] bg-[#e9f7f1] px-4 py-3 text-sm font-bold text-[#186b4f] dark:bg-white/[.06]"
+              >
+                下書きを作成しました
+              </p>
+            )}
 
-        {event && isLowConfidence(event.verification_status, event.reliability_score) && (
-          <p className="mb-4 border border-[#f3b83f] bg-[#fff8e8] px-4 py-3 text-sm font-bold text-[#8a5a00] dark:bg-white/[.06]">
-            未確定情報（rumor/unverified、または信頼度70未満）です。公開前に必ず事実確認してください。
-          </p>
-        )}
+            {event && isLowConfidence(event.verification_status, event.reliability_score) && (
+              <p className="mb-4 border border-[#f3b83f] bg-[#fff8e8] px-4 py-3 text-sm font-bold text-[#8a5a00] dark:bg-white/[.06]">
+                未確定情報（rumor/unverified、または信頼度70未満）です。公開前に必ず事実確認してください。
+              </p>
+            )}
 
-        <section className="mb-8 border border-line bg-surface p-6">
-          <h2 className="mb-4 text-lg font-semibold">原典（公開ページに必ず表示されます）</h2>
-          {isOriginal ? (
-            <p className="text-sm text-muted">
-              独自コラム（イベント・取得ニュースなし）のため、原典はありません。公開ページには「情報源」欄を表示しません。
-            </p>
-          ) : (items ?? []).length === 0 ? (
-            <p className="text-sm text-muted">原典が見つかりません。</p>
-          ) : (
-            <ul className="space-y-2 text-sm">
-              {(items ?? []).map((item) => (
-                <li key={item.id}>
-                  <a
-                    href={item.canonical_url}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    className={LINK_CLASS}
-                  >
-                    {item.title}
-                  </a>
-                  <span className="text-muted">
-                    {" "}
-                    ・ {item.author_name ?? sourceNameById.get(item.source_id) ?? "不明"}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        <section className="mb-8 border border-line bg-surface p-6">
-          <h2 className="mb-4 text-lg font-semibold">本文</h2>
-          <DraftEditForm draft={draft} />
-        </section>
-
-        <section className="flex flex-wrap items-center gap-4 border border-line bg-surface p-6">
-          <PublishButton draftId={draft.id} />
-          <RejectButton draftId={draft.id} />
-        </section>
-      </div>
+            <section className="mb-8 border border-line bg-surface p-6">
+              <h2 className="mb-4 text-lg font-semibold">原典（公開ページに必ず表示されます）</h2>
+              {isOriginal ? (
+                <p className="text-sm text-muted">
+                  独自コラム（イベント・取得ニュースなし）のため、原典はありません。公開ページには「情報源」欄を表示しません。
+                </p>
+              ) : (items ?? []).length === 0 ? (
+                <p className="text-sm text-muted">原典が見つかりません。</p>
+              ) : (
+                <ul className="space-y-2 text-sm">
+                  {(items ?? []).map((item) => (
+                    <li key={item.id}>
+                      <a
+                        href={item.canonical_url}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className={LINK_CLASS}
+                      >
+                        {item.title}
+                      </a>
+                      <span className="text-muted">
+                        {" "}
+                        ・ {item.author_name ?? sourceNameById.get(item.source_id) ?? "不明"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </div>
+        }
+        afterForm={
+          <section key="publish" className="flex flex-wrap items-center gap-4 border border-line bg-surface p-6">
+            <PublishButton draftId={draft.id} />
+            <RejectButton draftId={draft.id} />
+          </section>
+        }
+      />
     </div>
   );
 }

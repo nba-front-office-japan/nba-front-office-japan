@@ -76,7 +76,14 @@ export function RelatedMediaSection({ media }: { media: RelatedMedia[] }) {
           <MediaEmbed key={m.url} media={m} />
         ))}
       </div>
-      {media.some((m) => m.kind === "x") && <XWidgetsLoader />}
+      {media.some((m) => m.kind === "x") && (
+        <XWidgetsLoader
+          watch={media
+            .filter((m) => m.kind === "x")
+            .map((m) => m.url)
+            .join(" ")}
+        />
+      )}
     </section>
   );
 }
