@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from "react";
 import { GHOST_BUTTON_CLASS, PRIMARY_BUTTON_CLASS } from "@/app/admin/_components/action-ui";
 import { classifyLinkUrl, linkTextProblem, toLinkMarkup } from "@/lib/news/inline-links";
 import { MAX_RELATED_MEDIA, parseRelatedMediaUrl } from "@/lib/news/related-media";
@@ -49,15 +49,39 @@ export function BodyEditor({ name, defaultValue, onChange }: { name: string; def
     return () => window.removeEventListener("resize", autosize);
   }, []);
 
+  // 本文の入力欄での選択範囲(カーソル位置を含む)を、入力欄にフォーカスがある間だけ覚えておく。
+  // スマホでボタンを押して入力欄からフォーカスが外れ、選択が解除されても、直前に選んでいた範囲を使えるようにする
   function rememberSelection() {
     const el = ref.current;
-    if (el) lastSelection.current = { start: el.selectionStart, end: el.selectionEnd };
+    if (el && document.activeElement === el) lastSelection.current = { start: el.selectionStart, end: el.selectionEnd };
+  }
+  // キーボード・マウス・タッチ以外(選択範囲のつまみの操作など)で変わった選択範囲も覚える
+  useEffect(() => {
+    document.addEventListener("selectionchange", rememberSelection);
+    return () => document.removeEventListener("selectionchange", rememberSelection);
+  }, []);
+
+  // 「リンク」「メディア挿入」のボタンを押しても入力欄からフォーカス(と選択範囲)が外れないようにする(クリックは通常どおり動く)
+  function keepEditorFocus(e: MouseEvent<HTMLButtonElement>) {
+    if (document.activeElement === ref.current) e.preventDefault();
   }
 
   function startLink() {
     const el = ref.current;
     if (!el) return;
-    const sel = el.selectionStart !== el.selectionEnd ? { start: el.selectionStart, end: el.selectionEnd } : lastSelection.current;
+    // 「リンク」を押した時点の本文の選択範囲を使う。入力欄にフォーカスがあればその選択範囲、
+    // フォーカスが外れていれば(スマホなど)入力欄で最後に選んでいた範囲。末尾に追加することはしない
+    const focused = document.activeElement === el;
+    const range = focused ? { start: el.selectionStart, end: el.selectionEnd } : lastSelection.current;
+    const sel = range.start !== range.end ? range : null;
+    if (!sel) {
+      // 公開ページと同じ見た目のプレビュー側で文字を選んでいる場合は、そのことを伝える
+      const outside = window.getSelection();
+      const inPreview = Boolean(outside && !outside.isCollapsed && outside.anchorNode && document.getElementById("draft-preview")?.contains(outside.anchorNode));
+      fail(inPreview ? "プレビューではなく、上の本文の入力欄でリンクにしたい文字を選択してください。" : "本文内でリンクにしたい文字を選択してください。");
+      setPending(null);
+      return;
+    }
     const text = el.value.slice(sel.start, sel.end);
     const problem = linkTextProblem(text);
     if (problem) {
@@ -96,6 +120,7 @@ export function BodyEditor({ name, defaultValue, onChange }: { name: string; def
     });
     el.focus();
     el.setSelectionRange(pending.start, pending.start + markup.length);
+    lastSelection.current = { start: pending.start, end: pending.start + markup.length };
   }
 
   function startMedia() {
@@ -150,14 +175,15 @@ export function BodyEditor({ name, defaultValue, onChange }: { name: string; def
   return (
     <div className="grid gap-2">
       {/* ボタン・説明・URL入力は、長い本文を入力中も上に表示しておく */}
-      <div className="sticky top-0 z-10 grid gap-1 border border-line bg-surface p-4 text-[11px] font-bold text-muted sm:px-6">
+      {/* 管理画面の上部ナビ(高さ top-12)の下に固定する */}
+      <div className="sticky top-12 z-10 grid gap-1 border border-line bg-surface p-4 text-[11px] font-bold text-muted sm:px-6">
         <div className="flex flex-wrap items-end justify-between gap-2">
           <label htmlFor="bodyMarkdown">本文（公開ページと同じ幅・文字組みで表示。RSS原文の転載はしないでください）</label>
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={startLink} className={`${GHOST_BUTTON_CLASS}`} aria-controls="bodyMarkdown">
+            <button type="button" onMouseDown={keepEditorFocus} onClick={startLink} className={`${GHOST_BUTTON_CLASS}`} aria-controls="bodyMarkdown">
               🔗 リンク
             </button>
-            <button type="button" onClick={startMedia} className={`${GHOST_BUTTON_CLASS}`} aria-controls="bodyMarkdown">
+            <button type="button" onMouseDown={keepEditorFocus} onClick={startMedia} className={`${GHOST_BUTTON_CLASS}`} aria-controls="bodyMarkdown">
               ▶ メディア挿入
             </button>
           </div>
@@ -265,7 +291,7 @@ export function BodyEditor({ name, defaultValue, onChange }: { name: string; def
           onMouseUp={rememberSelection}
           onTouchEnd={rememberSelection}
           aria-describedby="body-editor-help"
-          className={`${ARTICLE_BODY_TEXT_CLASS} box-border block min-h-[12rem] w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-foreground/90 outline-none disabled:opacity-60`}
+          className={`${ARTICLE_BODY_TEXT_CLASS} box-border block min-h-[12rem] w-full scroll-mt-44 resize-none overflow-hidden border-0 bg-transparent p-0 text-foreground/90 outline-none disabled:opacity-60`}
         />
       </div>
     </div>

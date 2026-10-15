@@ -226,7 +226,7 @@ export function DraftEditForm({
       </form>
 
           {/* 入力中の内容のプレビュー。公開ページと同じ部品・同じ幅で描く(保存するまで公開ページには反映されない) */}
-          <section id="draft-preview" aria-labelledby="draft-preview-heading" className="mb-8 scroll-mt-4">
+          <section id="draft-preview" aria-labelledby="draft-preview-heading" className="mb-8 scroll-mt-16">
             <div className="mb-3 border-l-4 border-gold bg-surface px-4 py-3">
               <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-[#8a5a00] dark:text-gold">Preview</p>
               <h2 id="draft-preview-heading" className="text-lg font-semibold">
