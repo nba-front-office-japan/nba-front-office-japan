@@ -1,7 +1,8 @@
-import type { MouseEventHandler } from "react";
+import { Fragment, type MouseEventHandler } from "react";
 import Link from "next/link";
 import { ARTICLE_CREDIT, showsArticleCredit } from "@/lib/news/credit";
 import { splitInlineLinks } from "@/lib/news/inline-links";
+import { formatLines } from "@/lib/news/inline-format";
 import { toBodySegments } from "@/lib/news/body-media";
 import { ARTICLE_BODY_TEXT_CLASS } from "@/lib/news/body-typography";
 import { MediaEmbed } from "./related-media";
@@ -10,9 +11,9 @@ import type { ArticleKind } from "@/lib/supabase/types";
 
 const LINK_CLASS = "font-semibold text-blue underline decoration-blue/40 underline-offset-2 hover:decoration-blue";
 
-// 本文の [文字](URL) を、選択した文字だけのリンクにする(それ以外は文字のまま。改行・空白も入力したとおり)。
+// 本文の [文字](URL) を、選択した文字だけのリンクにする(それ以外は文字のまま)。
 // 内部リンクは同じタブ、外部リンクは別タブ(rel="noopener noreferrer")で開く。
-function ParagraphText({ text, onInternalLinkClick }: { text: string; onInternalLinkClick?: MouseEventHandler<HTMLAnchorElement> }) {
+function LinkedText({ text, onInternalLinkClick }: { text: string; onInternalLinkClick?: MouseEventHandler<HTMLAnchorElement> }) {
   return (
     <>
       {splitInlineLinks(text).map((seg, i) => {
@@ -32,6 +33,39 @@ function ParagraphText({ text, onInternalLinkClick }: { text: string; onInternal
           <Link key={i} href={seg.href} className={LINK_CLASS} onClick={onInternalLinkClick}>
             {seg.text}
           </Link>
+        );
+      })}
+    </>
+  );
+}
+
+// 本文の文字の部分。改行・空白は入力したとおりに表示し、行の先頭の「## 」の行を見出し、**文字** を太字にする
+// (lib/news/inline-format.ts)。見出しも行の高さは本文と同じにし、段落の間隔(空行)を入力欄とそろえる。
+function ParagraphText({ text, onInternalLinkClick }: { text: string; onInternalLinkClick?: MouseEventHandler<HTMLAnchorElement> }) {
+  const lines = formatLines(text);
+  return (
+    <>
+      {lines.map((line, i) => {
+        const inline = line.parts.map((part, j) =>
+          part.bold ? (
+            <strong key={j} className="font-bold text-foreground">
+              <LinkedText text={part.text} onInternalLinkClick={onInternalLinkClick} />
+            </strong>
+          ) : (
+            <LinkedText key={j} text={part.text} onInternalLinkClick={onInternalLinkClick} />
+          )
+        );
+        return (
+          <Fragment key={i}>
+            {line.heading ? (
+              <strong role="heading" aria-level={2} className="text-[1.125rem] font-extrabold text-foreground">
+                {inline}
+              </strong>
+            ) : (
+              inline
+            )}
+            {i < lines.length - 1 && "\n"}
+          </Fragment>
         );
       })}
     </>

@@ -6,6 +6,7 @@ import { classifyLinkUrl, linkTextProblem, toLinkMarkup } from "@/lib/news/inlin
 import { MAX_RELATED_MEDIA, parseRelatedMediaUrl } from "@/lib/news/related-media";
 import { bodyMediaOf, toMediaMarker } from "@/lib/news/body-media";
 import { ARTICLE_BODY_TEXT_CLASS } from "@/lib/news/body-typography";
+import { isHeadingLine, stripHeading } from "@/lib/news/inline-format";
 import { ARTICLE_FRAME_CLASS } from "@/components/news/article-view";
 
 // 記事本文の入力欄と「リンク」ボタン。
@@ -36,12 +37,124 @@ export function BodyEditor({ name, defaultValue, onChange }: { name: string; def
   const fail = (text: string) => setMessage({ text, error: true });
 
   // 入力欄はスクロールバーを出さず、内容に合わせて高さを伸ばす(スクロールバーの分だけ幅が狭くなり、
-  // 入力中に折り返し位置が変わるのを防ぐ)
+  // 入力中に折り返し位置が変わるのを防ぐ)。高さを測り直す間にページが縮んで画面の位置が動かないよう、スクロール位置を戻す
   function autosize() {
     const el = ref.current;
     if (!el) return;
+    const y = window.scrollY;
     el.style.height = "auto";
     el.style.height = `${el.scrollHeight}px`; // 入力欄自体には余白・枠線がない
+    if (window.scrollY !== y) window.scrollTo(window.scrollX, y);
+  }
+
+  // 「リンク」「メディア挿入」「見出し」「太字」の操作の前後で、本文の入力欄の画面上の位置を変えない。
+  // 上のボタン列(URLの入力欄・メッセージ)の高さが変わってもページが動かないよう、描画後に差の分だけスクロールし直す
+  const viewAnchor = useRef<number | null>(null);
+  function keepView() {
+    if (ref.current) viewAnchor.current = ref.current.getBoundingClientRect().top;
+  }
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || viewAnchor.current === null) return;
+    const diff = el.getBoundingClientRect().top - viewAnchor.current;
+    viewAnchor.current = null;
+    if (Math.abs(diff) >= 1) window.scrollBy(0, diff);
+  });
+
+  /** 入力欄の内容を書き換え、指定した範囲を選択した状態にする(画面の位置はそのまま) */
+  function replaceBody(next: string, select: Selection) {
+    const el = ref.current;
+    if (!el) return;
+    keepView();
+    el.value = next;
+    onChange(next);
+    autosize();
+    el.focus({ preventScroll: true });
+    el.setSelectionRange(select.start, select.end);
+    lastSelection.current = select;
+  }
+
+  /** 書式ボタンを押した時点の本文の選択範囲(入力欄にフォーカスがなければ、最後に選んでいた範囲)。選択がなければ null */
+  function currentSelection(): Selection | null {
+    const el = ref.current;
+    if (!el) return null;
+    const range = document.activeElement === el ? { start: el.selectionStart, end: el.selectionEnd } : lastSelection.current;
+    return range.start !== range.end ? range : null;
+  }
+
+  // 見出し: 選択範囲を含む行の先頭に「## 」を付ける(すべて見出しなら外す)。空行と [[media:URL]] の行には付けない
+  function toggleHeading() {
+    const el = ref.current;
+    const sel = currentSelection();
+    keepView();
+    if (!el || !sel) {
+      fail("本文内で見出しにしたい行（文字）を選択してください。");
+      return;
+    }
+    const v = el.value;
+    const lineStart = v.lastIndexOf("\n", sel.start - 1) + 1;
+    const endAt = sel.end > sel.start && v[sel.end - 1] === "\n" ? sel.end - 1 : sel.end;
+    const nl = v.indexOf("\n", endAt);
+    const lineEnd = nl === -1 ? v.length : nl;
+    const lines = v.slice(lineStart, lineEnd).split("\n");
+    const target = (l: string) => l.trim() !== "" && !/^\[\[media:/.test(l.trim());
+    const targets = lines.filter(target);
+    const allHeading = targets.length > 0 && targets.every(isHeadingLine);
+    const next = lines.map((l) => (!target(l) ? l : allHeading ? stripHeading(l) : isHeadingLine(l) ? l : `## ${l}`)).join("\n");
+    setPending(null);
+    setMediaAt(null);
+    replaceBody(v.slice(0, lineStart) + next + v.slice(lineEnd), { start: lineStart, end: lineStart + next.length });
+    setMessage({
+      text: allHeading ? "見出しを解除しました。" : "見出しにしました（行の先頭に「## 」が付きます）。下のプレビューで確認し、「保存」を押してください。",
+      error: false,
+    });
+  }
+
+  // 太字: 選択した文字を **文字** で囲む(すでに太字なら外す)。1行の中の文字だけ
+  function toggleBold() {
+    const el = ref.current;
+    const sel = currentSelection();
+    keepView();
+    if (!el || !sel) {
+      fail("本文内で太字にしたい文字を選択してください。");
+      return;
+    }
+    const v = el.value;
+    const text = v.slice(sel.start, sel.end);
+    if (/\n/.test(text)) {
+      fail("太字は1行の中の文字だけを選択してください。");
+      return;
+    }
+    setPending(null);
+    setMediaAt(null);
+    // 選択した文字が ** で囲まれている(選択に ** を含む、または選択のすぐ外側が **)場合は外す
+    if (text.length > 4 && text.startsWith("**") && text.endsWith("**")) {
+      const inner = text.slice(2, -2);
+      replaceBody(v.slice(0, sel.start) + inner + v.slice(sel.end), { start: sel.start, end: sel.start + inner.length });
+      setMessage({ text: "太字を解除しました。", error: false });
+      return;
+    }
+    if (v.slice(sel.start - 2, sel.start) === "**" && v.slice(sel.end, sel.end + 2) === "**") {
+      replaceBody(v.slice(0, sel.start - 2) + text + v.slice(sel.end + 2), { start: sel.start - 2, end: sel.end - 2 });
+      setMessage({ text: "太字を解除しました。", error: false });
+      return;
+    }
+    if (text.includes("*")) {
+      fail("選択した文字に「*」が含まれています。太字にする文字だけを選択してください。");
+      return;
+    }
+    // 前後の空白は太字の外に出す
+    const lead = text.length - text.trimStart().length;
+    const trail = text.length - text.trimEnd().length;
+    const core = text.trim();
+    if (!core) {
+      fail("本文内で太字にしたい文字を選択してください。");
+      return;
+    }
+    const start = sel.start + lead;
+    const end = sel.end - trail;
+    replaceBody(v.slice(0, start) + `**${core}**` + v.slice(end), { start: start + 2, end: start + 2 + core.length });
+    setMessage({ text: "太字にしました（** で囲まれます）。下のプレビューで確認し、「保存」を押してください。", error: false });
   }
   useLayoutEffect(autosize, []);
   useEffect(() => {
@@ -69,6 +182,7 @@ export function BodyEditor({ name, defaultValue, onChange }: { name: string; def
   function startLink() {
     const el = ref.current;
     if (!el) return;
+    keepView();
     // 「リンク」を押した時点の本文の選択範囲を使う。入力欄にフォーカスがあればその選択範囲、
     // フォーカスが外れていれば(スマホなど)入力欄で最後に選んでいた範囲。末尾に追加することはしない
     const focused = document.activeElement === el;
@@ -92,12 +206,13 @@ export function BodyEditor({ name, defaultValue, onChange }: { name: string; def
     setMessage(null);
     setUrl("");
     setPending({ ...sel, text });
-    requestAnimationFrame(() => urlRef.current?.focus());
+    requestAnimationFrame(() => urlRef.current?.focus({ preventScroll: true }));
   }
 
   function confirmLink() {
     const el = ref.current;
     if (!el || !pending) return;
+    keepView();
     const link = classifyLinkUrl(url);
     if (!link) {
       fail("URLは「/」で始まるサイト内のパス（例: /guide/salary-cap）か、https:// で始まるURLを入力してください。");
@@ -110,34 +225,35 @@ export function BodyEditor({ name, defaultValue, onChange }: { name: string; def
       return;
     }
     const markup = toLinkMarkup(pending.text, url.trim());
-    el.value = el.value.slice(0, pending.start) + markup + el.value.slice(pending.end);
-    onChange(el.value);
-    autosize();
+    // 選んでいた位置をリンクにし、画面の位置とカーソル(リンクの部分を選択した状態)を保つ
+    replaceBody(el.value.slice(0, pending.start) + markup + el.value.slice(pending.end), {
+      start: pending.start,
+      end: pending.start + markup.length,
+    });
     setPending(null);
     setMessage({
       text: `「${pending.text}」を${link.external ? "外部リンク（別タブで開く）" : "サイト内リンク（同じタブで開く）"}にしました。下のプレビューで確認し、「保存」を押してください。`,
       error: false,
     });
-    el.focus();
-    el.setSelectionRange(pending.start, pending.start + markup.length);
-    lastSelection.current = { start: pending.start, end: pending.start + markup.length };
   }
 
   function startMedia() {
     const el = ref.current;
     if (!el) return;
+    keepView();
     // カーソルの位置(文字を選択している場合はその末尾)の後ろに入れる
     const at = el.selectionStart !== el.selectionEnd || document.activeElement === el ? el.selectionEnd : lastSelection.current.end;
     setPending(null);
     setMessage(null);
     setMediaUrl("");
     setMediaAt(at);
-    requestAnimationFrame(() => mediaUrlRef.current?.focus());
+    requestAnimationFrame(() => mediaUrlRef.current?.focus({ preventScroll: true }));
   }
 
   function confirmMedia() {
     const el = ref.current;
     if (!el || mediaAt === null) return;
+    keepView();
     const media = parseRelatedMediaUrl(mediaUrl);
     if (!media) {
       fail("Xの公開ポスト（https://x.com/ユーザー名/status/数字）か、YouTubeの動画・Shorts のURLを入力してください。");
@@ -159,17 +275,13 @@ export function BodyEditor({ name, defaultValue, onChange }: { name: string; def
     const lead = before === "" ? "" : before.endsWith("\n\n") ? "" : before.endsWith("\n") ? "\n" : "\n\n";
     const trail = after === "" ? "\n" : after.startsWith("\n\n") ? "" : after.startsWith("\n") ? "\n" : "\n\n";
     const marker = toMediaMarker(media.url);
-    el.value = before + lead + marker + trail + after;
-    onChange(el.value);
-    autosize();
-    setMediaAt(null);
     const start = before.length + lead.length;
+    replaceBody(before + lead + marker + trail + after, { start, end: start + marker.length });
+    setMediaAt(null);
     setMessage({
       text: `${media.kind === "x" ? "Xポスト" : media.shorts ? "YouTube Shorts" : "YouTube動画"}を本文中に入れました。公開ページではこの位置に表示されます。「保存」を押してください。`,
       error: false,
     });
-    el.focus();
-    el.setSelectionRange(start, start + marker.length);
   }
 
   return (
@@ -180,6 +292,12 @@ export function BodyEditor({ name, defaultValue, onChange }: { name: string; def
         <div className="flex flex-wrap items-end justify-between gap-2">
           <label htmlFor="bodyMarkdown">本文（公開ページと同じ幅・文字組みで表示。RSS原文の転載はしないでください）</label>
           <div className="flex flex-wrap gap-2">
+            <button type="button" onMouseDown={keepEditorFocus} onClick={toggleHeading} className={`${GHOST_BUTTON_CLASS}`} aria-controls="bodyMarkdown" title="選択した行を見出しにする（もう一度押すと解除）">
+              見出し
+            </button>
+            <button type="button" onMouseDown={keepEditorFocus} onClick={toggleBold} className={`${GHOST_BUTTON_CLASS}`} aria-controls="bodyMarkdown" title="選択した文字を太字にする（もう一度押すと解除）">
+              <b>太字</b>
+            </button>
             <button type="button" onMouseDown={keepEditorFocus} onClick={startLink} className={`${GHOST_BUTTON_CLASS}`} aria-controls="bodyMarkdown">
               🔗 リンク
             </button>
@@ -189,7 +307,10 @@ export function BodyEditor({ name, defaultValue, onChange }: { name: string; def
           </div>
         </div>
         <details id="body-editor-help" className="font-normal">
-          <summary className="cursor-pointer font-bold">使い方（リンク・メディア挿入）</summary>
+          <summary className="cursor-pointer font-bold">使い方（見出し・太字・リンク・メディア挿入）</summary>
+          <p className="font-normal">
+            見出しにしたい行（または行の中の文字）を選択して「見出し」を押すと、行の先頭に <code>## </code> が付き、公開ページでは見出しとして表示されます。太字にしたい文字を選択して「太字」を押すと <code>**文字**</code> の形になり、公開ページでは太字になります。どちらももう一度押すと解除できます。
+          </p>
           <p className="font-normal">
             リンクにしたい文字を選択して「リンク」を押し、URLを貼り付けて確定します。本文には <code>[文字](URL)</code> の形で入り、公開ページでは選択した文字だけがリンクになります。
           </p>

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-// 管理画面の上部ナビゲーション。縦にスクロールしても画面上部に固定し(高さ ADMIN_NAV_HEIGHT_CLASS)、
+// 管理画面の上部ナビゲーション。縦にスクロールしても画面上部に固定し(position: fixed・高さ 3rem)、
 // 今いる画面のリンクを強調する。スマホで項目が入りきらない場合は、ナビの部分だけを横にスクロールできる。
 
 const NAV_ITEMS = [
@@ -23,7 +23,10 @@ function activeHref(pathname: string): string | null {
 export function AdminNav() {
   const active = activeHref(usePathname());
   return (
-    <div className="sticky top-0 z-40 h-12 border-b border-line bg-surface shadow-[0_1px_0_rgba(0,0,0,0.04)]">
+    <>
+      {/* 親要素の大きさや overflow に左右されないよう fixed で固定し、同じ高さの空きを置いて本文が隠れないようにする */}
+      <div aria-hidden className="h-12" />
+      <div className="fixed inset-x-0 top-0 z-40 h-12 border-b border-line bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.06)]">
       <nav aria-label="管理画面" className="mx-auto flex h-full max-w-5xl items-stretch gap-1 overflow-x-auto px-4 text-sm font-bold sm:px-8">
         {NAV_ITEMS.map((item) => {
           const current = item.href === active;
@@ -41,6 +44,7 @@ export function AdminNav() {
           );
         })}
       </nav>
-    </div>
+      </div>
+    </>
   );
 }
