@@ -12,6 +12,7 @@ function isCategory(value: string): value is NewsEventCategory {
 import type { ActionState } from "@/app/admin/_components/action-ui";
 import { validateRelatedMediaInputs } from "@/lib/news/related-media";
 import { bodyMediaProblem } from "@/lib/news/body-media";
+import { validatePublishedAtInput } from "@/lib/news/jst-datetime";
 
 export async function createDraftAction(
   _prevState: ActionState,
@@ -151,7 +152,27 @@ export async function updateDraftAction(
     return { status: "error", message: bodyMediaError };
   }
 
+  // 投稿日(公開済みの記事だけ。日本時間の "YYYY-MM-DDTHH:mm")。画面を開いたときの値から変えた場合だけ更新し、
+  // 変えていなければ既存の投稿日(秒まで)をそのまま残す。保存しただけでは投稿日は変わらない
+  const publishedAtInput = formData.get("publishedAtJst");
+  const publishedAtOriginal = String(formData.get("publishedAtJstOriginal") ?? "");
+  let publishedAtUpdate: { published_at: string } | Record<string, never> = {};
+  if (publishedAtInput !== null && String(publishedAtInput).trim() !== publishedAtOriginal) {
+    const checked = validatePublishedAtInput(String(publishedAtInput));
+    if ("error" in checked) {
+      return { status: "error", message: checked.error };
+    }
+    publishedAtUpdate = { published_at: checked.iso };
+  }
+
   const supabase = createAdminSupabaseClient();
+  if ("published_at" in publishedAtUpdate) {
+    // 投稿日を変えられるのは、すでに投稿日がある(公開済みの)記事だけ
+    const { data: current } = await supabase.from("article_drafts").select("published_at").eq("id", draftId).single();
+    if (!current?.published_at) {
+      return { status: "error", message: "未公開の記事の投稿日は、公開した時点の日時になります（公開前は変更できません）。" };
+    }
+  }
   const { error } = await supabase
     .from("article_drafts")
     .update({
@@ -164,6 +185,7 @@ export async function updateDraftAction(
       source_attribution_markdown: sourceAttributionMarkdown,
       editor_notes: editorNotes || null,
       related_media_urls: media.urls,
+      ...publishedAtUpdate,
     })
     .eq("id", draftId);
 
@@ -191,7 +213,7 @@ export async function publishDraftAction(
 
   const { data: draft } = await supabase
     .from("article_drafts")
-    .select("body_markdown")
+    .select("body_markdown, published_at")
     .eq("id", draftId)
     .single();
 
@@ -199,9 +221,11 @@ export async function publishDraftAction(
     return { status: "error", message: "本文が空のままでは公開できません。" };
   }
 
+  // 初めて公開するときは、その時点の日時を投稿日にする。すでに投稿日がある(公開済みの)記事を
+  // もう一度「公開する」場合は、投稿日を変えない(修正しただけで最新記事にならないように)
   const { error } = await supabase
     .from("article_drafts")
-    .update({ status: "published", published_at: new Date().toISOString() })
+    .update({ status: "published", published_at: draft.published_at ?? new Date().toISOString() })
     .eq("id", draftId);
 
   if (error) {

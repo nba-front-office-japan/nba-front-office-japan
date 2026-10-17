@@ -15,11 +15,21 @@ import { BodyEditor } from "./body-editor";
 import { MAX_RELATED_MEDIA, parseRelatedMediaUrl } from "@/lib/news/related-media";
 import { trailingRelatedMedia } from "@/lib/news/body-media";
 import { ARTICLE_PAGE_FRAME_CLASS, NewsArticleView, formatArticleDate, type ArticleViewSource } from "@/components/news/article-view";
+import { toJstInputValue, validatePublishedAtInput } from "@/lib/news/jst-datetime";
 
 type ArticleDraft = Database["public"]["Tables"]["article_drafts"]["Row"];
 
 // プレビューに使う入力中の値
-type PreviewValues = { kind: ArticleKind; category: string; headline: string; dek: string; body: string; media: string[] };
+type PreviewValues = {
+  kind: ArticleKind;
+  category: string;
+  headline: string;
+  dek: string;
+  body: string;
+  media: string[];
+  /** 投稿日(日本時間 "YYYY-MM-DDTHH:mm")。未公開の記事は "" */
+  publishedAt: string;
+};
 
 function sameValues(a: PreviewValues, b: PreviewValues): boolean {
   return (
@@ -28,7 +38,8 @@ function sameValues(a: PreviewValues, b: PreviewValues): boolean {
     a.headline === b.headline &&
     a.dek === b.dek &&
     a.body === b.body &&
-    a.media.join("|") === b.media.join("|")
+    a.media.join("|") === b.media.join("|") &&
+    a.publishedAt === b.publishedAt
   );
 }
 
@@ -72,8 +83,14 @@ export function DraftEditForm({
     dek: draft.dek_ja ?? "",
     body: draft.body_markdown,
     media: Array.from({ length: MAX_RELATED_MEDIA }, (_, i) => savedMedia[i] ?? ""),
+    publishedAt: draft.published_at ? toJstInputValue(draft.published_at) : "",
   };
+  // 投稿日の入力欄で選べる最も新しい日時(現在の日本時間。未来の日時は選べない)
+  const [nowJst] = useState(() => toJstInputValue(new Date().toISOString()));
   const [values, setValues] = useState<PreviewValues>(initial);
+  // プレビューに表示する投稿日(入力中の値。正しくない日時の間は null)
+  const publishedAtCheck = values.publishedAt ? validatePublishedAtInput(values.publishedAt) : { error: "" };
+  const previewPublishedIso = "iso" in publishedAtCheck ? publishedAtCheck.iso : null;
   const [submitted, setSubmitted] = useState<PreviewValues | null>(null);
   const set = (patch: Partial<PreviewValues>) => setValues((v) => ({ ...v, ...patch }));
   // 保存済みの内容と比べて変更があるか(保存に成功したら、そのとき送った内容を基準にする)
@@ -170,6 +187,42 @@ export function DraftEditForm({
               className="border border-line bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-60"
             />
           </label>
+          {/* 投稿日: 公開済みの記事だけ変更できる(日本時間)。変えずに保存すれば、既存の投稿日をそのまま残す */}
+          {draft.published_at ? (
+            <div className="grid gap-1 text-[11px] font-bold text-muted">
+              <label htmlFor="publishedAtJst">投稿日（日本時間）</label>
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  id="publishedAtJst"
+                  type="datetime-local"
+                  name="publishedAtJst"
+                  defaultValue={initial.publishedAt}
+                  max={nowJst}
+                  min="2000-01-01T00:00"
+                  step={60}
+                  required
+                  onChange={(e) => set({ publishedAt: e.target.value })}
+                  className="border border-line bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-60"
+                />
+                {/* 入力中の値を保存前に確かめる(保存時もサーバーで同じ検証をする) */}
+                {"error" in publishedAtCheck ? (
+                  <span role="alert" className="text-xs font-bold text-[#cf4a51]">
+                    {publishedAtCheck.error}
+                  </span>
+                ) : (
+                  <span className="text-xs font-normal">公開ページの表示：{formatArticleDate(publishedAtCheck.iso)}</span>
+                )}
+              </div>
+              <input type="hidden" name="publishedAtJstOriginal" value={draft.published_at ? toJstInputValue(draft.published_at) : ""} />
+              <p className="font-normal">
+                ニュース一覧の並び順・記事ページの日付・サイトマップは、この投稿日を基準にします。誤字の修正などで保存しても、ここを変えなければ投稿日は変わりません（未来の日時は指定できません）。
+              </p>
+            </div>
+          ) : (
+            <p className="text-[11px] font-bold text-muted">
+              投稿日：<span className="font-normal">未公開（公開した時点の日時が投稿日になります）</span>
+            </p>
+          )}
           </section>
           <BodyEditor name="bodyMarkdown" defaultValue={draft.body_markdown} onChange={(body) => set({ body })} />
           <section className="grid gap-3 border border-line bg-surface p-6">
@@ -247,7 +300,7 @@ export function DraftEditForm({
               singleSource={context.singleSource}
               headline={values.headline}
               dek={values.dek.trim() || null}
-              dateLabel={draft.published_at ? formatArticleDate(draft.published_at) : "公開日（公開すると表示されます）"}
+              dateLabel={previewPublishedIso ? formatArticleDate(previewPublishedIso) : draft.published_at ? "投稿日を正しく入力してください" : "公開日（公開すると表示されます）"}
               bodyMarkdown={values.body}
               trailingMedia={trailingRelatedMedia(values.body, relatedUrls)}
               sources={context.sources}
