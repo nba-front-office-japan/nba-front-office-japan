@@ -1,11 +1,11 @@
-// 記事本文の途中に入れるメディア(Xポスト・YouTube動画)。
+// 記事本文の途中に入れるメディア(Xポスト・YouTube動画・Instagram投稿/リール・TikTok動画)。
 // 本文には、空行で区切った1段落として [[media:URL]] の形で保存する(生のHTMLや埋め込みコードは使わない)。
 // 管理画面の「メディア挿入」ボタンがこの形で挿入する。
 // 埋め込みとして扱うのは、段落全体がこの形で、かつ URL が lib/news/related-media.ts の検証を通るもの(公開Xポスト・
 // YouTube動画・Shorts)だけ。それ以外(URL をそのまま書いた行、対応外の URL、文中の [[media:…]])は通常の文字のまま表示する。
 // 本文末の関連メディア(article_drafts.related_media_urls)と合わせて最大 MAX_RELATED_MEDIA 件までを埋め込む。
 
-import { MAX_RELATED_MEDIA, parseRelatedMediaUrl, readStoredRelatedMedia, type RelatedMedia } from "./related-media";
+import { MAX_RELATED_MEDIA, SUPPORTED_MEDIA_HINT, parseRelatedMediaUrl, readStoredRelatedMedia, unsupportedMediaReason, type RelatedMedia } from "./related-media";
 
 const MARKER_RE = /^\[\[media:([^\s[\]]+)\]\]$/;
 
@@ -75,7 +75,7 @@ export function bodyMediaProblem(body: string, relatedUrls: string[]): string | 
   for (const url of markers) {
     const media = parseRelatedMediaUrl(url);
     if (!media || media.url !== url) {
-      return `本文中のメディア「${url}」は使えません。「メディア挿入」ボタンから、Xの公開ポストかYouTubeの動画・Shorts のURLで入れ直してください。`;
+      return `本文中のメディア「${url}」は使えません。「メディア挿入」ボタンから入れ直してください。${unsupportedMediaReason(url) ?? SUPPORTED_MEDIA_HINT}`;
     }
   }
   const unique = new Set(markers);

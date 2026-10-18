@@ -130,7 +130,7 @@ export async function updateDraftAction(
   const editorNotes = String(formData.get("editorNotes") ?? "").trim();
   // 独自コラムの編集画面だけがカテゴリを送る(イベントありの記事はイベントのカテゴリを使う)
   const categoryValue = formData.get("category");
-  // 関連メディアURL(X・YouTube／任意)。検証して正規化した URL だけを保存する
+  // 関連メディアURL(X・YouTube・Instagram・TikTok／任意)。検証して正規化した URL だけを保存する
   const media = validateRelatedMediaInputs(formData.getAll("relatedMediaUrl").map(String));
 
   if (!draftId || !headlineJa) {

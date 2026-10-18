@@ -227,9 +227,9 @@ export function DraftEditForm({
           <BodyEditor name="bodyMarkdown" defaultValue={draft.body_markdown} onChange={(body) => set({ body })} />
           <section className="grid gap-3 border border-line bg-surface p-6">
           <fieldset className="grid min-w-0 gap-1.5">
-            <legend className="mb-1 text-[11px] font-bold text-muted">関連メディアURL（X・YouTube／任意）</legend>
+            <legend className="mb-1 text-[11px] font-bold text-muted">関連メディアURL（X・YouTube・Instagram・TikTok／任意）</legend>
             <p className="text-xs text-muted">
-              Xの公開ポスト（x.com / twitter.com の …/status/数字）と、YouTubeの動画・Shorts のURLを登録できます。公開ページでは本文の後に表示します（本文中に「メディア挿入」で入れたものと合わせて{MAX_RELATED_MEDIA}件まで。本文中に入れたものは末尾には重ねて表示しません）。空欄は登録しません。
+              Xの公開ポスト（x.com / twitter.com の …/status/数字）、YouTubeの動画・Shorts、Instagramの公開投稿・リール（instagram.com/p/… ・ /reel/…）、TikTokの公開動画（tiktok.com/@ユーザー名/video/数字。短縮URLは不可）のURLを登録できます。公開ページでは本文の後に表示します（本文中に「メディア挿入」で入れたものと合わせて{MAX_RELATED_MEDIA}件まで。本文中に入れたものは末尾には重ねて表示しません）。空欄は登録しません。
             </p>
             {values.media.map((_, i) => (
               <input

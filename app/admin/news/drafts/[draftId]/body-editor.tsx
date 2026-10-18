@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from "react";
 import { GHOST_BUTTON_CLASS, PRIMARY_BUTTON_CLASS } from "@/app/admin/_components/action-ui";
 import { classifyLinkUrl, linkTextProblem, toLinkMarkup } from "@/lib/news/inline-links";
-import { MAX_RELATED_MEDIA, parseRelatedMediaUrl } from "@/lib/news/related-media";
+import { MAX_RELATED_MEDIA, SUPPORTED_MEDIA_HINT, mediaLabel, parseRelatedMediaUrl, unsupportedMediaReason } from "@/lib/news/related-media";
 import { bodyMediaOf, toMediaMarker } from "@/lib/news/body-media";
 import { ARTICLE_BODY_TEXT_CLASS } from "@/lib/news/body-typography";
 import { isHeadingLine, stripHeading } from "@/lib/news/inline-format";
@@ -256,7 +256,7 @@ export function BodyEditor({ name, defaultValue, onChange }: { name: string; def
     keepView();
     const media = parseRelatedMediaUrl(mediaUrl);
     if (!media) {
-      fail("Xの公開ポスト（https://x.com/ユーザー名/status/数字）か、YouTubeの動画・Shorts のURLを入力してください。");
+      fail(unsupportedMediaReason(mediaUrl) ?? SUPPORTED_MEDIA_HINT);
       return;
     }
     const existing = bodyMediaOf(el.value);
@@ -279,7 +279,7 @@ export function BodyEditor({ name, defaultValue, onChange }: { name: string; def
     replaceBody(before + lead + marker + trail + after, { start, end: start + marker.length });
     setMediaAt(null);
     setMessage({
-      text: `${media.kind === "x" ? "Xポスト" : media.shorts ? "YouTube Shorts" : "YouTube動画"}を本文中に入れました。公開ページではこの位置に表示されます。「保存」を押してください。`,
+      text: `${mediaLabel(media)}を本文中に入れました。公開ページではこの位置に表示されます。「保存」を押してください。`,
       error: false,
     });
   }
@@ -315,7 +315,7 @@ export function BodyEditor({ name, defaultValue, onChange }: { name: string; def
             リンクにしたい文字を選択して「リンク」を押し、URLを貼り付けて確定します。本文には <code>[文字](URL)</code> の形で入り、公開ページでは選択した文字だけがリンクになります。
           </p>
           <p className="font-normal">
-            Xポスト・YouTube動画を本文の途中に入れるときは、入れたい位置にカーソルを置いて「メディア挿入」を押し、URLを貼り付けて確定します。本文には{" "}
+            Xポスト・YouTube動画・Instagram投稿／リール・TikTok動画を本文の途中に入れるときは、入れたい位置にカーソルを置いて「メディア挿入」を押し、URLを貼り付けて確定します。本文には{" "}
             <code>[[media:URL]]</code> だけの段落として入り、公開ページではその位置に表示されます（本文中と関連メディアURLを合わせて{MAX_RELATED_MEDIA}件まで）。URLをそのまま書いた行は埋め込みにならず、文字のまま表示されます。
           </p>
         </details>
@@ -323,7 +323,7 @@ export function BodyEditor({ name, defaultValue, onChange }: { name: string; def
         {mediaAt !== null && (
           <div className="mt-1 grid gap-2 border border-blue/40 bg-[#f6f9ff] p-3 font-normal text-foreground dark:bg-white/[.04]">
             <label className="grid gap-1 text-[11px] font-bold text-muted">
-              本文中に入れるメディアのURL（Xの公開ポスト、YouTubeの動画・Shorts）
+              本文中に入れるメディアのURL（Xの公開ポスト、YouTubeの動画・Shorts、Instagramの公開投稿・リール、TikTokの公開動画）
               <input
                 ref={mediaUrlRef}
                 type="text"
@@ -338,7 +338,7 @@ export function BodyEditor({ name, defaultValue, onChange }: { name: string; def
                   }
                   if (e.key === "Escape") setMediaAt(null);
                 }}
-                placeholder="https://x.com/…/status/… または https://www.youtube.com/watch?v=…"
+                placeholder="x.com/…/status/… ・ youtube.com/… ・ instagram.com/p/… ・ tiktok.com/@…/video/…"
                 className="min-w-0 border border-line bg-surface px-3 py-2 text-sm font-normal text-foreground"
               />
             </label>

@@ -5,8 +5,7 @@ import { splitInlineLinks } from "@/lib/news/inline-links";
 import { formatLines } from "@/lib/news/inline-format";
 import { toBodySegments } from "@/lib/news/body-media";
 import { ARTICLE_BODY_TEXT_CLASS } from "@/lib/news/body-typography";
-import { MediaEmbed } from "./related-media";
-import { XWidgetsLoader } from "./x-widgets-loader";
+import { MediaEmbed, MediaScriptLoaders } from "./related-media";
 import type { ArticleKind } from "@/lib/supabase/types";
 
 const LINK_CLASS = "font-semibold text-blue underline decoration-blue/40 underline-offset-2 hover:decoration-blue";
@@ -75,7 +74,7 @@ function ParagraphText({ text, onInternalLinkClick }: { text: string; onInternal
 // ニュース記事・コラム記事の本文と、本文直後のクレジット。
 // 本文は、管理画面の本文の入力欄と同じ文字組み(ARTICLE_BODY_TEXT_CLASS)で、改行・空行を入力したとおりに表示する。
 // そのため同じ画面幅なら、入力欄・プレビュー・公開ページで本文の折り返し位置と段落(空行)の間隔が一致する。
-// 本文中の [[media:URL]] だけの段落(管理画面の「メディア挿入」で入れたもの)は、その位置にXポスト・YouTube動画を埋め込む
+// 本文中の [[media:URL]] だけの段落(管理画面の「メディア挿入」で入れたもの)は、その位置にX・YouTube・Instagram・TikTokを埋め込む
 // (対応する URL のものだけ。それ以外は文字のまま。lib/news/body-media.ts)。
 // 公開ページ(/news/[articleId])と管理画面の記事プレビューで同じ表示にするため、この部品を共通で使う。
 // onInternalLinkClick は管理画面のプレビュー用(未保存の変更があるときに、内部リンクで画面を離れる前に確認する)。
@@ -91,7 +90,7 @@ export function ArticleBody({
   const showCredit = showsArticleCredit(articleKind);
   // 本文の末尾にクレジットを手入力している記事もあるため、二重に表示しないよう末尾の同じ一行は除く(保存データは変更しない)
   const segments = toBodySegments(bodyMarkdown, showCredit ? ARTICLE_CREDIT : null);
-  const xUrls = segments.flatMap((s) => (s.kind === "media" && s.media.kind === "x" ? [s.media.url] : [])).join(" ");
+  const bodyMedia = segments.flatMap((s) => (s.kind === "media" ? [s.media] : []));
 
   return (
     <div className="mb-6 min-w-0">
@@ -112,7 +111,7 @@ export function ArticleBody({
           )
         )
       )}
-      {xUrls && <XWidgetsLoader watch={xUrls} />}
+      <MediaScriptLoaders media={bodyMedia} />
       {showCredit && (
         <p className="mt-5 text-right text-sm font-semibold text-foreground/80">{ARTICLE_CREDIT}</p>
       )}
