@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DEFAULT_SEASON, seasonSearch } from "@/lib/seasons";
 
 export interface TeamListItem {
   id: string;
@@ -20,8 +21,14 @@ const CONFERENCE_LABEL: Record<string, string> = {
 
 // チーム名クリックで選手名鑑Profile(/players/guide/[teamId])へ進む一覧。
 // チーム名の下の導線は「Profile / Stats / Team Profile(/players/guide/[teamId]?view=team-profile)」。
-// 選手名・チームPPG・3P%・今季成績などは出さない。
-export function PlayerTeamDirectory({ teams }: { teams: TeamListItem[] }) {
+// 選手名・チームPPG・3P%・今季成績などは出さない。season は表示中のシーズン(リンク先も同じシーズンで開く)。
+export function PlayerTeamDirectory({
+  teams,
+  season = DEFAULT_SEASON,
+}: {
+  teams: TeamListItem[];
+  season?: number;
+}) {
   const conferences: ("East" | "West")[] = ["East", "West"];
 
   return (
@@ -53,7 +60,7 @@ export function PlayerTeamDirectory({ teams }: { teams: TeamListItem[] }) {
                     {divisionTeams.map((team) => (
                       <div key={team.id} className="border-t border-line py-2.5">
                         <Link
-                          href={`/players/guide/${team.id}`}
+                          href={`/players/guide/${team.id}${seasonSearch(season)}`}
                           className="flex items-center gap-2.5 text-sm font-bold hover:text-blue"
                         >
                           <span className="inline-grid h-[30px] w-[30px] flex-none place-items-center rounded-full bg-[#eaf1ff] text-[10px] tracking-wide text-[#2457b7]">
@@ -63,9 +70,9 @@ export function PlayerTeamDirectory({ teams }: { teams: TeamListItem[] }) {
                         </Link>
                         <div className="ml-10 mt-1 flex flex-wrap gap-x-4 gap-y-0.5">
                           {[
-                            { label: "Profile", href: `/players/guide/${team.id}` },
-                            { label: "Stats", href: `/players/guide/${team.id}?view=stats` },
-                            { label: "Team Profile", href: `/players/guide/${team.id}?view=team-profile` },
+                            { label: "Profile", href: `/players/guide/${team.id}${seasonSearch(season)}` },
+                            { label: "Stats", href: `/players/guide/${team.id}${seasonSearch(season, { view: "stats" })}` },
+                            { label: "Team Profile", href: `/players/guide/${team.id}${seasonSearch(season, { view: "team-profile" })}` },
                           ].map((link) => (
                             <Link
                               key={link.label}

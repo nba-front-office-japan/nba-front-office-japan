@@ -21,6 +21,8 @@ export interface ProfileRow {
   draftSort: number | null;
   // そのチームでの出場試合数(チーム記録のProfileでのみ使う)
   gamesPlayed?: number | null;
+  // Two-Way 契約(固定スナップショットのロスターでのみ使う)
+  twoWay?: boolean;
 }
 
 // current: 選手名鑑(ロスターシーズンの選手一覧。背番号・経験年数あり)
@@ -208,6 +210,14 @@ export function TeamRosterProfileTable({
                 <Link href={`/players/${row.id}`} className="hover:text-blue">
                   {row.name}
                 </Link>
+                {row.twoWay && (
+                  <span
+                    title="Two-Way 契約"
+                    className="ml-1.5 inline-block border border-line px-1 align-middle text-[10px] font-bold leading-4 text-muted"
+                  >
+                    TW
+                  </span>
+                )}
                 {row.nameEn && row.nameEn !== row.name && (
                   <div className="text-xs font-normal text-muted">{row.nameEn}</div>
                 )}

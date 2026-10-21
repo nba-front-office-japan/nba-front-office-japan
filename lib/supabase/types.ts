@@ -204,6 +204,49 @@ export interface Database {
         >;
         Relationships: [];
       };
+      // シーズンごとのロスターの固定スナップショット(supabase/migrations/20261021000000_roster_snapshots.sql)。
+      // 登録後は変更・削除できない(読み取り専用として扱う)
+      roster_snapshots: {
+        Row: {
+          id: string;
+          season: number;
+          as_of: string;
+          source_name: string;
+          source_note: string | null;
+          row_count: number;
+          imported_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      roster_snapshot_players: {
+        Row: {
+          id: string;
+          snapshot_id: string;
+          team_id: string;
+          player_id: string;
+          source_player_name: string;
+          two_way: boolean;
+          jersey_number: number | null;
+          position: string;
+          height_text: string | null;
+          height_cm: number | null;
+          weight_lb: number | null;
+          weight_kg: number | null;
+          birth_date: string | null;
+          source_birth_date: string | null;
+          correction_note: string | null;
+          birth_place: string | null;
+          experience: string | null;
+          years_of_service: number | null;
+          college: string | null;
+          source_url: string | null;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       player_name_aliases: {
         Row: {
           id: string;

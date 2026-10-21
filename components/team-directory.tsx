@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Database } from "@/lib/supabase/types";
+import { DEFAULT_SEASON, seasonSearch } from "@/lib/seasons";
 
 type Team = Database["public"]["Tables"]["teams"]["Row"];
 
@@ -13,13 +14,16 @@ const CONFERENCE_LABEL: Record<string, string> = {
   West: "Western Conference",
 };
 
-// チーム名はチームページ(Overview)へ。その下の Profile / Stats は該当タブを直接開く。
+// チーム名はチームページ(Overview)へ。その下の Profile / Stats / Team Profile は該当タブを直接開く。
+// season は表示中のシーズン(リンク先も同じシーズンで開く)。
 export function TeamDirectory({
   teams,
   activeTeamId,
+  season = DEFAULT_SEASON,
 }: {
   teams: Team[];
   activeTeamId?: string;
+  season?: number;
 }) {
   if (teams.length === 0) {
     return <p className="text-sm text-muted">チームデータがありません。</p>;
@@ -61,7 +65,7 @@ export function TeamDirectory({
                       return (
                         <div key={team.id} className="border-t border-line py-2.5">
                           <Link
-                            href={`/teams/${team.id}`}
+                            href={`/teams/${team.id}${seasonSearch(season)}`}
                             className={`flex items-center gap-2.5 text-sm font-bold ${
                               isActive ? "text-blue" : "hover:text-blue"
                             }`}
@@ -77,11 +81,12 @@ export function TeamDirectory({
                             </span>
                             <span>{team.name}</span>
                           </Link>
-                          {/* チームページの Profile / Stats タブを直接開く(?tab= は /teams/[teamId] が受け付ける値) */}
-                          <div className="ml-10 mt-1.5 flex gap-2">
+                          {/* チームページの各タブを直接開く(?tab= は /teams/[teamId] が受け付ける値) */}
+                          <div className="ml-10 mt-1.5 flex flex-wrap gap-2">
                             {[
-                              { label: "Profile", href: `/teams/${team.id}?tab=profile` },
-                              { label: "Stats", href: `/teams/${team.id}?tab=stats` },
+                              { label: "Profile", href: `/teams/${team.id}${seasonSearch(season, { tab: "profile" })}` },
+                              { label: "Stats", href: `/teams/${team.id}${seasonSearch(season, { tab: "stats" })}` },
+                              { label: "Team Profile", href: `/teams/${team.id}${seasonSearch(season, { tab: "team-profile" })}` },
                             ].map((link) => (
                               <Link
                                 key={link.label}
