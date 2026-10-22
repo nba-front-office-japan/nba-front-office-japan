@@ -6,7 +6,10 @@ import type { GameStatus } from "@/lib/supabase/types";
 export type GameTeamLine = {
   teamId: string;
   abbreviation: string;
+  /** 英語の正式チーム名(teams.name) */
   name: string;
+  /** カタカナの正式チーム名(lib/team-names-ja.ts)。無ければ null(英語名を表示する) */
+  nameJa: string | null;
   city: string;
   score: number | null;
   /** 1Q〜4Qの得点(未実施はnull) */
@@ -34,6 +37,8 @@ export type GameSummary = {
 export type BoxScoreRow = {
   playerId: string | null;
   playerName: string;
+  /** 選手データのカタカナ名(players.full_name_ja)。未登録は null(英語名を表示する) */
+  playerNameJa: string | null;
   secondsPlayed: number;
   pts: number;
   reb: number;
@@ -91,6 +96,8 @@ export type PreseasonBox = {
 export type FullBoxRow = {
   playerId: string | null;
   playerName: string;
+  /** 選手データのカタカナ名(players.full_name_ja)。未登録は null(英語名を表示する) */
+  playerNameJa: string | null;
   role: "starter" | "bench" | "dnp";
   dnpReason: string | null;
   secondsPlayed: number | null;
@@ -112,7 +119,7 @@ export type FullBoxRow = {
   plusMinus: number | null;
 };
 
-export type FullBoxTotals = Omit<FullBoxRow, "playerId" | "playerName" | "role" | "dnpReason" | "secondsPlayed" | "plusMinus">;
+export type FullBoxTotals = Omit<FullBoxRow, "playerId" | "playerName" | "playerNameJa" | "role" | "dnpReason" | "secondsPlayed" | "plusMinus">;
 
 export type FullBox = {
   away: FullBoxRow[];

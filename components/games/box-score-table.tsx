@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { formatMinutes, type BoxScoreRow, type GameTeamLine } from "@/lib/games/types";
+import { PlayerName, TeamName } from "./names";
 
 // 1チーム分のボックススコア。列: 選手・MIN・PTS・REB・AST・STL・BLK・FGM/FGA・3PM/3PA・FTM/FTA・+/-
 // スマホでは表だけを横スクロールにし(選手名の列は固定)、ページ全体は横にはみ出さない。
@@ -14,8 +14,8 @@ export function BoxScoreTable({ side, team, rows }: { side: "アウェー" | "�
   return (
     <section>
       <h3 className="mb-2 text-base font-bold">
-        <span className="mr-2 text-xs font-bold text-muted">{side}</span>
-        {team.name}
+        <span className="mb-0.5 block text-xs font-bold text-muted">{side}</span>
+        <TeamName team={team} />
       </h3>
       {rows.length === 0 ? (
         <p className="border border-line bg-surface px-4 py-3 text-sm text-muted">ボックススコアは準備中です。</p>
@@ -38,13 +38,7 @@ export function BoxScoreTable({ side, team, rows }: { side: "アウェー" | "�
               {rows.map((r) => (
                 <tr key={r.playerName} className="border-b border-line last:border-b-0">
                   <th scope="row" className="sticky left-0 whitespace-nowrap bg-surface px-3 py-2 text-left font-bold">
-                    {r.playerId ? (
-                      <Link href={`/players/${r.playerId}`} className="hover:underline">
-                        {r.playerName}
-                      </Link>
-                    ) : (
-                      r.playerName
-                    )}
+                    <PlayerName name={r.playerName} nameJa={r.playerNameJa} playerId={r.playerId} />
                   </th>
                   <td className="px-2 py-2 text-right tabular-nums">{formatMinutes(r.secondsPlayed)}</td>
                   <td className="px-2 py-2 text-right font-bold tabular-nums">{r.pts}</td>

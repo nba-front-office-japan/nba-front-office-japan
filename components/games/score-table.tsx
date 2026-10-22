@@ -1,4 +1,5 @@
 import { overtimeTotal, type GameSummary, type GameTeamLine } from "@/lib/games/types";
+import { TeamName } from "./names";
 
 // クオータースコア表(アウェー → ホームの順)。列: 1Q・2Q・3Q・4Q・OT・TOTAL
 const COLUMNS = ["1Q", "2Q", "3Q", "4Q", "OT", "TOTAL"] as const;
@@ -12,9 +13,8 @@ function Row({ side, line }: { side: "アウェー" | "ホーム"; line: GameTea
     <tr className="border-t border-line">
       <th scope="row" className="py-2 pr-2 text-left font-normal">
         <span className="block text-[10px] font-bold text-muted">{side}</span>
-        <span className="block text-sm font-extrabold">{line.abbreviation}</span>
-        {/* teams.name はチームの正式名(例: Detroit Pistons)。都市名を含むため city は付けない */}
-        <span className="hidden text-xs text-muted sm:block">{line.name}</span>
+        {/* 上段にカタカナの正式チーム名、下段に英語の正式名(teams.name)。略称は出さない */}
+        <TeamName team={line} size="sm" />
       </th>
       {cells(line).map((v, i) => (
         <td
@@ -33,7 +33,7 @@ export function ScoreTable({ game }: { game: GameSummary }) {
     <table className="w-full table-fixed border-collapse">
       <thead>
         <tr className="text-[11px] font-extrabold text-muted">
-          <th scope="col" className="w-[34%] pb-1 text-left sm:w-[40%]">
+          <th scope="col" className="w-[38%] pb-1 text-left sm:w-[42%]">
             <span className="sr-only">チーム</span>
           </th>
           {COLUMNS.map((c) => (

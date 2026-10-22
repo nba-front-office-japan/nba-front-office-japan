@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { formatMinutes, type FullBoxRow, type FullBoxTotals, type GameTeamLine } from "@/lib/games/types";
+import { PlayerName, TeamName } from "./names";
 
 // ボックススコア(新書式Excelから取り込み)の1チーム分。先発・控え・出場なし(DNP)に分けて表示する。
 // 列: 選手｜分｜点｜FG｜3P｜FT｜リバウンド(O-D-合計)｜アシスト｜スティール｜ブロック｜TO｜反則｜+/-
@@ -40,15 +40,6 @@ const GROUPS: { role: FullBoxRow["role"]; label: string }[] = [
   { role: "dnp", label: "出場なし（DNP）" },
 ];
 
-function PlayerName({ row }: { row: FullBoxRow }) {
-  return row.playerId ? (
-    <Link href={`/players/${row.playerId}`} className="hover:text-blue hover:underline">
-      {row.playerName}
-    </Link>
-  ) : (
-    <>{row.playerName}</>
-  );
-}
 
 export function FullBoxScoreTable({
   side,
@@ -64,8 +55,8 @@ export function FullBoxScoreTable({
   return (
     <section>
       <h3 className="mb-2 text-base font-bold">
-        <span className="mr-2 text-xs font-bold text-muted">{side}</span>
-        {team.name}
+        <span className="mb-0.5 block text-xs font-bold text-muted">{side}</span>
+        <TeamName team={team} />
       </h3>
       {rows.length === 0 ? (
         <p className="border border-line bg-surface px-4 py-3 text-sm text-muted">個人成績は準備中です。</p>
@@ -97,7 +88,7 @@ export function FullBoxScoreTable({
                   {list.map((r, i) => (
                     <tr key={`${r.playerName}-${i}`} className="border-b border-line last:border-b-0">
                       <th scope="row" className={`${NAME} py-2 font-bold`}>
-                        <PlayerName row={r} />
+                        <PlayerName name={r.playerName} nameJa={r.playerNameJa} playerId={r.playerId} />
                       </th>
                       {role === "dnp" ? (
                         <td colSpan={STAT_HEADERS.length} className="px-2 py-2 text-left text-xs text-muted">

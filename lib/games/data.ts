@@ -6,6 +6,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
+import { teamNameJa } from "@/lib/team-names-ja";
 import { addDays, jstDateOf, jstDayRangeUtc } from "./date";
 import type {
   BoxScoreRow,
@@ -46,6 +47,7 @@ function teamLine(team: TeamRow | undefined, side: "home" | "away", g: GameRow):
     teamId: side === "home" ? g.home_team_id : g.away_team_id,
     abbreviation: team?.abbreviation ?? "—",
     name: team?.name ?? "（不明）",
+    nameJa: teamNameJa(team?.abbreviation),
     city: team?.city ?? "",
     score: side === "home" ? g.home_score : g.away_score,
     quarters: q,
@@ -66,6 +68,17 @@ function toSummary(g: GameRow, teams: Map<string, TeamRow>): GameSummary {
     home: teamLine(teams.get(g.home_team_id), "home", g),
     away: teamLine(teams.get(g.away_team_id), "away", g),
   };
+}
+
+/** 選手データのカタカナ名(players.full_name_ja)。登録されている選手だけを返す(未登録の選手は英語名で表示する) */
+async function fetchPlayerNamesJa(supabase: Client, ids: (string | null)[]): Promise<Map<string, string>> {
+  const unique = [...new Set(ids.filter((id): id is string => Boolean(id)))];
+  const map = new Map<string, string>();
+  for (let i = 0; i < unique.length; i += 150) {
+    const { data } = await supabase.from("players").select("id, full_name_ja").in("id", unique.slice(i, i + 150));
+    for (const p of data ?? []) if (p.full_name_ja && p.full_name_ja.trim() !== "") map.set(p.id, p.full_name_ja.trim());
+  }
+  return map;
 }
 
 async function fetchTeams(supabase: Client, ids: string[]): Promise<Map<string, TeamRow>> {
@@ -154,6 +167,7 @@ function preseasonSummary(g: PreseasonGameRow, teams: Map<string, TeamRow>): Gam
       teamId: side === "home" ? g.home_team_id : g.away_team_id,
       abbreviation: team?.abbreviation ?? "—",
       name: team?.name ?? (side === "home" ? g.home_team_label : g.away_team_label),
+      nameJa: teamNameJa(team?.abbreviation),
       city: team?.city ?? "",
       score: side === "home" ? g.home_score : g.away_score,
       quarters: side === "home" ? [g.home_q1, g.home_q2, g.home_q3, g.home_q4] : [g.away_q1, g.away_q2, g.away_q3, g.away_q4],
@@ -257,10 +271,11 @@ async function fetchPreseasonGameDetail(supabase: Client, gameId: string): Promi
   };
 }
 
-function toBoxRow(s: StatRow): BoxScoreRow {
+function toBoxRow(s: StatRow, nameJaById: Map<string, string>): BoxScoreRow {
   return {
     playerId: s.player_id,
     playerName: s.player_name,
+    playerNameJa: s.player_id ? (nameJaById.get(s.player_id) ?? null) : null,
     secondsPlayed: s.seconds_played,
     pts: s.pts,
     reb: s.reb,
@@ -303,12 +318,13 @@ export async function fetchGameDetail(supabase: Client, gameId: string): Promise
 
   // 出場時間の長い順(同じなら得点の多い順)
   const rows = [...(statsResult.data ?? [])].sort((a, b) => b.seconds_played - a.seconds_played || b.pts - a.pts);
+  const nameJaById = await fetchPlayerNamesJa(supabase, rows.map((r) => r.player_id));
   return {
     status: "ok",
     detail: {
       game: toSummary(game, teams),
-      homePlayers: rows.filter((r) => r.team_id === game.home_team_id).map(toBoxRow),
-      awayPlayers: rows.filter((r) => r.team_id === game.away_team_id).map(toBoxRow),
+      homePlayers: rows.filter((r) => r.team_id === game.home_team_id).map((r) => toBoxRow(r, nameJaById)),
+      awayPlayers: rows.filter((r) => r.team_id === game.away_team_id).map((r) => toBoxRow(r, nameJaById)),
     },
   };
 }
@@ -365,6 +381,7 @@ function boxTeamLine(team: TeamRow | undefined, side: "home" | "away", b: BoxGam
     teamId: side === "home" ? b.home_team_id : b.away_team_id,
     abbreviation: team?.abbreviation ?? "—",
     name: team?.name ?? "（不明）",
+    nameJa: teamNameJa(team?.abbreviation),
     city: team?.city ?? "",
     score: side === "home" ? b.home_score : b.away_score,
     quarters: side === "home" ? [b.home_q1, b.home_q2, b.home_q3, b.home_q4] : [b.away_q1, b.away_q2, b.away_q3, b.away_q4],
@@ -403,10 +420,11 @@ function withBoxScore(summary: GameSummary, b: BoxGameRow): GameSummary {
   return { ...summary, ...boxStatus(b), hasBoxScore: true, home: line("home"), away: line("away") };
 }
 
-function toFullRow(p: BoxPlayerRow): FullBoxRow {
+function toFullRow(p: BoxPlayerRow, nameJaById: Map<string, string>): FullBoxRow {
   return {
     playerId: p.player_id,
     playerName: p.player_name,
+    playerNameJa: p.player_id ? (nameJaById.get(p.player_id) ?? null) : null,
     role: p.role,
     dnpReason: p.dnp_reason,
     secondsPlayed: p.seconds_played,
@@ -458,11 +476,12 @@ async function fetchFullBox(supabase: Client, b: BoxGameRow): Promise<FullBox> {
   if (playersResult.error) throw new Error(`box_score_playersの取得に失敗しました: ${playersResult.error.message}`);
   if (totalsResult.error) throw new Error(`box_score_team_totalsの取得に失敗しました: ${totalsResult.error.message}`);
   const players = playersResult.data ?? [];
+  const nameJaById = await fetchPlayerNamesJa(supabase, players.map((p) => p.player_id));
   const totals = totalsResult.data ?? [];
   return {
     // 出典(Excel)の並び順のまま(先発 → 控え → DNP)
-    away: players.filter((p) => p.side === "away").map(toFullRow),
-    home: players.filter((p) => p.side === "home").map(toFullRow),
+    away: players.filter((p) => p.side === "away").map((p) => toFullRow(p, nameJaById)),
+    home: players.filter((p) => p.side === "home").map((p) => toFullRow(p, nameJaById)),
     awayTotals: toFullTotals(totals.find((t) => t.side === "away")),
     homeTotals: toFullTotals(totals.find((t) => t.side === "home")),
     sourceUrl: b.source_url,
