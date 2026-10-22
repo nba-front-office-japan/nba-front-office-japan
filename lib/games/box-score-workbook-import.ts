@@ -22,6 +22,8 @@ export type BoxScoreImportResult = {
   warnings: ImportIssue[];
   skippedGameIds: string[];
   importedGames: { id: string; date: string; label: string }[];
+  // 試合結果・チーム合計は登録し、個人成績は取得元の不足ありとして登録した試合
+  incompleteGames: { id: string; label: string; note: string }[];
   importedPlayers: number;
   unmatchedPlayers: string[];
   schema: string | null;
@@ -79,8 +81,15 @@ async function buildPlayerMatcher(supabase: Client) {
   };
 }
 
-/** Excel を検査し、両チームの検査が通った試合を取り込む。戻り値は管理画面に表示する取り込み結果 */
-export async function importBoxScoreWorkbook(supabase: Client, file: Buffer): Promise<BoxScoreImportResult> {
+/**
+ * Excel を検査し、検査が通った試合を取り込む。戻り値は管理画面に表示する取り込み結果。
+ * dryRun: true のときは検査と登録内容の組み立てだけを行い、DBには書き込まない(登録予定の件数は totalsToSave で返す)
+ */
+export async function importBoxScoreWorkbook(
+  supabase: Client,
+  file: Buffer,
+  options: { dryRun?: boolean } = {}
+): Promise<BoxScoreImportResult & { totalsToSave: number }> {
   const parsed = parseBoxScoreWorkbook(readXlsx(file));
   const errors = [...parsed.errors];
 
@@ -120,9 +129,21 @@ export async function importBoxScoreWorkbook(supabase: Client, file: Buffer): Pr
     .filter((t) => ok.has(t.bref_game_id))
     .map(({ team_abbr, ...t }) => ({ ...t, team_id: teamIdByAbbr.get(team_abbr)! }));
 
+  // 個人成績が不完全な試合の印(players_incomplete)は 20261023010000_box_score_players_incomplete.sql で追加する列。
+  // 未実行のまま取り込むと印が保存されず、公開ページに注記が出ないため、その場合は何も書き込まずに止める
+  const incompleteGames = games.filter((g) => g.players_incomplete);
+  if (incompleteGames.length > 0 && !options.dryRun) {
+    const { error: columnError } = await supabase.from("box_score_games").select("players_incomplete").limit(1);
+    if (columnError) {
+      throw new Error(
+        "個人成績が不足している試合を登録するための列（box_score_games.players_incomplete）がまだありません。supabase/migrations/20261023010000_box_score_players_incomplete.sql を Supabase で実行してから、もう一度取り込んでください"
+      );
+    }
+  }
+
   let inserted = 0;
   let updated = 0;
-  if (games.length > 0) {
+  if (games.length > 0 && !options.dryRun) {
     const { data, error } = await supabase.rpc("import_box_scores", { p_games: games, p_players: players, p_totals: totals });
     if (error) throw new Error(error.message);
     inserted = data?.inserted ?? 0;
@@ -137,7 +158,13 @@ export async function importBoxScoreWorkbook(supabase: Client, file: Buffer): Pr
     warnings: parsed.warnings,
     skippedGameIds: [...skipped],
     importedGames,
+    incompleteGames: incompleteGames.map((g) => ({
+      id: g.bref_game_id,
+      label: importedGames.find((x) => x.id === g.bref_game_id)?.label ?? g.bref_game_id,
+      note: g.players_note ?? "",
+    })),
     importedPlayers: players.length,
+    totalsToSave: totals.length,
     unmatchedPlayers: [...unmatched],
     schema: parsed.schema,
     coverage: parsed.coverage,

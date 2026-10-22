@@ -79,13 +79,39 @@ export function BoxScoreWorkbookForm() {
             </div>
           </dl>
           {state.result.importedGames.length > 0 && (
-            <ul className="space-y-0.5 text-xs">
-              {state.result.importedGames.map((g) => (
-                <li key={g.id} className="tabular-nums">
-                  {g.date}（米国の日付）・{g.id}・{g.label}
-                </li>
-              ))}
-            </ul>
+            <>
+              <p className="text-sm font-bold">
+                {state.result.importedGames.length}試合を登録しました
+                {state.result.incompleteGames.length > 0 && `（うち ${state.result.incompleteGames.length}試合は個人成績が取得元で不足）`}。
+              </p>
+              <ul className="space-y-0.5 text-xs">
+                {state.result.importedGames.map((g) => {
+                  const incomplete = state.result.incompleteGames.some((x) => x.id === g.id);
+                  return (
+                    <li key={g.id} className="tabular-nums">
+                      {g.date}（米国の日付）・{g.id}・{g.label}
+                      {incomplete && <span className="ml-1.5 font-bold text-[#7a5200] dark:text-[#ffd27a]">（個人成績は取得元の不足あり）</span>}
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          )}
+          {state.result.incompleteGames.length > 0 && (
+            <div role="status" className="border-l-4 border-gold bg-surface px-4 py-3 text-sm text-[#7a5200] dark:text-[#ffd27a]">
+              <p className="mb-1 font-extrabold">試合結果・チーム合計は登録／個人成績は取得元の不足あり（{state.result.incompleteGames.length}試合）</p>
+              <ul className="space-y-1 break-words">
+                {state.result.incompleteGames.map((g) => (
+                  <li key={g.id}>
+                    <b>
+                      {g.id}・{g.label}
+                    </b>
+                    ：{g.note}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-1 text-xs">存在する個人成績だけを登録しました（推測・補完はしていません）。公開ページのボックススコアには、個人成績の一部が不足している旨の注記を表示します。</p>
+            </div>
           )}
           <p className="text-xs text-muted">
             個人成績 {state.result.importedPlayers}行を反映しました。

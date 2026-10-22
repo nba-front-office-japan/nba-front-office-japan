@@ -120,6 +120,8 @@ export type FullBox = {
   awayTotals: FullBoxTotals | null;
   homeTotals: FullBoxTotals | null;
   sourceUrl: string | null;
+  /** 個人成績が取得元データで不足している試合(個人成績の合計がチーム合計と一致しない場合がある) */
+  playersIncomplete?: boolean;
 };
 
 export type GameDetail = {

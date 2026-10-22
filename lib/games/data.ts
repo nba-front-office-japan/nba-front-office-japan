@@ -466,6 +466,7 @@ async function fetchFullBox(supabase: Client, b: BoxGameRow): Promise<FullBox> {
     awayTotals: toFullTotals(totals.find((t) => t.side === "away")),
     homeTotals: toFullTotals(totals.find((t) => t.side === "home")),
     sourceUrl: b.source_url,
+    playersIncomplete: b.players_incomplete === true,
   };
 }
 

@@ -608,6 +608,9 @@ export interface Database {
           away_ot_scores: number[];
           home_ot_scores: number[];
           source_url: string | null;
+          // 20261023010000_box_score_players_incomplete.sql で追加(未実行の間は返らないため省略可能にしている)
+          players_incomplete?: boolean;
+          players_note?: string | null;
           last_imported_at: string;
           created_at: string;
           updated_at: string;

@@ -58,6 +58,9 @@ export type ParsedBoxGame = {
   away_ot_scores: number[];
   home_ot_scores: number[];
   source_url: string | null;
+  // 個人成績が取得元データで不足している(個人成績の合計がチーム合計と合わない)試合は true。試合結果・チーム合計は正しい
+  players_incomplete: boolean;
+  players_note: string | null;
 };
 
 export type ParsedBoxPlayer = BoxStats & {
@@ -92,6 +95,8 @@ export type ParsedBoxScores = {
   errors: ImportIssue[];
   warnings: ImportIssue[];
   skippedGameIds: string[];
+  // 試合結果・チーム合計は登録し、個人成績は取得元の不足ありとして登録する試合
+  incompleteGameIds: string[];
   schema: string | null;
   coverage: string[];
   sourceErrors: SourceError[];
@@ -235,6 +240,7 @@ export function parseBoxScoreWorkbook(sheets: Map<string, SheetRows>): ParsedBox
     errors,
     warnings,
     skippedGameIds: [],
+    incompleteGameIds: [],
     schema: null,
     coverage: [],
     sourceErrors: [],
@@ -520,6 +526,8 @@ export function parseBoxScoreWorkbook(sheets: Map<string, SheetRows>): ParsedBox
       away_ot_scores: ots(away.ot),
       home_ot_scores: ots(home.ot),
       source_url: text(cell(summary, first, "Source URL")),
+      players_incomplete: false,
+      players_note: null,
     });
     result.players.push(...players);
     result.totals.push(totalsBySide.get("away")!, totalsBySide.get("home")!);
@@ -720,11 +728,14 @@ function parseNbaOfficialFormat(
         plus_minus: played && plusMinus !== null && !Number.isNaN(plusMinus) ? plusMinus : null,
       });
     }
+    // 個人成績の不足(取得元データに出場選手の行が足りないなど)は、試合結果・チーム合計の取り込みを止めない。
+    // 存在する個人成績だけを登録し、試合に「個人成績が不完全」の印を付ける(推測・補完はしない)
+    const incompleteNotes: string[] = [];
     for (const side of ["away", "home"] as const) {
       const label = side === "away" ? "アウェー" : "ホーム";
       const list = players.filter((p) => p.side === side);
       if (list.length === 0) {
-        fail(SHEETS.players, null, `${label}の個人成績がありません`);
+        incompleteNotes.push(`${label}の個人成績の行がありません`);
         continue;
       }
       const names = new Set<string>();
@@ -732,27 +743,24 @@ function parseNbaOfficialFormat(
         if (names.has(p.player_name)) fail(SHEETS.players, null, `${p.player_name} の行が重複しています`);
         names.add(p.player_name);
       }
-      // 個人成績の合計がチーム合計と一致すること。TOV のチーム合計にはチームターンオーバーが含まれるため、個人の合計がチーム合計以下なら正しいものとする
+      // 個人成績の合計がチーム合計と一致するか。TOV のチーム合計にはチームターンオーバーが含まれるため、個人の合計がチーム合計以下なら正しいものとする
       const total = totalsBySide.get(side);
       if (total) {
-        let mismatched = false;
+        const diffs: string[] = [];
         for (const [key, column] of STAT_COLUMNS) {
           const sum = list.reduce((a, p) => a + (p[key] ?? 0), 0);
           if (key === "tov" && total.tov !== null && sum <= total.tov) continue;
-          if (total[key] !== null && sum !== total[key]) {
-            mismatched = true;
-            fail(SHEETS.players, null, `${label}の個人成績の ${column} の合計（${sum}）がチーム合計（${total[key]}）と一致しません`);
-          }
+          if (total[key] !== null && sum !== total[key]) diffs.push(`${column} ${sum}/${total[key]}`);
         }
-        // 出場時間の合計がチーム合計より少ない場合は、出場した選手の行が Excel に無い可能性が高いので、原因の手がかりとして示す
-        const playedSeconds = list.reduce((a, p) => a + (p.seconds_played ?? 0), 0);
-        if (mismatched && total.minutes !== null && playedSeconds < total.minutes * 60) {
-          const mmss = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-          fail(
-            SHEETS.players,
-            null,
-            `${label}の出場選手の MIN の合計（${mmss(playedSeconds)}）が Team Totals の MIN（${total.minutes}:00）より ${mmss(total.minutes * 60 - playedSeconds)} 少ないため、出場した選手の行が Player Box Scores に足りない可能性があります`
-          );
+        if (diffs.length > 0) {
+          // 出場時間の合計がチーム合計より少ない場合は、出場した選手の行が取得元に無い可能性が高いので、手がかりとして添える
+          const playedSeconds = list.reduce((a, p) => a + (p.seconds_played ?? 0), 0);
+          const mmss = (sec: number) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
+          const minutesHint =
+            total.minutes !== null && playedSeconds < total.minutes * 60
+              ? `。出場選手の MIN の合計 ${mmss(playedSeconds)}（チーム合計 ${total.minutes}:00 より ${mmss(total.minutes * 60 - playedSeconds)} 少なく、出場選手の行が不足している可能性）`
+              : "";
+          incompleteNotes.push(`${label}（${total.team_abbr}）の個人成績の合計がチーム合計と一致しません（個人の合計/チーム合計：${diffs.join("、")}）${minutesHint}`);
         }
       }
       const starters = list.filter((p) => p.role === "starter").length;
@@ -785,7 +793,15 @@ function parseNbaOfficialFormat(
       away_ot_scores: hasOt ? [away.ot] : [],
       home_ot_scores: hasOt ? [home.ot] : [],
       source_url: sourceUrlByGame.get(id) ?? null,
+      players_incomplete: incompleteNotes.length > 0,
+      players_note: incompleteNotes.length > 0 ? incompleteNotes.join(" / ") : null,
     });
+    if (incompleteNotes.length > 0) {
+      result.incompleteGameIds.push(id);
+      for (const note of incompleteNotes) {
+        warnings.push({ sheet: SHEETS.players, row: null, message: `${id}：試合結果・チーム合計は登録／個人成績は取得元の不足あり。${note}` });
+      }
+    }
     result.players.push(...players);
     result.totals.push(totalsBySide.get("away")!, totalsBySide.get("home")!);
   }
