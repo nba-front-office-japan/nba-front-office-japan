@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
+import { XlsxDropZone } from "@/app/admin/_components/xlsx-drop-zone";
 import type { ImportIssue } from "@/lib/games/box-score-excel";
 import { PRIMARY_BUTTON_CLASS } from "@/app/admin/_components/action-ui";
 import { importBoxScoreWorkbookAction, type BoxScoreWorkbookState } from "./actions";
@@ -31,18 +32,23 @@ function IssueTable({ title, issues, tone }: { title: string; issues: ImportIssu
 // 試合のボックススコア Excel(新書式)。ファイルを選んで「取り込む」を押すと、両チームの検査が通った試合を取り込み、結果を表示する。
 export function BoxScoreWorkbookForm() {
   const [state, action, pending] = useActionState<BoxScoreWorkbookState, FormData>(importBoxScoreWorkbookAction, { status: "idle" });
+  const [hasFile, setHasFile] = useState(false);
+  // 送信のたびにドロップエリアを作り直し、取り込み後は未選択の状態に戻す(送信後はフォームの入力欄も空になるため)
+  const [formKey, setFormKey] = useState(0);
 
   return (
     <div className="space-y-4">
-      <form action={action} className="flex flex-wrap items-center gap-3">
-        <input
-          type="file"
-          name="xlsx"
-          accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-          required
-          className="w-full max-w-full text-sm sm:w-auto file:mr-3 file:border file:border-line file:bg-surface file:px-3 file:py-2 file:text-sm file:font-bold"
-        />
-        <button type="submit" disabled={pending} className={PRIMARY_BUTTON_CLASS}>
+      <form
+        key={formKey}
+        action={(formData) => {
+          setHasFile(false);
+          setFormKey((k) => k + 1);
+          action(formData);
+        }}
+        className="space-y-3"
+      >
+        <XlsxDropZone name="xlsx" disabled={pending} onFileChange={(f) => setHasFile(f !== null)} />
+        <button type="submit" disabled={pending || !hasFile} className={`${PRIMARY_BUTTON_CLASS} w-full sm:w-auto`}>
           {pending ? "取り込み中…" : "ボックススコアを取り込む"}
         </button>
       </form>
