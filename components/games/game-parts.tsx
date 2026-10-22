@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { formatJstDateLabel, formatJstTime } from "@/lib/games/date";
 import { GAME_STATUS_LABEL, type GameSummary } from "@/lib/games/types";
 
@@ -32,11 +33,23 @@ export function TipoffTime({ game }: { game: GameSummary }) {
 }
 
 // 結果を隠しているときの表示。onReveal を押したときだけ結果を取得・表示する。
-export function SpoilerGate({ message, onReveal, loading }: { message: string; onReveal: () => void; loading: boolean }) {
+// children は見出しの直下(説明文・ボタンより上)に表示する(試合結果の一覧では、その日のデータの入力状況)。
+export function SpoilerGate({
+  message,
+  onReveal,
+  loading,
+  children,
+}: {
+  message: string;
+  onReveal: () => void;
+  loading: boolean;
+  children?: ReactNode;
+}) {
   return (
     <div className="border border-line bg-surface px-5 py-10 text-center sm:py-14">
       <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">Spoiler free</p>
       <p className="mb-2 text-lg font-bold">{message}</p>
+      {children && <div className="mb-4 mt-3">{children}</div>}
       <p className="mb-5 text-xs leading-6 text-muted">ネタバレ防止のため、試合の勝敗・点数は、ボタンを押すまで表示しません。</p>
       <button
         type="button"

@@ -4,6 +4,8 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import type { GameSummary, GamesResponse } from "@/lib/games/types";
 import { NotReadyNotice, SpoilerGate, StatusBadge, TipoffTime } from "./game-parts";
+import { GameDayStatusCard } from "./game-day-status";
+import type { GameDayStatus } from "@/lib/games/types";
 import { ScoreTable } from "./score-table";
 import { InlineBoxScore } from "./inline-box-score";
 import { formatJstDateLabel, gamesDateHref } from "@/lib/games/date";
@@ -36,12 +38,15 @@ export function GamesCenter({
   dayLabel,
   today,
   gameCount,
+  dayStatus,
   adjacent,
 }: {
   date: string;
   dayLabel: string;
   today: string;
   gameCount: number | null;
+  // その日のデータの入力状況(試合数だけ。対戦カード・得点は含まない)
+  dayStatus?: GameDayStatus | null;
   adjacent: { prev: string | null; next: string | null };
 }) {
   // このタブで結果を表示済みの日付か(サーバー側・最初の描画では分からないため null)
@@ -74,10 +79,20 @@ export function GamesCenter({
   if (!show) {
     // まだ判定できない間(ページを開いた直後の一瞬)は、非表示画面も結果も出さない
     if (revealedBefore === null) return <LoadingNotice />;
-    return <SpoilerGate message={`${dayLabel}の試合結果は非表示です`} onReveal={reveal} loading={false} />;
+    return (
+      <SpoilerGate message={`${dayLabel}の試合結果は非表示です`} onReveal={reveal} loading={false}>
+        {dayStatus && <GameDayStatusCard status={dayStatus} />}
+      </SpoilerGate>
+    );
   }
   if (!result) {
-    return clicked ? <SpoilerGate message={`${dayLabel}の試合結果は非表示です`} onReveal={reveal} loading /> : <LoadingNotice />;
+    return clicked ? (
+      <SpoilerGate message={`${dayLabel}の試合結果は非表示です`} onReveal={reveal} loading>
+        {dayStatus && <GameDayStatusCard status={dayStatus} />}
+      </SpoilerGate>
+    ) : (
+      <LoadingNotice />
+    );
   }
   if (result.kind === "not_ready") return <NotReadyNotice />;
   if (result.kind === "error") {

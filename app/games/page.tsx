@@ -3,7 +3,6 @@ import Link from "next/link";
 import { PageShell } from "@/components/page-shell";
 import { GamesCenter } from "@/components/games/games-center";
 import { GameCalendar } from "@/components/games/game-calendar";
-import { GameDayStatusBadge } from "@/components/games/game-day-status";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { fetchAdjacentGameDates, fetchGameCountsForMonth } from "@/lib/games/data";
 import {
@@ -82,10 +81,9 @@ export default async function GamesPage({ searchParams }: PageProps<"/games">) {
             <span>{formatJstDateLong(selected)}の試合</span>
             {relative && <span className="text-xs font-bold text-muted">（{relative}）</span>}
             {gameCount !== null && gameCount > 0 && <span className="text-xs font-bold text-blue">{gameCount}試合</span>}
-            {dayStatus && <GameDayStatusBadge status={dayStatus} />}
           </h2>
 
-          <GamesCenter key={selected} date={selected} dayLabel={dayLabel} today={today} gameCount={gameCount} adjacent={adjacent} />
+          <GamesCenter key={selected} date={selected} dayLabel={dayLabel} today={today} gameCount={gameCount} dayStatus={dayStatus} adjacent={adjacent} />
         </div>
 
         <div className="order-1 lg:order-2">
