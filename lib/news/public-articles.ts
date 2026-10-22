@@ -34,16 +34,52 @@ export interface PublicArticleDetail extends PublicArticleSummary {
   sources: PublicArticleSource[];
 }
 
+// NEWS の検索で比べる形にそろえる(全角・半角、大文字・小文字の違いを無視する)
+function normalizeForSearch(text: string): string {
+  return text.normalize("NFKC").toLowerCase();
+}
+
+// 本文(Markdown)から、検索に使う文字だけを取り出す(埋め込みメディアの URL・リンク先 URL・見出し/太字の記号は除く)
+function bodyTextForSearch(markdown: string): string {
+  return markdown
+    .replace(/\[\[media:[^\]]*\]\]/g, " ")
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/\*\*/g, "")
+    .replace(/^##\s+/gm, "");
+}
+
 // 公開ページ(/news, /news/[articleId])からのみ使う。status='published'のみを
 // 対象にし、下書き・rumor未承認のarticle_draftsが一般公開されないようにする。
+// query を渡すと、記事のタイトル(headline_ja)と本文(body_markdown)に部分一致する記事だけを返す(NEWS の記事だけが対象)。
 export async function fetchPublishedArticles(
-  supabase: SupabaseAdmin
+  supabase: SupabaseAdmin,
+  options: { query?: string } = {}
 ): Promise<PublicArticleSummary[]> {
-  const { data: drafts } = await supabase
+  const { data: rows } = await supabase
     .from("article_drafts")
     .select("id, headline_ja, dek_ja, article_type, article_kind, published_at, event_id, category")
     .eq("status", "published")
     .order("published_at", { ascending: false });
+
+  // 検索するときだけ、公開記事の本文を読んで、タイトルか本文に検索語を含む記事に絞る
+  const needle = options.query ? normalizeForSearch(options.query.trim()) : "";
+  let drafts = rows;
+  if (needle && rows && rows.length > 0) {
+    const { data: bodies } = await supabase
+      .from("article_drafts")
+      .select("id, headline_ja, body_markdown")
+      .eq("status", "published");
+    const matched = new Set(
+      (bodies ?? [])
+        .filter(
+          (d) =>
+            normalizeForSearch(d.headline_ja).includes(needle) ||
+            normalizeForSearch(bodyTextForSearch(d.body_markdown ?? "")).includes(needle)
+        )
+        .map((d) => d.id)
+    );
+    drafts = rows.filter((d) => matched.has(d.id));
+  }
 
   if (!drafts || drafts.length === 0) return [];
 

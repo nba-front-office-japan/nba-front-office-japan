@@ -5,6 +5,8 @@
 import type { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/types";
 import type { ProfileRow } from "@/components/team-roster-profile-table";
+import type { TeamStatsRow } from "@/components/team-roster-stats-table";
+import { aggregatePlayerSeasonStats, deriveStats } from "@/lib/stats";
 import { formatDraftInfo, draftSortValue } from "@/lib/draft-format";
 import { ageAt, todayInJapan, type AgeReference } from "@/lib/age";
 
@@ -179,6 +181,50 @@ export function buildSeasonProfileRows(record: TeamStatsSeasonRecord, ageReferen
     gamesPlayed: record.gamesForTeamByPlayer.get(player.id) ?? null,
   }));
   rows.sort((a, b) => (b.gamesPlayed ?? -1) - (a.gamesPlayed ?? -1) || a.name.localeCompare(b.name, "ja"));
+  return rows;
+}
+
+// 選手名鑑の Stats: ロスターの選手ごとの、そのシーズン(前のシーズン)のレギュラーシーズン最終成績。
+// 移籍した選手は TOT 行(シーズン合計)を優先し、無ければチーム別の行を合算する(lib/stats.ts の aggregatePlayerSeasonStats)。
+// チーム欄はそのシーズンの所属チーム(複数なら「LAL/DAL」)。成績がない選手もロスターから外さず、末尾にまとめる(PTS 降順)。
+export async function fetchPriorSeasonStatsRows(
+  supabase: ServerClient,
+  rosterRows: Pick<ProfileRow, "id" | "name" | "position">[],
+  season: number
+): Promise<TeamStatsRow[]> {
+  const playerIds = rosterRows.map((r) => r.id);
+  const [{ data: stats }, { data: teams }] = await Promise.all([
+    playerIds.length > 0
+      ? supabase.from("player_stats").select("*").eq("season", season).eq("season_type", "regular_season").in("player_id", playerIds)
+      : Promise.resolve({ data: [] as PlayerStatsRow[] }),
+    supabase.from("teams").select("id, abbreviation"),
+  ]);
+  const abbrById = new Map((teams ?? []).map((t) => [t.id, t.abbreviation]));
+  const statsByPlayer = new Map<string, PlayerStatsRow[]>();
+  for (const row of stats ?? []) {
+    const list = statsByPlayer.get(row.player_id) ?? [];
+    list.push(row);
+    statsByPlayer.set(row.player_id, list);
+  }
+
+  const rows: TeamStatsRow[] = rosterRows.map((r) => {
+    const list = statsByPlayer.get(r.id) ?? [];
+    const totals = aggregatePlayerSeasonStats(list);
+    const teamAbbrs = [...new Set(list.flatMap((s) => (s.team_id ? [abbrById.get(s.team_id) ?? "—"] : [])))];
+    return {
+      id: r.id,
+      name: r.name,
+      teamAbbr: teamAbbrs.length > 0 ? teamAbbrs.join("/") : "—",
+      position: r.position,
+      gamesPlayed: totals?.gamesPlayed ?? null,
+      stats: totals ? deriveStats(totals) : null,
+    };
+  });
+  rows.sort((a, b) => {
+    if ((a.stats !== null) !== (b.stats !== null)) return a.stats ? -1 : 1;
+    if (a.stats && b.stats) return (b.stats.ppg ?? 0) - (a.stats.ppg ?? 0);
+    return a.name.localeCompare(b.name, "ja");
+  });
   return rows;
 }
 

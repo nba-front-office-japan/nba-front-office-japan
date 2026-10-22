@@ -166,10 +166,11 @@ export default async function TeamDetailPage({
   const guideLink = (
     <p className="mt-4 text-sm">
       <Link
-        href={`/players/guide/${teamId}${seasonSearch(season)}`}
+        href={`/players/guide/${teamId}`}
         className="font-semibold text-foreground underline underline-offset-4 hover:no-underline"
       >
-        選手名鑑 {label}（{label}ロスター・Team Profile）→
+        {/* 選手名鑑は 2026-27 開幕ロスターだけ(どのシーズンを表示中でも同じリンク) */}
+        選手名鑑 {seasonLabel(ROSTER_SEASON)}（開幕ロスター・Team Profile）→
       </Link>
     </p>
   );
