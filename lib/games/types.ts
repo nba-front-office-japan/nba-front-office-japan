@@ -25,6 +25,8 @@ export type GameSummary = {
   postseason: boolean;
   /** プレシーズンの試合(管理画面のExcelから取り込んだもの)。開始時刻はなく、個人成績は PreseasonBox で持つ */
   preseason: boolean;
+  /** 個人成績(ボックススコア)が登録されているか。一覧の「ボックススコアを表示」を出すかどうかに使う */
+  hasBoxScore?: boolean;
   home: GameTeamLine;
   away: GameTeamLine;
 };
@@ -85,13 +87,53 @@ export type PreseasonBox = {
   homeTotals: PreseasonBoxTotals | null;
 };
 
+/** ボックススコア(新書式Excelから取り込み)の個人成績の1行。DNP など空欄の項目は null */
+export type FullBoxRow = {
+  playerId: string | null;
+  playerName: string;
+  role: "starter" | "bench" | "dnp";
+  dnpReason: string | null;
+  secondsPlayed: number | null;
+  fgm: number | null;
+  fga: number | null;
+  fg3m: number | null;
+  fg3a: number | null;
+  ftm: number | null;
+  fta: number | null;
+  oreb: number | null;
+  dreb: number | null;
+  reb: number | null;
+  ast: number | null;
+  stl: number | null;
+  blk: number | null;
+  tov: number | null;
+  pf: number | null;
+  pts: number | null;
+  plusMinus: number | null;
+};
+
+export type FullBoxTotals = Omit<FullBoxRow, "playerId" | "playerName" | "role" | "dnpReason" | "secondsPlayed" | "plusMinus">;
+
+export type FullBox = {
+  away: FullBoxRow[];
+  home: FullBoxRow[];
+  awayTotals: FullBoxTotals | null;
+  homeTotals: FullBoxTotals | null;
+  sourceUrl: string | null;
+};
+
 export type GameDetail = {
   game: GameSummary;
   homePlayers: BoxScoreRow[];
   /** プレシーズンの試合だけ。あれば homePlayers / awayPlayers の代わりにこちらで表示する */
   preseason?: PreseasonBox;
+  /** ボックススコア(新書式Excel)がある試合だけ。あればこちらを優先して表示する */
+  full?: FullBox;
   awayPlayers: BoxScoreRow[];
 };
+
+/** 試合カレンダーの、日本時間の日付ごとの試合数(結果は含まない) */
+export type GameCalendarResponse = { month: string; counts: Record<string, number> };
 
 /** データ未準備(テーブル未作成・データなし)と、取得成功を区別して返す */
 export type GamesResponse =

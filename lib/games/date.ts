@@ -46,6 +46,46 @@ export function jstDayRangeUtc(date: string): { start: string; end: string } {
   return { start: start.toISOString(), end: end.toISOString() };
 }
 
+/** "YYYY-MM" の形の月か */
+export function isValidMonthString(value: string): boolean {
+  return /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
+}
+
+/** 日付(YYYY-MM-DD)の月(YYYY-MM) */
+export function monthOf(date: string): string {
+  return date.slice(0, 7);
+}
+
+/** 月(YYYY-MM)に months か月を加える */
+export function addMonths(month: string, months: number): string {
+  const [y, m] = month.split("-").map(Number);
+  const total = y * 12 + (m - 1) + months;
+  return `${Math.floor(total / 12)}-${String((total % 12) + 1).padStart(2, "0")}`;
+}
+
+/** 例: 2026-10 → 2026年10月 */
+export function formatMonthLabel(month: string): string {
+  const [y, m] = month.split("-").map(Number);
+  return `${y}年${m}月`;
+}
+
+/** 試合センター(/games)のその日付の URL(今日は ?date= なし) */
+export function gamesDateHref(date: string, today: string): string {
+  return date === today ? "/games" : `/games?date=${date}`;
+}
+
+/** 例: 2026-10-03 → 2026年10月3日(土) */
+export function formatJstDateLong(date: string): string {
+  const d = new Date(`${date}T12:00:00${JST_OFFSET}`);
+  return new Intl.DateTimeFormat("ja-JP", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "short",
+  }).format(d);
+}
+
 /** 例: 2026-10-03 → 10月3日(土) */
 export function formatJstDateLabel(date: string): string {
   const d = new Date(`${date}T12:00:00${JST_OFFSET}`);

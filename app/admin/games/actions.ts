@@ -10,6 +10,7 @@ import { applyTeamBoxScore, isTeamSide, prepareTeamBoxScore, type CheckReport, t
 import { MAX_SYNC_DAYS, syncGamesFromBalldontlie, type SyncResult } from "@/lib/games/balldontlie-sync";
 import { addDays, isValidDateString } from "@/lib/games/date";
 import { importPreseasonWorkbook, type PreseasonImportResult } from "@/lib/games/preseason-import";
+import { importBoxScoreWorkbook, type BoxScoreImportResult } from "@/lib/games/box-score-workbook-import";
 
 export type CheckResult = { ok: true; report: CheckReport } | { ok: false; message: string };
 
@@ -19,6 +20,11 @@ export type PreseasonState = { status: "idle" } | { status: "error"; message: st
 
 // サーバーアクションの送信サイズ上限(既定1MB)に収まる大きさ
 const MAX_PRESEASON_BYTES = 900_000;
+
+export type BoxScoreWorkbookState =
+  | { status: "idle" }
+  | { status: "error"; message: string }
+  | { status: "done"; fileName: string; result: BoxScoreImportResult };
 
 export type SyncState = { status: "idle" } | { status: "error"; message: string } | { status: "done"; result: SyncResult };
 
@@ -100,6 +106,22 @@ export async function importPreseasonAction(_prev: PreseasonState, formData: For
 
   try {
     const result = await importPreseasonWorkbook(createAdminSupabaseClient(), Buffer.from(await file.arrayBuffer()));
+    revalidatePath("/admin/games");
+    return { status: "done", fileName: file.name, result };
+  } catch (err) {
+    return { status: "error", message: `取り込みに失敗しました（データは変更されていません）：${errorMessage(err)}` };
+  }
+}
+
+/** 試合のボックススコア Excel(新書式: Game Summary・Player Box Scores・Team Totals・Metadata・Errors)を取り込む */
+export async function importBoxScoreWorkbookAction(_prev: BoxScoreWorkbookState, formData: FormData): Promise<BoxScoreWorkbookState> {
+  const file = formData.get("xlsx");
+  if (!(file instanceof File) || file.size === 0) return { status: "error", message: "Excelファイル（.xlsx）を選んでください。" };
+  if (!/\.xlsx$/i.test(file.name)) return { status: "error", message: "拡張子が .xlsx のファイルを選んでください。" };
+  if (file.size > MAX_PRESEASON_BYTES) return { status: "error", message: `ファイルが大きすぎます（上限 ${Math.round(MAX_PRESEASON_BYTES / 1000)}KB）。` };
+
+  try {
+    const result = await importBoxScoreWorkbook(createAdminSupabaseClient(), Buffer.from(await file.arrayBuffer()));
     revalidatePath("/admin/games");
     return { status: "done", fileName: file.name, result };
   } catch (err) {

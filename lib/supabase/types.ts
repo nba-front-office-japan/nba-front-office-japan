@@ -566,6 +566,99 @@ export interface Database {
         Update: never;
         Relationships: [];
       };
+      // 試合のボックススコア(新書式Excel。supabase/migrations/20261022000000_box_scores.sql)。書き込みは import_box_scores() のみ
+      box_score_games: {
+        Row: {
+          id: string;
+          bref_game_id: string;
+          game_date: string;
+          away_team_id: string;
+          home_team_id: string;
+          away_score: number;
+          home_score: number;
+          away_q1: number | null;
+          away_q2: number | null;
+          away_q3: number | null;
+          away_q4: number | null;
+          home_q1: number | null;
+          home_q2: number | null;
+          home_q3: number | null;
+          home_q4: number | null;
+          away_ot_scores: number[];
+          home_ot_scores: number[];
+          source_url: string | null;
+          last_imported_at: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      box_score_players: {
+        Row: {
+          id: string;
+          game_id: string;
+          team_id: string;
+          side: "away" | "home";
+          row_order: number;
+          player_name: string;
+          player_id: string | null;
+          bref_player_id: string | null;
+          role: "starter" | "bench" | "dnp";
+          dnp_reason: string | null;
+          seconds_played: number | null;
+          fgm: number | null;
+          fga: number | null;
+          fg3m: number | null;
+          fg3a: number | null;
+          ftm: number | null;
+          fta: number | null;
+          oreb: number | null;
+          dreb: number | null;
+          reb: number | null;
+          ast: number | null;
+          stl: number | null;
+          blk: number | null;
+          tov: number | null;
+          pf: number | null;
+          pts: number | null;
+          game_score: number | null;
+          plus_minus: number | null;
+          created_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      box_score_team_totals: {
+        Row: {
+          id: string;
+          game_id: string;
+          team_id: string;
+          side: "away" | "home";
+          minutes: number | null;
+          fgm: number | null;
+          fga: number | null;
+          fg3m: number | null;
+          fg3a: number | null;
+          ftm: number | null;
+          fta: number | null;
+          oreb: number | null;
+          dreb: number | null;
+          reb: number | null;
+          ast: number | null;
+          stl: number | null;
+          blk: number | null;
+          tov: number | null;
+          pf: number | null;
+          pts: number | null;
+          created_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       preseason_games: {
         Row: {
           id: string;
@@ -1259,6 +1352,10 @@ export interface Database {
       apply_player_award_import: {
         Args: { p_rows: unknown; p_delete_ids: string[] };
         Returns: { inserted: number; updated: number; deleted: number };
+      };
+      import_box_scores: {
+        Args: { p_games: unknown; p_players: unknown; p_totals: unknown };
+        Returns: { inserted: number; updated: number };
       };
       import_preseason: {
         Args: { p_games: unknown; p_players: unknown; p_totals: unknown; p_coverage: unknown };

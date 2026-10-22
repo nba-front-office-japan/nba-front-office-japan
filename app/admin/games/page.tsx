@@ -8,6 +8,7 @@ import { GAME_STATUS_LABEL } from "@/lib/games/types";
 import { GHOST_BUTTON_CLASS, LINK_CLASS } from "@/app/admin/_components/action-ui";
 import { SyncForm } from "./sync-form";
 import { PreseasonImportForm } from "./preseason-import-form";
+import { BoxScoreWorkbookForm } from "./box-score-workbook-form";
 
 // 管理画面は常に最新の登録状況を見せるため、毎回サーバーで取得する。
 export const dynamic = "force-dynamic";
@@ -120,6 +121,13 @@ async function fetchPreseasonAdmin(): Promise<PreseasonAdmin> {
   };
 }
 
+// ボックススコア(新書式Excel)のテーブルがあるか、取り込み済みの試合数
+async function fetchBoxScoreAdmin(): Promise<{ ready: boolean; games: number }> {
+  const { count, error } = await createAdminSupabaseClient().from("box_score_games").select("id", { count: "exact", head: true });
+  if (error) return { ready: false, games: 0 };
+  return { ready: true, games: count ?? 0 };
+}
+
 function Card({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="border border-line bg-surface p-5 sm:p-6">
@@ -132,7 +140,7 @@ function Card({ title, children }: { title: string; children: ReactNode }) {
 export default async function AdminGamesPage({ searchParams }: PageProps<"/admin/games">) {
   const { date: dateParam } = await searchParams;
   const date = typeof dateParam === "string" && isValidDateString(dateParam) ? dateParam : null;
-  const [recent, preseason] = await Promise.all([fetchRecentGames(date), fetchPreseasonAdmin()]);
+  const [recent, preseason, boxScores] = await Promise.all([fetchRecentGames(date), fetchPreseasonAdmin(), fetchBoxScoreAdmin()]);
   const syncDates = defaultSyncDates();
 
   return (
@@ -149,6 +157,29 @@ export default async function AdminGamesPage({ searchParams }: PageProps<"/admin
           試合データのテーブル（games / game_player_stats）がまだありません。<code className="break-all">supabase/migrations/20261003000000_games.sql</code> を Supabase で実行してから使ってください。
         </p>
       )}
+
+      <Card title="ボックススコア Excel更新（NBA_Box_Scores.xlsx・新書式）">
+        <p>
+          試合ごとのクオーター別得点・個人成績（先発／控え／DNP）・チーム合計を、Excel の Game Summary・Player Box Scores・Team Totals から取り込みます。
+          同じ Game ID の試合は更新、新しい Game ID は追加し、アップロードに含まれない試合は削除しません。
+        </p>
+        <ul className="list-disc space-y-1 pl-5 text-xs text-muted">
+          <li>1試合ごとに、両チームの得点（Q1〜Q4・OT の合計 = Total = Team Totals の PTS = 個人成績の合計）がすべて一致した試合だけを取り込みます。</li>
+          <li>チーム略称 BRK / CHO / PHO は当サイトの BKN / CHA / PHX に置き換えます。選手名は選手データと照合し、照合できない選手は名前だけで表示します。</li>
+          <li>Date は米国東部時間の試合日として保存します。試合センターでは、日程（balldontlie）の同じ日付・同じ対戦の試合にボックススコアを表示し、日程に無い試合は1日加えた日本時間の日付に表示します。</li>
+          <li>Metadata・Errors シートは取り込み結果に表示するだけで、公開ページには使いません。</li>
+        </ul>
+        {!boxScores.ready ? (
+          <p role="alert" className="border-l-4 border-[#cf4a51] bg-surface px-4 py-3 text-sm font-semibold text-[#a3383d] dark:text-[#ff8a7a]">
+            ボックススコア用のテーブルがまだありません。<code className="break-all">supabase/migrations/20261022000000_box_scores.sql</code> を Supabase で実行してから使ってください。
+          </p>
+        ) : (
+          <>
+            <p className="text-xs text-muted">取り込み済み：{boxScores.games}試合</p>
+            <BoxScoreWorkbookForm />
+          </>
+        )}
+      </Card>
 
       <Card title="プレシーズン Excel更新（プレシーズン期間のみ）">
         <p>

@@ -22,7 +22,8 @@ export function StatusBadge({ game }: { game: GameSummary }) {
 
 export function TipoffTime({ game }: { game: GameSummary }) {
   // プレシーズン(Excel取り込み)は開始時刻のデータがない
-  if (game.preseason && !game.tipoffAt) {
+  // 日程に無い試合のボックススコア(新書式Excel)も同じく開始時刻がない
+  if ((game.preseason || game.status === "final") && !game.tipoffAt) {
     // プレシーズン(Excel取り込み)は開始時刻のデータがないため、日本時間の試合日だけを表示する
     return <span className="text-xs text-muted">{game.jstDate ? `${formatJstDateLabel(game.jstDate)}（日本時間）・` : ""}開始時刻の掲載なし</span>;
   }
