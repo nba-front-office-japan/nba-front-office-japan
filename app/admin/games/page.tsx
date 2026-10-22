@@ -158,14 +158,19 @@ export default async function AdminGamesPage({ searchParams }: PageProps<"/admin
         </p>
       )}
 
-      <Card title="ボックススコア Excel更新（NBA_Box_Scores.xlsx・新書式）">
+      <Card title="ボックススコア Excel更新（NBA_Box_Scores.xlsx）">
         <p>
-          試合ごとのクオーター別得点・個人成績（先発／控え／DNP）・チーム合計を、Excel の Game Summary・Player Box Scores・Team Totals から取り込みます。
+          試合ごとのクオーター別得点・個人成績（先発／控え／出場なし）・チーム合計を、Excel の Game Summary・Player Box Scores・Team Totals から取り込みます。
           同じ Game ID の試合は更新、新しい Game ID は追加し、アップロードに含まれない試合は削除しません。
         </p>
         <ul className="list-disc space-y-1 pl-5 text-xs text-muted">
-          <li>1試合ごとに、両チームの得点（Q1〜Q4・OT の合計 = Total = Team Totals の PTS = 個人成績の合計）がすべて一致した試合だけを取り込みます。</li>
-          <li>チーム略称 BRK / CHO / PHO は当サイトの BKN / CHA / PHX に置き換えます。選手名は選手データと照合し、照合できない選手は名前だけで表示します。</li>
+          <li>
+            NBA公式書式（Game Summary が1試合1行：Game ID, Date (ET), Status, Away, Home, Away Total, Home Total, Away/Home Q1〜Q4・OT。Player Box Scores に Side・NBA Player ID・Status・Comment）と、
+            Basketball-Reference 書式（Game Summary が1試合2行：Date, Away Team, Home Team, Team, Home/Away, Q1〜Q4, Total）の両方を受け付けます。
+          </li>
+          <li>1試合ごとに、両チームの得点（Q1〜Q4・OT の合計 = Total = Team Totals の PTS = 個人成績の合計）がすべて一致した Final の試合だけを取り込みます。</li>
+          <li>NBA公式書式では、Status が Played の選手を出場（Position がある選手は先発）、それ以外（DNP・Inactive）を出場なしとし、Comment を理由として表示します。</li>
+          <li>チーム略称 BRK / CHO / PHO は当サイトの BKN / CHA / PHX に置き換えます。選手は NBA Player ID（選手データの NBA ID）、次に選手名で照合し、照合できない選手は名前だけで表示します。</li>
           <li>Date は米国東部時間の試合日として保存します。試合結果＆ボックススコアのページでは、日程（balldontlie）の同じ日付・同じ対戦の試合にボックススコアを表示し、日程に無い試合は1日加えた日本時間の日付に表示します。</li>
           <li>Metadata・Errors シートは取り込み結果に表示するだけで、公開ページには使いません。</li>
         </ul>

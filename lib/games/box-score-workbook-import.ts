@@ -41,7 +41,9 @@ export function normalizePlayerName(name: string): string {
 
 async function buildPlayerMatcher(supabase: Client) {
   const [players, aliases] = await Promise.all([
-    fetchAllRows<{ id: string; full_name: string }>((from, to) => supabase.from("players").select("id, full_name").order("id").range(from, to)),
+    fetchAllRows<{ id: string; full_name: string; nba_person_id: number | null }>((from, to) =>
+      supabase.from("players").select("id, full_name, nba_person_id").order("id").range(from, to)
+    ),
     fetchAllRows<{ player_id: string; alias_full_name: string }>((from, to) =>
       supabase.from("player_name_aliases").select("player_id, alias_full_name").order("id").range(from, to)
     ),
@@ -51,6 +53,7 @@ async function buildPlayerMatcher(supabase: Client) {
 
   const exact = new Map<string, Set<string>>();
   const normalized = new Map<string, Set<string>>();
+  const byNbaId = new Map<string, Set<string>>();
   const add = (map: Map<string, Set<string>>, key: string, id: string) => {
     if (!map.has(key)) map.set(key, new Set());
     map.get(key)!.add(id);
@@ -58,13 +61,17 @@ async function buildPlayerMatcher(supabase: Client) {
   for (const p of players.data) {
     add(exact, p.full_name, p.id);
     add(normalized, normalizePlayerName(p.full_name), p.id);
+    if (p.nba_person_id !== null) add(byNbaId, String(p.nba_person_id), p.id);
   }
   for (const a of aliases.data) {
     add(exact, a.alias_full_name, a.player_id);
     add(normalized, normalizePlayerName(a.alias_full_name), a.player_id);
   }
-  // 同じ名前の選手が複数いる場合は、取り違えないよう照合しない
-  return (name: string): string | null => {
+  // NBA公式の選手ID(players.nba_person_id)で照合し、見つからなければ名前(別名を含む)で照合する。
+  // 同じIDや名前の選手が複数いる場合は、取り違えないよう照合しない
+  return (name: string, nbaPlayerId?: string | null): string | null => {
+    const byId = nbaPlayerId ? byNbaId.get(nbaPlayerId.trim()) : undefined;
+    if (byId && byId.size === 1) return [...byId][0];
     const e = exact.get(name);
     if (e) return e.size === 1 ? [...e][0] : null;
     const n = normalized.get(normalizePlayerName(name));
@@ -104,8 +111,8 @@ export async function importBoxScoreWorkbook(supabase: Client, file: Buffer): Pr
   const unmatched = new Set<string>();
   const players = parsed.players
     .filter((p) => ok.has(p.bref_game_id))
-    .map(({ team_abbr, ...p }) => {
-      const playerId = matchPlayer(p.player_name);
+    .map(({ team_abbr, nba_player_id, ...p }) => {
+      const playerId = matchPlayer(p.player_name, nba_player_id);
       if (!playerId) unmatched.add(p.player_name);
       return { ...p, team_id: teamIdByAbbr.get(team_abbr)!, player_id: playerId };
     });
