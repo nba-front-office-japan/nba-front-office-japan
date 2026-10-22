@@ -50,6 +50,8 @@ const parser = new XMLParser({
   removeNSPrefix: true,
   parseTagValue: false,
   trimValues: false,
+  // 数値文字参照(例: González を Gonz&#225;lez と書いた Excel)も文字に戻す
+  htmlEntities: true,
   isArray: (name) => ["sheet", "Relationship", "si", "r", "row", "c"].includes(name),
 });
 
