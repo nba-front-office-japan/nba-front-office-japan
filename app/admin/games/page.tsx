@@ -166,7 +166,7 @@ export default async function AdminGamesPage({ searchParams }: PageProps<"/admin
         <ul className="list-disc space-y-1 pl-5 text-xs text-muted">
           <li>1試合ごとに、両チームの得点（Q1〜Q4・OT の合計 = Total = Team Totals の PTS = 個人成績の合計）がすべて一致した試合だけを取り込みます。</li>
           <li>チーム略称 BRK / CHO / PHO は当サイトの BKN / CHA / PHX に置き換えます。選手名は選手データと照合し、照合できない選手は名前だけで表示します。</li>
-          <li>Date は米国東部時間の試合日として保存します。試合センターでは、日程（balldontlie）の同じ日付・同じ対戦の試合にボックススコアを表示し、日程に無い試合は1日加えた日本時間の日付に表示します。</li>
+          <li>Date は米国東部時間の試合日として保存します。試合結果＆ボックススコアのページでは、日程（balldontlie）の同じ日付・同じ対戦の試合にボックススコアを表示し、日程に無い試合は1日加えた日本時間の日付に表示します。</li>
           <li>Metadata・Errors シートは取り込み結果に表示するだけで、公開ページには使いません。</li>
         </ul>
         {!boxScores.ready ? (
@@ -189,7 +189,7 @@ export default async function AdminGamesPage({ searchParams }: PageProps<"/admin
         <ul className="list-disc space-y-1 pl-5 text-xs text-muted">
           <li>選手名は Excel の表記のまま表示し、選手ページへのリンクは付けません（選手データとは照合しません）。</li>
           <li>Coverage シートは公開ページには使わず、下の「Coverage との照合」でだけ表示します。</li>
-          <li>Game Date は米国側の日付として保存し（この画面・Game ID・Coverage はその日付のまま）、試合センターでは1日加えた日本時間の日付に表示します（例: Game Date 10/7 → 試合センターの 10/8）。</li>
+          <li>Game Date は米国側の日付として保存し（この画面・Game ID・Coverage はその日付のまま）、試合結果＆ボックススコアのページでは1日加えた日本時間の日付に表示します（例: Game Date 10/7 → 試合結果＆ボックススコアの 10/8）。</li>
           <li>レギュラーシーズンの試合（下の balldontlie・CSV の仕組み）には影響しません。</li>
         </ul>
         {!preseason.ready ? (

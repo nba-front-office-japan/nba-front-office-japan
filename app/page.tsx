@@ -4,8 +4,10 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { getLatestSeason } from "@/lib/supabase/current-season";
 import { fetchPublishedArticles } from "@/lib/news/public-articles";
 import { PageShell } from "@/components/page-shell";
+import { announcementExcerpt, fetchPublishedAnnouncements, formatAnnouncementDate } from "@/lib/announcements";
 
-const MARQUEE_ABBREVIATIONS = ["GSW", "LAL", "BOS", "OKC"];
+// トップページに出すお知らせの件数(公開中のものを新しい順に)
+const HOME_ANNOUNCEMENT_LIMIT = 3;
 
 // ホームの見出し・ボタンの文言。現在は選手スタッツとニュースの掲載なので「Lab」「分析」は使わない。
 // 比較・絞り込み・独自指標などの分析機能を追加したら、ここを
@@ -28,17 +30,13 @@ const STATS_PICKS = [
 export default async function Home() {
   const supabase = createServerSupabaseClient();
 
-  const [{ count: playerCount }, { data: teams }, latestSeason, articles] =
+  const [{ count: playerCount }, latestSeason, articles, announcements] =
     await Promise.all([
       supabase.from("players").select("*", { count: "exact", head: true }),
-      supabase.from("teams").select("*").order("name"),
       getLatestSeason(supabase),
       fetchPublishedArticles(createAdminSupabaseClient()),
+      fetchPublishedAnnouncements(supabase, HOME_ANNOUNCEMENT_LIMIT),
     ]);
-
-  const marqueeTeams = MARQUEE_ABBREVIATIONS.map((abbr) =>
-    (teams ?? []).find((t) => t.abbreviation === abbr)
-  ).filter((t): t is NonNullable<typeof t> => Boolean(t));
 
   const featured = articles[0] ?? null;
 
@@ -111,35 +109,54 @@ export default async function Home() {
         </div>
       </div>
 
-      {/* 試合センターへの入口。ネタバレ防止のため、ホームには試合の勝敗・点数・チーム名を一切表示しない */}
+      {/* 試合結果＆ボックススコア(/games)への入口。ネタバレ防止のため、ホームには試合の勝敗・点数・チーム名を一切表示しない */}
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border border-line bg-surface px-6 py-4">
         <div>
           <p className="text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">Games</p>
-          <p className="text-sm text-muted">試合結果は、ネタバレ防止のため試合センターでだけ表示します。</p>
+          <p className="text-sm text-muted">試合結果は、ネタバレ防止のため「試合結果＆ボックススコア」のページでだけ表示します。</p>
         </div>
         <Link href="/games" className="bg-navy px-4 py-2.5 text-sm font-extrabold text-white">
-          試合センターへ →
+          試合結果＆ボックススコアへ →
         </Link>
       </div>
 
       <div className="mt-5 grid grid-cols-1 gap-4.5 lg:grid-cols-[1.55fr_1fr]">
-        <div className="border border-line bg-surface p-6">
-          <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
-            Team Database
-          </p>
-          <h2 className="mb-4 text-xl font-semibold">注目チーム</h2>
-          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-            {marqueeTeams.map((team) => (
-              <Link
-                key={team.id}
-                href={`/teams/${team.id}`}
-                className="border-l-[3px] border-blue bg-[#f3f6fb] p-3.5 text-sm font-extrabold dark:bg-white/[.04]"
-              >
-                {team.name}
+        {/* お知らせ(管理画面で公開したものを新しい順に最大3件)。0件のときは「現在お知らせはありません」と表示する */}
+        <section aria-labelledby="home-announcements" className="border border-line bg-surface p-6">
+          <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+            <div>
+              <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">Notice</p>
+              <h2 id="home-announcements" className="text-xl font-semibold">
+                お知らせ
+              </h2>
+            </div>
+            {announcements.length > 0 && (
+              <Link href="/announcements" className="text-sm font-extrabold text-blue">
+                お知らせ一覧 →
               </Link>
-            ))}
+            )}
           </div>
-        </div>
+          {announcements.length === 0 ? (
+            <p className="border-l-[3px] border-line bg-background px-3.5 py-3 text-sm text-muted">現在、お知らせはありません。</p>
+          ) : (
+            <ul className="divide-y divide-line">
+              {announcements.map((a) => (
+                <li key={a.id} className="py-3 first:pt-0 last:pb-0">
+                  <p className="text-xs tabular-nums text-muted">{formatAnnouncementDate(a.posted_on)}</p>
+                  <h3 className="mt-0.5 break-words text-[15px] font-bold">
+                    <Link href={`/announcements/${a.id}`} className="hover:underline">
+                      {a.title}
+                    </Link>
+                  </h3>
+                  <p className="mt-1 break-words text-xs leading-6 text-muted">{announcementExcerpt(a.body)}</p>
+                  <Link href={`/announcements/${a.id}`} className="mt-1 inline-block text-xs font-extrabold text-blue">
+                    詳しく見る →
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
 
         <div className="border border-line bg-surface p-6">
           <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">

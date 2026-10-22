@@ -204,6 +204,27 @@ export interface Database {
         >;
         Relationships: [];
       };
+      // サイトのお知らせ(supabase/migrations/20261023000000_announcements.sql)。公開中のものだけ誰でも読める
+      announcements: {
+        Row: {
+          id: string;
+          title: string;
+          body: string;
+          posted_on: string;
+          is_published: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          body: string;
+          posted_on: string;
+          is_published?: boolean;
+        };
+        Update: Partial<Database["public"]["Tables"]["announcements"]["Insert"]>;
+        Relationships: [];
+      };
       // シーズンごとのロスターの固定スナップショット(supabase/migrations/20261021000000_roster_snapshots.sql)。
       // 登録後は変更・削除できない(読み取り専用として扱う)
       roster_snapshots: {

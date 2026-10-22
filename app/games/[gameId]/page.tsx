@@ -5,7 +5,7 @@ import { GameDetailView } from "@/components/games/game-detail-view";
 
 // タイトル・説明文にも試合結果やチーム名を含めない(リンクの共有や検索結果でネタバレしないため)
 export const metadata: Metadata = {
-  title: "試合詳細 | 試合センター | NBA Front Office Japan",
+  title: "試合詳細 | 試合結果＆ボックススコア | NBA Front Office Japan",
   description: "NBAの試合のスコアとボックススコア。ネタバレ防止のため、結果は操作したときだけ表示します。",
 };
 
@@ -17,7 +17,7 @@ export default async function GameDetailPage({ params }: PageProps<"/games/[game
     <PageShell>
       <nav aria-label="パンくずリスト" className="mb-4 text-xs text-muted">
         <Link href="/games" className="font-semibold text-blue hover:underline">
-          試合センター
+          試合結果＆ボックススコア
         </Link>
         <span aria-hidden className="mx-1.5">›</span>
         <span aria-current="page">試合詳細</span>
@@ -28,7 +28,7 @@ export default async function GameDetailPage({ params }: PageProps<"/games/[game
       <GameDetailView gameId={gameId} />
 
       <Link href="/games" className="mt-8 inline-block text-sm font-extrabold text-blue">
-        ← 試合センターに戻る
+        ← 試合結果＆ボックススコアに戻る
       </Link>
     </PageShell>
   );

@@ -132,8 +132,34 @@ export type GameDetail = {
   awayPlayers: BoxScoreRow[];
 };
 
-/** 試合カレンダーの、日本時間の日付ごとの試合数(結果は含まない) */
-export type GameCalendarResponse = { month: string; counts: Record<string, number> };
+/**
+ * 日付ごとのデータの入力状況(結果・対戦カードは含まない)。
+ * total: 試合数 / results: 試合結果(最終スコア)が保存済み / boxScores: 個人成績が保存済み / upcoming: 試合前(まだ始まっていない)
+ */
+export type GameDayStatus = { total: number; results: number; boxScores: number; upcoming: number };
+
+/** 入力状況の区分。complete: すべて入力済み / partial: 一部入力済み / none: 未入力 / scheduled: すべて試合前(予定) */
+export type GameDayLevel = "complete" | "partial" | "none" | "scheduled";
+
+export function gameDayLevel(s: GameDayStatus): GameDayLevel {
+  if (s.total > 0 && s.upcoming === s.total) return "scheduled";
+  if (s.results === s.total && s.boxScores === s.total) return "complete";
+  if (s.results === 0 && s.boxScores === 0) return "none";
+  return "partial";
+}
+
+/** 入力状況の表示文(例: 全11試合・結果/ボックススコア入力済み、結果 8/11試合・ボックススコア 6/11試合入力済み) */
+export function gameDayStatusText(s: GameDayStatus): string {
+  const level = gameDayLevel(s);
+  if (level === "scheduled") return `予定 ${s.total}試合（試合前）`;
+  if (level === "complete") return `全${s.total}試合・結果／ボックススコア入力済み`;
+  const pending = s.upcoming > 0 ? `・予定 ${s.upcoming}試合` : "";
+  if (level === "none") return s.upcoming > 0 ? `未入力 ${s.total - s.upcoming}試合${pending}` : `未入力（${s.total}試合）`;
+  return `結果 ${s.results}/${s.total}試合・ボックススコア ${s.boxScores}/${s.total}試合入力済み${pending}`;
+}
+
+/** 試合カレンダーの、日本時間の日付ごとの試合数と入力状況(結果・対戦カードは含まない) */
+export type GameCalendarResponse = { month: string; counts: Record<string, number>; statuses: Record<string, GameDayStatus> };
 
 /** データ未準備(テーブル未作成・データなし)と、取得成功を区別して返す */
 export type GamesResponse =

@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import type { GameCalendarResponse } from "@/lib/games/types";
+import { gameDayLevel, gameDayStatusText, type GameCalendarResponse, type GameDayStatus } from "@/lib/games/types";
+import { GameDayStatusLegend, LEVEL_DOT_CLASS, LEVEL_LABEL } from "./game-day-status";
 import { addMonths, formatMonthLabel, gamesDateHref } from "@/lib/games/date";
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"] as const;
 
-type Counts = Record<string, number>;
+type MonthData = { counts: Record<string, number>; statuses: Record<string, GameDayStatus> };
 
 /** その月のカレンダーのマス(前後の月の分は null) */
 function monthCells(month: string): (string | null)[] {
@@ -20,35 +21,36 @@ function monthCells(month: string): (string | null)[] {
   return cells;
 }
 
-// 試合センターの月間カレンダー(日本時間)。日付を押すと、その日の試合一覧(/games?date=)へ移動する。
-// 試合がある日には試合数を出す(勝敗・点数・対戦カードは出さない)。月の切り替えはこの部品の中で行い、
-// その月の試合数を /api/games/calendar から取得する。
+// 試合結果＆ボックススコアの月間カレンダー(日本時間)。日付を押すと、その日の試合一覧(/games?date=)へ移動する。
+// 試合がある日には試合数と、入力状況の色印(入力済み=緑・一部=黄・未入力=灰・予定=青)を出す。
+// 勝敗・点数・対戦カードは出さない。月の切り替えはこの部品の中で行い、その月の分を /api/games/calendar から取得する。
 export function GameCalendar({
   selected,
   today,
   initialMonth,
-  initialCounts,
+  initialData,
 }: {
   selected: string;
   today: string;
   initialMonth: string;
   // サーバーで取得できなかったときは undefined(この部品で取得し直す)
-  initialCounts?: Counts;
+  initialData?: MonthData;
 }) {
   const [month, setMonth] = useState(initialMonth);
-  const [countsByMonth, setCountsByMonth] = useState<Record<string, Counts>>(initialCounts ? { [initialMonth]: initialCounts } : {});
+  const [dataByMonth, setDataByMonth] = useState<Record<string, MonthData>>(initialData ? { [initialMonth]: initialData } : {});
   const [failed, setFailed] = useState<string | null>(null);
-  const counts = countsByMonth[month];
+  const counts = dataByMonth[month]?.counts;
+  const statuses = dataByMonth[month]?.statuses;
 
   useEffect(() => {
-    if (countsByMonth[month]) return;
+    if (dataByMonth[month]) return;
     let cancelled = false;
     fetch(`/api/games/calendar?month=${month}`, { cache: "no-store" })
       .then((res) => res.json() as Promise<GameCalendarResponse | { error: string }>)
       .then((body) => {
         if (cancelled) return;
         if ("error" in body) setFailed(month);
-        else setCountsByMonth((prev) => ({ ...prev, [month]: body.counts }));
+        else setDataByMonth((prev) => ({ ...prev, [month]: { counts: body.counts, statuses: body.statuses ?? {} } }));
       })
       .catch(() => {
         if (!cancelled) setFailed(month);
@@ -56,7 +58,7 @@ export function GameCalendar({
     return () => {
       cancelled = true;
     };
-  }, [month, countsByMonth]);
+  }, [month, dataByMonth]);
 
   const cells = monthCells(month);
   const gameDays = counts ? Object.values(counts).filter((n) => n > 0).length : null;
@@ -99,6 +101,8 @@ export function GameCalendar({
         {cells.map((date, i) => {
           if (!date) return <div key={`blank-${i}`} className="min-h-12 bg-surface" />;
           const n = counts?.[date] ?? 0;
+          const status = statuses?.[date];
+          const level = status ? gameDayLevel(status) : null;
           const isSelected = date === selected;
           const isToday = date === today;
           const day = Number(date.slice(8));
@@ -107,14 +111,18 @@ export function GameCalendar({
               key={date}
               href={gamesDateHref(date, today)}
               aria-current={isSelected ? "date" : undefined}
-              aria-label={`${Number(date.slice(5, 7))}月${day}日${isToday ? "（今日）" : ""}${n > 0 ? `・${n}試合` : "・試合なし"}`}
+              aria-label={`${Number(date.slice(5, 7))}月${day}日${isToday ? "（今日）" : ""}${n > 0 ? `・${n}試合` : "・試合なし"}${status ? `・${gameDayStatusText(status)}` : ""}`}
+              title={status ? `${LEVEL_LABEL[gameDayLevel(status)]}：${gameDayStatusText(status)}` : undefined}
               className={`flex min-h-12 flex-col items-center justify-center gap-0.5 px-0.5 py-1 text-sm tabular-nums transition-colors ${
                 isSelected ? "bg-navy text-white" : n > 0 ? "bg-surface font-bold hover:bg-[#eaf1ff] dark:hover:bg-white/[.06]" : "bg-surface text-muted hover:bg-background"
               } ${isToday && !isSelected ? "outline outline-2 -outline-offset-2 outline-gold" : ""}`}
             >
-              <span>{day}</span>
+              <span className="inline-flex items-center gap-1">
+                {day}
+                {level && <span aria-hidden className={`inline-block h-2 w-2 rounded-full ${LEVEL_DOT_CLASS[level]} ${isSelected ? "ring-1 ring-white" : ""}`} />}
+              </span>
               {n > 0 ? (
-                <span className={`text-[10px] leading-none ${isSelected ? "text-gold" : "text-blue"}`}>{n}試合</span>
+                <span className={`whitespace-nowrap text-[10px] leading-none ${isSelected ? "text-gold" : "text-blue"}`}>{n}試合</span>
               ) : (
                 <span className="text-[10px] leading-none opacity-0" aria-hidden>
                   -
@@ -124,7 +132,10 @@ export function GameCalendar({
           );
         })}
       </div>
-      <p className="mt-2 text-[11px] text-muted">日付は日本時間。数字はその日の試合数（結果は表示しません）。枠付きの日付が今日です。</p>
+      <div className="mt-2 space-y-1">
+        <GameDayStatusLegend />
+        <p className="text-[11px] text-muted">日付は日本時間。数字はその日の試合数、色印はデータの入力状況です（勝敗・点数は表示しません）。枠付きの日付が今日です。</p>
+      </div>
     </section>
   );
 }

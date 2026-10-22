@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { href: "/admin/news/drafts", label: "記事下書き" },
   { href: "/admin/games", label: "試合データ" },
   { href: "/admin/awards", label: "表彰データ" },
+  { href: "/admin/announcements", label: "お知らせ" },
 ];
 
 /** 今いる画面に当たる項目(詳細・編集画面も含む。/admin/news と /admin/news/drafts のように重なる場合は長いほう) */

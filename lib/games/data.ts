@@ -5,6 +5,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
+import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import { addDays, jstDateOf, jstDayRangeUtc } from "./date";
 import type {
   BoxScoreRow,
@@ -12,6 +13,7 @@ import type {
   FullBoxRow,
   FullBoxTotals,
   GameCalendarResponse,
+  GameDayStatus,
   GameDetailResponse,
   GameSummary,
   GameTeamLine,
@@ -497,8 +499,12 @@ function firstDayOfNextMonth(month: string): string {
   return m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, "0")}-01`;
 }
 
-/** その月(YYYY-MM)の、日本時間の日付ごとの試合数(日程・日程に無いボックススコア・プレシーズンの合計) */
-export async function fetchGameCountsForMonth(supabase: Client, month: string): Promise<GameCalendarResponse> {
+/**
+ * その月(YYYY-MM)の、日本時間の日付ごとの試合数と入力状況(日程・日程に無いボックススコア・プレシーズンの合計)。
+ * 入力状況は保存済みのデータから数える(結果: 試合終了の得点がある / ボックススコア: 個人成績の行がある / 予定: 試合前でまだ始まっていない)。
+ * 対戦カード・得点・勝敗は返さない(ネタバレ防止)。
+ */
+export async function fetchGameCountsForMonth(supabase: Client, month: string, now: Date = new Date()): Promise<GameCalendarResponse> {
   const first = `${month}-01`;
   const nextFirst = firstDayOfNextMonth(month);
   const start = jstDayRangeUtc(first).start;
@@ -506,27 +512,70 @@ export async function fetchGameCountsForMonth(supabase: Client, month: string): 
   // 米国の日付で保存している試合(ボックススコア・プレシーズン)は、日本時間の日付 = 米国の日付 + 1日
   const usFrom = addDays(first, -1);
   const usTo = addDays(nextFirst, -1);
+  const today = jstDateOf(now.toISOString());
   const counts: Record<string, number> = {};
-  const add = (date: string) => {
-    if (date >= first && date < nextFirst) counts[date] = (counts[date] ?? 0) + 1;
+  const statuses: Record<string, GameDayStatus> = {};
+  const add = (date: string, game: { result: boolean; box: boolean; upcoming: boolean }) => {
+    if (date < first || date >= nextFirst) return;
+    counts[date] = (counts[date] ?? 0) + 1;
+    const s = (statuses[date] ??= { total: 0, results: 0, boxScores: 0, upcoming: 0 });
+    s.total += 1;
+    if (game.result) s.results += 1;
+    if (game.box) s.boxScores += 1;
+    if (game.upcoming) s.upcoming += 1;
   };
 
   const [gamesResult, scheduledResult, boxResult, preseasonResult] = await Promise.all([
-    supabase.from("games").select("tipoff_at").gte("tipoff_at", start).lt("tipoff_at", end).limit(1000),
+    supabase.from("games").select("id, tipoff_at, status, home_score, away_score, game_date, home_team_id, away_team_id").gte("tipoff_at", start).lt("tipoff_at", end).limit(1000),
     supabase.from("games").select("game_date, home_team_id, away_team_id").gte("game_date", usFrom).lt("game_date", usTo).limit(1000),
     supabase.from("box_score_games").select("game_date, home_team_id, away_team_id").gte("game_date", usFrom).lt("game_date", usTo).limit(1000),
-    supabase.from("preseason_games").select("game_date").gte("game_date", usFrom).lt("game_date", usTo).limit(1000),
+    supabase.from("preseason_games").select("id, game_date, status, home_score, away_score").gte("game_date", usFrom).lt("game_date", usTo).limit(1000),
   ]);
   if (gamesResult.error && !isMissingTable(gamesResult.error)) throw new Error(`gamesの取得に失敗しました: ${gamesResult.error.message}`);
-  for (const g of gamesResult.data ?? []) if (g.tipoff_at) add(jstDateOf(g.tipoff_at));
+  const games = gamesResult.data ?? [];
+  const preseason = preseasonResult.data ?? [];
+
+  // 個人成績が登録されている試合(CSV の game_player_stats・プレシーズンの preseason_player_stats)
+  const [csvRows, preseasonRows] = await Promise.all([
+    games.length > 0
+      ? fetchAllRows<{ game_id: string }>((f, t) => supabase.from("game_player_stats").select("game_id").in("game_id", games.map((g) => g.id)).order("id").range(f, t))
+      : Promise.resolve({ data: [] as { game_id: string }[], error: null }),
+    preseason.length > 0
+      ? fetchAllRows<{ game_id: string }>((f, t) => supabase.from("preseason_player_stats").select("game_id").in("game_id", preseason.map((g) => g.id)).order("id").range(f, t))
+      : Promise.resolve({ data: [] as { game_id: string }[], error: null }),
+  ]);
+  const csvGameIds = new Set(csvRows.data.map((r) => r.game_id));
+  const preseasonBoxIds = new Set(preseasonRows.data.map((r) => r.game_id));
+  const boxKeys = new Set((boxResult.data ?? []).map((b) => matchKey(b.game_date, b.home_team_id, b.away_team_id)));
+  const nowIso = now.toISOString();
+
+  for (const g of games) {
+    if (!g.tipoff_at) continue;
+    const hasFullBox = boxKeys.has(matchKey(g.game_date, g.home_team_id, g.away_team_id));
+    add(jstDateOf(g.tipoff_at), {
+      // 新書式のボックススコアがある試合は、検査済みの最終結果として結果も入力済み
+      result: hasFullBox || (g.status === "final" && g.home_score !== null && g.away_score !== null),
+      box: hasFullBox || csvGameIds.has(g.id),
+      upcoming: !hasFullBox && g.status === "scheduled" && g.tipoff_at > nowIso,
+    });
+  }
 
   // 日程(games)にある試合のボックススコアは、日程の試合として数え済み
   const scheduled = new Set((scheduledResult.data ?? []).map((g) => matchKey(g.game_date, g.home_team_id, g.away_team_id)));
   for (const b of boxResult.data ?? []) {
-    if (!scheduled.has(matchKey(b.game_date, b.home_team_id, b.away_team_id))) add(addDays(b.game_date, BOX_SCORE_JST_OFFSET_DAYS));
+    if (!scheduled.has(matchKey(b.game_date, b.home_team_id, b.away_team_id))) {
+      add(addDays(b.game_date, BOX_SCORE_JST_OFFSET_DAYS), { result: true, box: true, upcoming: false });
+    }
   }
-  for (const p of preseasonResult.data ?? []) add(preseasonJstDate(p.game_date));
-  return { month, counts };
+  for (const p of preseason) {
+    const jst = preseasonJstDate(p.game_date);
+    add(jst, {
+      result: p.status === "final" && p.home_score !== null && p.away_score !== null,
+      box: preseasonBoxIds.has(p.id),
+      upcoming: p.status === "scheduled" && jst >= today,
+    });
+  }
+  return { month, counts, statuses };
 }
 
 /** その日より前で試合がある直近の日付と、その日より後で試合がある直近の日付(日本時間。なければ null) */

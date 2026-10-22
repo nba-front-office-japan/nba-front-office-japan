@@ -3,6 +3,7 @@ import Link from "next/link";
 import { PageShell } from "@/components/page-shell";
 import { GamesCenter } from "@/components/games/games-center";
 import { GameCalendar } from "@/components/games/game-calendar";
+import { GameDayStatusBadge } from "@/components/games/game-day-status";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { fetchAdjacentGameDates, fetchGameCountsForMonth } from "@/lib/games/data";
 import {
@@ -19,7 +20,7 @@ import {
 
 // タイトル・説明文にも試合結果を含めない(検索結果やSNSの共有でネタバレしないため)
 export const metadata: Metadata = {
-  title: "試合センター | NBA Front Office Japan",
+  title: "試合結果＆ボックススコア | NBA Front Office Japan",
   description: "NBAの試合結果とボックススコア。ネタバレ防止のため、結果は「結果を表示する」を押したときだけ表示します。",
 };
 
@@ -40,6 +41,8 @@ export default async function GamesPage({ searchParams }: PageProps<"/games">) {
   // 試合数の取得に失敗しても、ページは表示する(カレンダーは読み込み直し、一覧は「結果を表示する」から取得する)
   const calendar = await fetchGameCountsForMonth(supabase, month).catch(() => null);
   const gameCount = calendar ? (calendar.counts[selected] ?? 0) : null;
+  // その日のデータの入力状況(結果・ボックススコアが保存済みの試合数。対戦カード・得点は含まない)
+  const dayStatus = calendar?.statuses[selected] ?? null;
   const adjacent = gameCount === 0 ? await fetchAdjacentGameDates(supabase, selected).catch(() => ({ prev: null, next: null })) : { prev: null, next: null };
 
   const dayLabel = formatJstDateLabel(selected);
@@ -54,7 +57,7 @@ export default async function GamesPage({ searchParams }: PageProps<"/games">) {
   return (
     <PageShell>
       <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">Games</p>
-      <h1 className="mb-3 text-[28px] font-semibold tracking-tight sm:text-[36px]">試合センター</h1>
+      <h1 className="mb-3 text-[28px] font-semibold tracking-tight sm:text-[36px]">試合結果＆ボックススコア</h1>
       <p className="mb-6 text-sm leading-7 text-muted">
         ネタバレ防止のため、試合の勝敗・点数は「結果を表示する」を押したときだけ表示します。日付は日本時間です。カレンダーから日付を選ぶと、プレシーズンを含む過去の試合も見られます。
       </p>
@@ -79,13 +82,14 @@ export default async function GamesPage({ searchParams }: PageProps<"/games">) {
             <span>{formatJstDateLong(selected)}の試合</span>
             {relative && <span className="text-xs font-bold text-muted">（{relative}）</span>}
             {gameCount !== null && gameCount > 0 && <span className="text-xs font-bold text-blue">{gameCount}試合</span>}
+            {dayStatus && <GameDayStatusBadge status={dayStatus} />}
           </h2>
 
           <GamesCenter key={selected} date={selected} dayLabel={dayLabel} today={today} gameCount={gameCount} adjacent={adjacent} />
         </div>
 
         <div className="order-1 lg:order-2">
-          <GameCalendar key={month} selected={selected} today={today} initialMonth={month} initialCounts={calendar?.counts} />
+          <GameCalendar key={month} selected={selected} today={today} initialMonth={month} initialData={calendar ? { counts: calendar.counts, statuses: calendar.statuses } : undefined} />
         </div>
       </div>
     </PageShell>
