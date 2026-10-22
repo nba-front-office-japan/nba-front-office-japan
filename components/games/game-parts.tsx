@@ -34,28 +34,33 @@ export function TipoffTime({ game }: { game: GameSummary }) {
 
 // 結果を隠しているときの表示。onReveal を押したときだけ結果を取得・表示する。
 // children は見出しの直下(説明文・ボタンより上)に表示する(試合結果の一覧では、その日のデータの入力状況)。
+// toneClass を渡すと、枠全体をその配色(入力状況ごとの淡い背景色・濃い文字色)にし、ボタンは濃紺にする。
 export function SpoilerGate({
   message,
   onReveal,
   loading,
   children,
+  toneClass,
 }: {
   message: string;
   onReveal: () => void;
   loading: boolean;
   children?: ReactNode;
+  toneClass?: string;
 }) {
   return (
-    <div className="border border-line bg-surface px-5 py-10 text-center sm:py-14">
-      <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">Spoiler free</p>
+    <div className={`border px-5 py-10 text-center sm:py-14 ${toneClass ?? "border-line bg-surface"}`}>
+      <p className={`mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] ${toneClass ? "" : "text-blue"}`}>Spoiler free</p>
       <p className="mb-2 text-lg font-bold">{message}</p>
-      {children && <div className="mb-4 mt-3">{children}</div>}
-      <p className="mb-5 text-xs leading-6 text-muted">ネタバレ防止のため、試合の勝敗・点数は、ボタンを押すまで表示しません。</p>
+      {children && <div className="mb-5 mt-4">{children}</div>}
+      <p className={`mb-5 text-xs leading-6 ${toneClass ? "opacity-85" : "text-muted"}`}>ネタバレ防止のため、試合の勝敗・点数は、ボタンを押すまで表示しません。</p>
       <button
         type="button"
         onClick={onReveal}
         disabled={loading}
-        className="bg-gold px-5 py-3 text-sm font-extrabold text-[#182238] disabled:opacity-60"
+        className={`px-5 py-3 text-sm font-extrabold disabled:opacity-60 ${
+          toneClass ? "bg-navy text-white hover:bg-[#22304d] dark:bg-gold dark:text-[#182238]" : "bg-gold text-[#182238]"
+        }`}
       >
         {loading ? "読み込み中…" : "結果を表示する"}
       </button>
