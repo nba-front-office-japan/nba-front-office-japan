@@ -29,11 +29,14 @@ import {
   fetchTeamStatsSeasonRecord,
   formatJapaneseDate,
 } from "@/lib/team-season-data";
+import { fetchTeamBoxScoreSeasonStats } from "@/lib/team-box-score-stats";
+import { TeamBoxScoreStats } from "@/components/team-box-score-stats";
 import type { Database } from "@/lib/supabase/types";
 
 // /teams/[teamId] はシーズンごとのチームページ(Overview / Profile / Stats / Team Profile)。
 // ?season= でシーズンを切り替える(初期表示は 2026-27。?season=2025 で 2025-26)。
-// ・2026-27: ロスターは固定スナップショット(2026-10-21時点)。成績は登録されるまで「未登録」と表示する
+// ・2026-27: ロスターは固定スナップショット(最新の基準日)。成績は取り込んだボックススコアのレギュラーシーズンの試合から
+//   集計する(lib/team-box-score-stats.ts)。試合が無い間は「未登録」と表示する
 // ・2025-26: レギュラーシーズン・プレーオフの成績から復元したチーム記録
 // タブは ?tab=profile / ?tab=stats / ?tab=team-profile で直接開ける(Teams一覧のリンクもこのURLを使う)。
 
@@ -180,6 +183,14 @@ export default async function TeamDetailPage({
     const asOfText = formatJapaneseDate(snapshotRoster.snapshot.as_of);
     const rows = snapshotRoster.rows;
     const avgAgeText = snapshotRoster.averageAge === null ? "-" : snapshotRoster.averageAge.toFixed(1);
+    // 成績は取り込んだボックススコアのレギュラーシーズンの試合から集計する(試合が無い間は「未登録」)
+    const boxStats = await fetchTeamBoxScoreSeasonStats(supabase, team, season, rows);
+    const hasBoxStats = boxStats.gamesCounted > 0;
+    const snapshotStatsContent = hasBoxStats ? (
+      <TeamBoxScoreStats seasonLabel={label} teamName={team.name} stats={boxStats} />
+    ) : (
+      statsContent
+    );
 
     return (
       <PageShell teamColor={teamColor}>
@@ -212,7 +223,7 @@ export default async function TeamDetailPage({
                     ["ROOKIES", `${snapshotRoster.rookieCount}`],
                     ["AVERAGE AGE", avgAgeText],
                     ["ROSTER AS OF", asOfText],
-                    ["STATS", hasStats ? "登録済み" : "未登録"],
+                    ["STATS", hasBoxStats ? `${boxStats.gamesCounted}試合を集計` : "未登録"],
                   ].map(([metric, value]) => (
                     <div key={metric} className="bg-surface p-4">
                       <span className="mb-1.5 block text-[11px] text-muted">{metric}</span>
@@ -228,7 +239,9 @@ export default async function TeamDetailPage({
                 <h2 className="mb-2 text-lg font-semibold">収録データ</h2>
                 <p className="text-sm text-muted">
                   {asOfText}時点の{label}ロスター（固定スナップショット）です。自動では更新しません。背番号は元データに無いため空欄です。年齢は表示した日の時点。
-                  {hasStats ? "" : `${label}シーズンのスタッツは未登録です。`}
+                  {hasBoxStats
+                    ? `Statsは、取り込んだボックススコアから集計した${label}レギュラーシーズンの成績です（試合を取り込むと自動で更新）。`
+                    : `${label}シーズンのスタッツは未登録です。`}
                 </p>
               </div>
             </div>
@@ -245,7 +258,7 @@ export default async function TeamDetailPage({
               <TeamRosterProfileTable rows={rows} />
             </div>
           }
-          stats={statsContent}
+          stats={snapshotStatsContent}
           teamProfile={teamProfileContent}
         />
       </PageShell>
