@@ -145,25 +145,18 @@ export async function fetchStatsSeasons(supabase: Client): Promise<{ regular_sea
 
 export type StatsPage = { rows: StatsListRow[]; total: number; page: number; lastPage: number; from: number };
 
-// 英語名で一致した選手のIDを1回の問い合わせに入れる数(URL が長くなりすぎないように分ける)
-const NAME_ID_CHUNK = 150;
-// 同時に送る問い合わせの数。全シーズン×1文字の検索など問い合わせが多いときに、DB の時間制限を超えないように抑える
-const MAX_PARALLEL_QUERIES = 1;
 // DB から1回に取れる行数の上限
 const MAX_ROWS_PER_REQUEST = 1000;
 
 type SelectOptions = { count: "exact"; head?: boolean };
-function selectList(supabase: Client, select: string, options: SelectOptions) {
+function selectList(supabase: Client, select: string, options?: SelectOptions) {
   return supabase.from("player_stats_list").select(select, options);
 }
 type ListQuery = ReturnType<typeof selectList>;
 
 /**
  * 検索条件に合う行を、指定したページの100件だけ取得する。
- * 選手名の検索で、英語名だけが一致する選手(日本語名で表示している選手)がいる場合は、
- * 「表示名が一致する行」と「英語名だけが一致する行(ID を100人ずつ)」を別々に、どれも同じ並び順で問い合わせ、
- * 表示するページまでの行だけを取り出してから1つの並びにまとめる(重ならないように、後者は表示名が一致しない行に限る)。
- * 件数はそれぞれの件数の合計。人数の上限はなく、取りこぼさない。
+ * 選手名の検索があるときは fetchNameSearchPage(人数の上限なし・短い検索語でも取りこぼさない)。
  */
 export async function fetchStatsPage(
   supabase: Client,
@@ -172,7 +165,7 @@ export async function fetchStatsPage(
   // 英語名で一致した、日本語名で表示している選手のID(fetchEnglishNameMatchIds)
   nameMatchIds: string[] = []
 ): Promise<StatsPage> {
-  const filtered = (select: string, options: SelectOptions) => {
+  const filtered = (select: string, options?: SelectOptions) => {
     let query = selectList(supabase, select, options).eq("season_type", q.seasonType);
     if (q.season !== null) query = query.eq("season", q.season);
     if (q.position) query = query.eq("position", q.position);
@@ -187,80 +180,60 @@ export async function fetchStatsPage(
       .order("player_name", { ascending: true })
       .order("id", { ascending: true });
 
-  const namePattern = q.q ? `*${q.q}*` : null;
-  // 問い合わせの単位(検索なし・英語名の一致なしなら1つだけ)
-  const sources: ((select: string, options: SelectOptions) => ListQuery)[] = [
-    (select, options) => (namePattern ? filtered(select, options).ilike("player_name", namePattern) : filtered(select, options)),
-  ];
-  if (namePattern) {
-    for (let i = 0; i < nameMatchIds.length; i += NAME_ID_CHUNK) {
-      const chunk = nameMatchIds.slice(i, i + NAME_ID_CHUNK);
-      sources.push((select, options) => filtered(select, options).in("player_id", chunk).not("player_name", "ilike", namePattern));
-    }
+  if (q.q) return fetchNameSearchPage(supabase, q, filtered, ordered, nameMatchIds);
+  return fetchSinglePage(filtered, ordered, q.page);
+}
+
+/**
+ * 選手名の検索。一覧の選手名は「日本語名、なければ英語名」のため、
+ * 「表示名に検索語を含む」または「英語名が一致した日本語名の選手(nameMatchIds)」の行を対象にする。
+ * 名前以外の条件(種別・シーズン・チーム・ポジション・最低試合数)に合う行を、並べ替えに使う列だけ DB の並び順で取り、
+ * 名前の判定はここで行う(DB で名前の部分一致をすると、1文字の検索語×全シーズンで DB の時間制限を超えるため)。
+ * そのあと表示するページの100件だけ、全部の列を取り直す。人数の上限はなく、取りこぼさない。
+ */
+async function fetchNameSearchPage(
+  supabase: Client,
+  q: StatsQuery,
+  filtered: (select: string, options?: SelectOptions) => ListQuery,
+  ordered: <T extends ListQuery>(query: T) => T,
+  nameMatchIds: string[]
+): Promise<StatsPage> {
+  const term = (q.q ?? "").toLowerCase();
+  const englishMatch = new Set(nameMatchIds);
+  const sortColumn = STATS_SORT_COLUMNS[q.sort];
+  const columns = [...new Set(["id", "player_id", "player_name", sortColumn])].join(", ");
+
+  type KeyRow = { id: string; player_id: string; player_name: string };
+  const keys: KeyRow[] = [];
+  for (let from = 0; ; from += MAX_ROWS_PER_REQUEST) {
+    const { data, error } = await ordered(filtered(columns))
+      .range(from, from + MAX_ROWS_PER_REQUEST - 1)
+      .overrideTypes<KeyRow[], { merge: false }>();
+    if (error) throw new Error(`スタッツの取得に失敗しました: ${error.message}`);
+    keys.push(...(data ?? []));
+    if (!data || data.length < MAX_ROWS_PER_REQUEST) break;
   }
 
-  if (sources.length === 1) return fetchSinglePage(sources[0], ordered, q.page);
-
-  // 複数の問い合わせ: それぞれ「表示するページの最後の行」までを取り、まとめて並べ替えてから切り出す
-  const need = q.page * STATS_PAGE_SIZE;
-  const parts = await mapWithConcurrency(
-    sources,
-    MAX_PARALLEL_QUERIES,
-    async (source) => {
-      const rows: StatsListRow[] = [];
-      let count = 0;
-      for (let from = 0; from < need; from += MAX_ROWS_PER_REQUEST) {
-        const to = Math.min(need, from + MAX_ROWS_PER_REQUEST) - 1;
-        const { data, count: c, error } = await ordered(source("*", { count: "exact" }))
-          .range(from, to)
-          .overrideTypes<StatsListRow[], { merge: false }>();
-        if (error) throw new Error(`スタッツの取得に失敗しました: ${error.message}`);
-        count = c ?? 0;
-        rows.push(...(data ?? []));
-        if (!data || data.length < to - from + 1) break;
-      }
-      return { rows, count };
-    }
-  );
-  const total = parts.reduce((sum, p) => sum + p.count, 0);
+  // DB の並び順のまま、名前が一致する行だけを残す
+  const matched = keys.filter((r) => r.player_name.toLowerCase().includes(term) || englishMatch.has(r.player_id));
+  const total = matched.length;
   const lastPage = Math.max(1, Math.ceil(total / STATS_PAGE_SIZE));
-  // 範囲外のページは最後のページにする(取った行は最後のページまでを含む)
+  // 範囲外のページ(条件を変えて件数が減った共有URLなど)は最後のページにする
   const page = Math.min(q.page, lastPage);
   const from = (page - 1) * STATS_PAGE_SIZE;
-  const merged = parts.flatMap((p) => p.rows).sort(compareRows(STATS_SORT_COLUMNS[q.sort], q.dir));
-  return { rows: merged.slice(from, from + STATS_PAGE_SIZE), total, page, lastPage, from };
+  const pageIds = matched.slice(from, from + STATS_PAGE_SIZE).map((r) => r.id);
+  if (pageIds.length === 0) return { rows: [], total, page, lastPage, from };
+
+  const { data, error } = await selectList(supabase, "*").in("id", pageIds).overrideTypes<StatsListRow[], { merge: false }>();
+  if (error) throw new Error(`スタッツの取得に失敗しました: ${error.message}`);
+  const byId = new Map((data ?? []).map((r) => [r.id, r]));
+  const rows = pageIds.map((id) => byId.get(id)).filter((r): r is StatsListRow => r !== undefined);
+  return { rows, total, page, lastPage, from };
 }
 
-// items を同時に limit 件までの処理で順に変換する(結果は items と同じ順)
-async function mapWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
-  const results = new Array<R>(items.length);
-  let next = 0;
-  const worker = async () => {
-    while (next < items.length) {
-      const index = next++;
-      results[index] = await fn(items[index]);
-    }
-  };
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
-  return results;
-}
-
-// DB の並び順(ORDER BY 列 [asc|desc] NULLS LAST, player_name, id)と同じ比較
-function compareRows(column: (typeof STATS_SORT_COLUMNS)[StatsSortKey], dir: "asc" | "desc") {
-  const sign = dir === "asc" ? 1 : -1;
-  const cmp = (a: unknown, b: unknown) => (a === b ? 0 : (a as string | number) < (b as string | number) ? -1 : 1);
-  return (a: StatsListRow, b: StatsListRow) => {
-    const va = a[column];
-    const vb = b[column];
-    if (va === null && vb !== null) return 1;
-    if (va !== null && vb === null) return -1;
-    return sign * cmp(va, vb) || cmp(a.player_name, b.player_name) || cmp(a.id, b.id);
-  };
-}
-
-/** 問い合わせが1つのとき: 指定したページの100件だけを取得する(範囲外のページは最後のページ) */
+/** 選手名の検索がないとき: 指定したページの100件だけを取得する(範囲外のページは最後のページ) */
 async function fetchSinglePage(
-  source: (select: string, options: SelectOptions) => ListQuery,
+  source: (select: string, options?: SelectOptions) => ListQuery,
   ordered: <T extends ListQuery>(query: T) => T,
   requestedPage: number
 ): Promise<StatsPage> {
