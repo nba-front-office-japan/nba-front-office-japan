@@ -24,10 +24,9 @@ async function loadStats(params: Record<string, string | string[] | undefined>) 
   const query = parseStatsQuery(params, latestSeason);
   const teamId = query.team ? ((teams ?? []).find((t) => t.abbreviation === query.team)?.id ?? null) : null;
   // 一覧の選手名は「日本語名、なければ英語名」のため、日本語名がある選手の英語名での一致は別に探す
-  const nameMatch = query.q ? await fetchEnglishNameMatchIds(supabase, query.q) : { ids: [], truncated: false };
-  const result = await fetchStatsPage(supabase, query, teamId, nameMatch.ids);
+  const nameMatchIds = query.q ? await fetchEnglishNameMatchIds(supabase, query.q) : [];
+  const result = await fetchStatsPage(supabase, query, teamId, nameMatchIds);
   return {
-    nameMatchTruncated: nameMatch.truncated,
     seasons,
     latestSeason,
     teams: (teams ?? []).map((t) => ({ abbreviation: t.abbreviation, name: t.name })),
@@ -61,11 +60,6 @@ export default async function StatsPage({ searchParams }: PageProps<"/stats">) {
       <h1 className="mb-2 text-[36px] font-semibold tracking-tight">選手スタッツ</h1>
       <p className="mb-7 text-sm text-muted">収録選手の基本スタッツを、シーズン・チーム・ポジション・出場試合数・選手名で検索する。</p>
       <StatsListFilters query={data.query} latestSeason={data.latestSeason} seasons={data.seasons} teams={data.teams} />
-      {data.nameMatchTruncated && (
-        <p className="mb-3 text-xs font-bold text-muted">
-          英語名で一致する選手が多いため、一部だけを表示しています。名前をもう少し長く入力してください。
-        </p>
-      )}
       <StatsListTable query={data.query} latestSeason={data.latestSeason} result={data.result} />
       {/* 収録範囲・複数チームの扱いの注意書き(ページ最下部) */}
       <div className="mt-8 space-y-1 border border-line bg-[#eaf1ff] px-4 py-3 text-xs leading-6 text-[#264c8a] dark:bg-white/[.06]">
