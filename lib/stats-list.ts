@@ -148,7 +148,7 @@ export type StatsPage = { rows: StatsListRow[]; total: number; page: number; las
 // 英語名で一致した選手のIDを1回の問い合わせに入れる数(URL が長くなりすぎないように分ける)
 const NAME_ID_CHUNK = 150;
 // 同時に送る問い合わせの数。全シーズン×1文字の検索など問い合わせが多いときに、DB の時間制限を超えないように抑える
-const MAX_PARALLEL_QUERIES = 2;
+const MAX_PARALLEL_QUERIES = 1;
 // DB から1回に取れる行数の上限
 const MAX_ROWS_PER_REQUEST = 1000;
 
