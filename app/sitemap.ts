@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/site";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import { fetchPublishedArticles } from "@/lib/news/public-articles";
 import { salaryTeams } from "@/lib/salary/data";
 import { teamSlug } from "@/lib/salary/types";
@@ -37,6 +38,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const { data: teams } = await createServerSupabaseClient().from("teams").select("id");
     for (const team of teams ?? []) {
       entries.push({ url: `${SITE_URL}/teams/${team.id}` });
+    }
+  } catch {}
+  // 選手ページ(現役の選手。is_active = true)。1000件ずつ全件を取る
+  try {
+    const supabase = createServerSupabaseClient();
+    const { data: players, error } = await fetchAllRows<{ id: string }>((from, to) =>
+      supabase.from("players").select("id").eq("is_active", true).order("id").range(from, to)
+    );
+    if (!error) {
+      for (const player of players) {
+        entries.push({ url: `${SITE_URL}/players/${player.id}` });
+      }
     }
   } catch {}
   try {

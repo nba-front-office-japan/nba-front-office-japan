@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -10,9 +11,12 @@ import {
 import { AWARDS_SEASON, getAwardLabel } from "@/lib/awards/constants";
 import { summarizeAwards } from "@/lib/awards/history";
 import { PlayerAwardHistory } from "@/components/player-award-history";
-import { ROSTER_SEASON } from "@/lib/seasons";
-
-const CURRENT_SEASON = ROSTER_SEASON;
+import {
+  fetchPlayerPageBase,
+  playerIntroSentence,
+  playerPageDescription,
+  playerPageTitle,
+} from "@/lib/player-page";
 
 // 選手ページは Profile(基本情報・受賞歴)と Stats(シーズン別成績)を ?view= で切り替える。
 // 上部の選手情報(PlayerHeader)はどちらの表示でも出す。
@@ -23,6 +27,25 @@ const VIEW_OPTIONS: { view: PlayerView; label: string }[] = [
   { view: "stats", label: "Stats" },
 ];
 
+// タイトル・説明文・canonical。canonical は Profile が /players/{id}、Stats が /players/{id}?view=stats(ほかのクエリは付けない)
+export async function generateMetadata({ params, searchParams }: PageProps<"/players/[playerId]">): Promise<Metadata> {
+  const { playerId } = await params;
+  const { view: viewParam } = await searchParams;
+  const view: PlayerView = viewParam === "stats" ? "stats" : "profile";
+  const base = await fetchPlayerPageBase(playerId);
+  if (!base) return {};
+
+  const title = playerPageTitle(base.player, view);
+  const description = playerPageDescription(base);
+  const canonical = view === "stats" ? `/players/${playerId}?view=stats` : `/players/${playerId}`;
+  return {
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: { title, description, url: canonical },
+  };
+}
+
 export default async function PlayerDetailPage({
   params,
   searchParams,
@@ -32,28 +55,14 @@ export default async function PlayerDetailPage({
   const selectedView: PlayerView = viewParam === "stats" ? "stats" : "profile";
   const supabase = createServerSupabaseClient();
 
-  const { data: player, error: playerError } = await supabase
-    .from("players")
-    .select("*")
-    .eq("id", playerId)
-    .single();
-
-  if (playerError || !player) {
+  // 選手と2026-27の現在所属（player_team_historyの日付範囲モデルとは別の、
+  // シーズン単位の単純な所属テーブル）。所属の行が無ければ「ロスター準備中」。
+  // generateMetadata と同じ取得(lib/player-page.ts の cache())なので、DBへの問い合わせは1回だけ
+  const base = await fetchPlayerPageBase(playerId);
+  if (!base) {
     notFound();
   }
-
-  // 2026-27の現在所属（player_team_historyの日付範囲モデルとは別の、
-  // シーズン単位の単純な所属テーブル）。行が無ければ「ロスター準備中」。
-  const { data: currentRoster } = await supabase
-    .from("player_season_rosters")
-    .select("team_id")
-    .eq("player_id", playerId)
-    .eq("season", CURRENT_SEASON)
-    .maybeSingle();
-
-  const { data: currentTeam } = currentRoster
-    ? await supabase.from("teams").select("*").eq("id", currentRoster.team_id).single()
-    : { data: null };
+  const { player, currentTeam } = base;
 
   const { data: stats, error: statsError } = await supabase
     .from("player_stats")
@@ -126,9 +135,10 @@ export default async function PlayerDetailPage({
     <PageShell>
       <PlayerHeader
         player={player}
-        currentTeam={currentTeam ?? null}
-        currentTeamPending={!currentRoster}
+        currentTeam={currentTeam}
+        currentTeamPending={base.currentRosterTeamId === null}
       />
+      {selectedView === "profile" && <p className="mt-4 text-sm text-muted">{playerIntroSentence(base)}</p>}
       <div className="mt-6 flex flex-wrap gap-2">
         {VIEW_OPTIONS.map((opt) => (
           <Link
