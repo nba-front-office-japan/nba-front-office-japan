@@ -48,6 +48,8 @@ export type StatsQuery = {
   /** チーム略称(例: BOS)。null はすべてのチーム */
   team: string | null;
   minGames: number;
+  /** 選手名の検索語(日本語名・英語名の部分一致)。null は検索なし */
+  q: string | null;
   sort: StatsSortKey;
   dir: "asc" | "desc";
   page: number;
@@ -69,12 +71,14 @@ export function parseStatsQuery(params: Params, latestSeason: number | null): St
   const page = Number(one(params, "page"));
   const position = one(params, "pos");
   const team = one(params, "team");
+  const q = normalizeSearchTerm(one(params, "q"));
   return {
     seasonType: one(params, "type") === "playoffs" ? "playoffs" : "regular_season",
     season: seasonParam === "all" ? null : /^\d{4}$/.test(seasonParam ?? "") ? Number(seasonParam) : latestSeason,
     position: position && STATS_POSITIONS.includes(position) ? position : null,
     team: team && /^[A-Z]{2,3}$/.test(team) ? team : null,
     minGames: STATS_MIN_GAMES.includes(minGames) ? minGames : 0,
+    q,
     sort,
     // 名前・チーム・ポジションの既定は昇順、数値の列の既定は降順
     dir: one(params, "dir") === "asc" || (one(params, "dir") !== "desc" && ["playerName", "teamLabel", "position"].includes(sort)) ? "asc" : "desc",
@@ -92,12 +96,43 @@ export function statsQueryToSearch(q: StatsQuery, latestSeason: number | null, o
   if (v.position) sp.set("pos", v.position);
   if (v.team) sp.set("team", v.team);
   if (v.minGames) sp.set("minGames", String(v.minGames));
+  if (v.q) sp.set("q", v.q);
   if (v.sort !== "ppg") sp.set("sort", v.sort);
   const defaultDir = ["playerName", "teamLabel", "position"].includes(v.sort) ? "asc" : "desc";
   if (v.dir !== defaultDir) sp.set("dir", v.dir);
   if (v.page > 1) sp.set("page", String(v.page));
   const s = sp.toString();
   return s ? `?${s}` : "";
+}
+
+/**
+ * 選手名の検索語を整える。前後の空白を除き、DBの検索条件の区切りに使われる記号(, ( ) * % \ " :)は空白にする。
+ * 空なら null。長すぎる語は 40 文字までにする
+ */
+export function normalizeSearchTerm(raw: string | null | undefined): string | null {
+  const term = (raw ?? "").replace(/[,()*%\\":]/g, " ").replace(/\s+/g, " ").trim().slice(0, 40);
+  return term === "" ? null : term;
+}
+
+/** 英語名で検索するとき、日本語名で表示している選手として一緒に探す人数の上限(URLの長さを抑えるため) */
+export const STATS_NAME_MATCH_LIMIT = 150;
+
+/**
+ * 選手名の検索で、英語名だけが一致する選手(一覧には日本語名で表示している選手)のIDを探す。
+ * 一覧(player_stats_list)の選手名は「日本語名、なければ英語名」のため、日本語名がある選手の英語名はここで補う。
+ * 上限を超えた場合は truncated = true(検索語をもう少し長くするよう画面で伝える)
+ */
+export async function fetchEnglishNameMatchIds(supabase: Client, q: string): Promise<{ ids: string[]; truncated: boolean }> {
+  const { data, error } = await supabase
+    .from("players")
+    .select("id")
+    .not("full_name_ja", "is", null)
+    .ilike("full_name", `%${q}%`)
+    .order("id")
+    .limit(STATS_NAME_MATCH_LIMIT + 1);
+  if (error) throw new Error(`選手名の検索に失敗しました: ${error.message}`);
+  const ids = (data ?? []).map((p) => p.id);
+  return { ids: ids.slice(0, STATS_NAME_MATCH_LIMIT), truncated: ids.length > STATS_NAME_MATCH_LIMIT };
 }
 
 /** 選べるシーズン(新しい順)。種別ごと */
@@ -111,13 +146,23 @@ export async function fetchStatsSeasons(supabase: Client): Promise<{ regular_sea
 export type StatsPage = { rows: StatsListRow[]; total: number; page: number; lastPage: number; from: number };
 
 /** 検索条件に合う行を、指定したページの100件だけDBから取得する */
-export async function fetchStatsPage(supabase: Client, q: StatsQuery, teamId: string | null): Promise<StatsPage> {
+export async function fetchStatsPage(
+  supabase: Client,
+  q: StatsQuery,
+  teamId: string | null,
+  // 英語名で一致した選手のID(fetchEnglishNameMatchIds)。表示名(player_name)の部分一致と OR で使う
+  nameMatchIds: string[] = []
+): Promise<StatsPage> {
   const filtered = (select: string, options: { count: "exact"; head?: boolean }) => {
     let query = supabase.from("player_stats_list").select(select, options).eq("season_type", q.seasonType);
     if (q.season !== null) query = query.eq("season", q.season);
     if (q.position) query = query.eq("position", q.position);
     if (teamId) query = query.contains("team_ids", [teamId]);
     if (q.minGames > 0) query = query.gte("games_played", q.minGames);
+    if (q.q) {
+      const byName = `player_name.ilike.*${q.q}*`;
+      query = query.or(nameMatchIds.length > 0 ? `${byName},player_id.in.(${nameMatchIds.join(",")})` : byName);
+    }
     return query;
   };
   const run = (page: number) => {

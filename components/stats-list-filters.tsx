@@ -1,9 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { STATS_MIN_GAMES, STATS_POSITIONS, statsQueryToSearch, type StatsQuery } from "@/lib/stats-list";
+import { seasonLabel } from "@/lib/seasons";
+import { STATS_MIN_GAMES, STATS_POSITIONS, normalizeSearchTerm, statsQueryToSearch, type StatsQuery } from "@/lib/stats-list";
 
 // 選手スタッツ一覧の絞り込み。条件を変えると URL を書き換えて1ページ目に戻す(並べ替えはそのまま)。
+// 選手名の検索は Enter または「検索」で確定する(日本語名・英語名の部分一致。ほかの絞り込みと併用できる)。
 export function StatsListFilters({
   query,
   latestSeason,
@@ -18,6 +21,13 @@ export function StatsListFilters({
   const router = useRouter();
   const go = (patch: Partial<StatsQuery>) => router.push(`/stats${statsQueryToSearch(query, latestSeason, { ...patch, page: 1 })}`, { scroll: false });
   const selectClass = "min-w-[100px] border border-line bg-surface px-2.5 py-2 text-sm text-foreground";
+  const [name, setName] = useState(query.q ?? "");
+  // URL の検索語が変わったら(戻る・リンクなど)入力欄もそろえる(描画中に前回の値と比べて直す)
+  const [shownQ, setShownQ] = useState(query.q);
+  if (shownQ !== query.q) {
+    setShownQ(query.q);
+    setName(query.q ?? "");
+  }
 
   return (
     <div className="mb-4 flex flex-wrap items-end gap-3 border border-line bg-surface p-4">
@@ -41,7 +51,7 @@ export function StatsListFilters({
           <option value="all">All</option>
           {seasons.map((s) => (
             <option key={s} value={s}>
-              {s}
+              {seasonLabel(s)}
             </option>
           ))}
         </select>
@@ -81,6 +91,43 @@ export function StatsListFilters({
           ))}
         </select>
       </label>
+
+      <form
+        role="search"
+        onSubmit={(e) => {
+          e.preventDefault();
+          go({ q: normalizeSearchTerm(name) });
+        }}
+        className="grid min-w-0 flex-1 basis-full gap-1.5 text-[11px] font-bold text-muted sm:basis-auto"
+      >
+        <label htmlFor="stats-player-search">PLAYER</label>
+        <div className="flex gap-2">
+          <input
+            id="stats-player-search"
+            type="search"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="選手名（日本語・英語）"
+            maxLength={40}
+            className="min-h-9 w-full min-w-0 border border-line bg-surface px-2.5 py-2 text-sm font-normal text-foreground sm:max-w-[260px]"
+          />
+          <button type="submit" className="min-h-9 shrink-0 border border-line px-3 text-sm font-bold text-blue hover:border-blue">
+            検索
+          </button>
+          {query.q && (
+            <button
+              type="button"
+              onClick={() => {
+                setName("");
+                go({ q: null });
+              }}
+              className="min-h-9 shrink-0 px-1 text-xs font-bold text-muted underline underline-offset-2 hover:text-foreground"
+            >
+              クリア
+            </button>
+          )}
+        </div>
+      </form>
     </div>
   );
 }
