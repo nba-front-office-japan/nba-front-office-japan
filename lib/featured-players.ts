@@ -7,6 +7,8 @@ export type FeaturedPlayerFaq = { q: string; a: string };
 export type FeaturedPlayer = {
   /** DBの英語名(players.full_name)と照合する名前 */
   name: string;
+  /** DBの英語名の別表記(例: O.G. Anunoby) */
+  aliases?: string[];
   /** 本文で使う日本語名 */
   nameJa: string;
   /** 内容の時点(例: 2026年10月) */
@@ -21,6 +23,8 @@ export type FeaturedPlayer = {
   /** サラリーデータ(lib/salary)の年俸を表示しない(契約状況がデータと違う選手) */
   hideSalary?: boolean;
 };
+
+import { FEATURED_PLAYERS_2 } from "@/lib/featured-players-2";
 
 const AS_OF = "2026年10月";
 
@@ -442,7 +446,12 @@ function normalizeName(name: string): string {
   return name.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 }
 
-const FEATURED_BY_NAME = new Map(FEATURED_PLAYERS.map((p) => [normalizeName(p.name), p]));
+/** 解説のある選手すべて(第1弾15人+第2弾) */
+export const ALL_FEATURED_PLAYERS: FeaturedPlayer[] = [...FEATURED_PLAYERS, ...FEATURED_PLAYERS_2];
+
+const FEATURED_BY_NAME = new Map(
+  ALL_FEATURED_PLAYERS.flatMap((p) => [p.name, ...(p.aliases ?? [])].map((n) => [normalizeName(n), p] as const)),
+);
 
 /** DBの英語名から有名選手の解説を探す。対象外の選手は null */
 export function featuredPlayerFor(fullName: string): FeaturedPlayer | null {

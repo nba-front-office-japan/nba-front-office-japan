@@ -24,6 +24,11 @@ export function salaryPlayerByName(name: string): SalaryPlayer | null {
   return SALARY_PLAYERS.find((p) => samePlayerName(p.name, name)) ?? null;
 }
 
+/** 英語名が同じ選手の行すべて(解雇後の支払いが残る選手は複数行になる) */
+export function salaryPlayersByName(name: string): SalaryPlayer[] {
+  return SALARY_PLAYERS.filter((p) => samePlayerName(p.name, name));
+}
+
 /** チームの選手の年俸の合計(年度別) */
 export function playerSalarySums(team: string): number[] {
   const players = SALARY_PLAYERS.filter((p) => p.team === team);

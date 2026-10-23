@@ -13,7 +13,8 @@ import { summarizeAwards } from "@/lib/awards/history";
 import { PlayerAwardHistory } from "@/components/player-award-history";
 import { FeaturedPlayerProfile } from "@/components/featured-player-profile";
 import { featuredPlayerFor } from "@/lib/featured-players";
-import { salaryPlayerByName } from "@/lib/salary/data";
+import { salaryPlayerByName, salaryPlayersByName } from "@/lib/salary/data";
+import { playerDataSummary } from "@/lib/player-summary";
 import {
   fetchPlayerPageBase,
   playerIntroSentence,
@@ -136,6 +137,17 @@ export default async function PlayerDetailPage({
 
   // 有名選手(lib/featured-players.ts)は、Profile に日本語の解説(経歴・プレースタイル・年俸など)を出す
   const featured = featuredPlayerFor(player.full_name);
+  // 全選手の「データで見る」: 成績と年俸から作る文章。年俸は有名選手なら解説の「年俸・契約」に出すので省き、
+  // それ以外はサラリーデータに同じ名前の行が1つだけのとき出す(解雇後の支払いで複数行ある選手は誤解を招くため出さない)
+  const salaryRows = featured ? [] : salaryPlayersByName(player.full_name);
+  const dataSummary =
+    selectedView === "profile"
+      ? playerDataSummary({
+          nameJa: player.full_name_ja ?? player.full_name,
+          stats: stats ?? [],
+          salary: salaryRows.length === 1 ? salaryRows[0] : null,
+        })
+      : [];
 
   return (
     <PageShell>
@@ -146,7 +158,20 @@ export default async function PlayerDetailPage({
       />
       {selectedView === "profile" && <p className="mt-4 text-sm text-muted">{playerIntroSentence(base)}</p>}
       {selectedView === "profile" && featured && (
-        <FeaturedPlayerProfile featured={featured} salary={salaryPlayerByName(player.full_name)} />
+        <FeaturedPlayerProfile featured={featured} salary={salaryPlayerByName(featured.name)} />
+      )}
+      {dataSummary.length > 0 && (
+        <section aria-labelledby="player-data-summary" className="mt-8 border border-line bg-surface p-5 sm:p-6">
+          <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">By the Numbers</p>
+          <h2 id="player-data-summary" className="mb-4 text-lg font-semibold">
+            データで見る{player.full_name_ja ?? player.full_name}
+          </h2>
+          <div className="space-y-3 text-sm leading-7">
+            {dataSummary.map((text) => (
+              <p key={text}>{text}</p>
+            ))}
+          </div>
+        </section>
       )}
       <div className="mt-6 flex flex-wrap gap-2">
         {VIEW_OPTIONS.map((opt) => (

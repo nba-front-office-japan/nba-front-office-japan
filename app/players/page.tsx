@@ -4,7 +4,7 @@ import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import { PageShell } from "@/components/page-shell";
 import { ROSTER_SEASON, STATS_SEASON, seasonLabel } from "@/lib/seasons";
 import Link from "next/link";
-import { FEATURED_PLAYERS, featuredPlayerFor } from "@/lib/featured-players";
+import { ALL_FEATURED_PLAYERS, featuredPlayerFor } from "@/lib/featured-players";
 import {
   PlayerTeamDirectory,
   type TeamListItem,
@@ -37,12 +37,14 @@ export default async function PlayersPage({ searchParams }: PageProps<"/players"
   }
 
   // 人気選手(lib/featured-players.ts)へのリンク。DBの英語名はアクセント記号の有無が揺れるので、両方の表記で探す
-  const featuredNames = FEATURED_PLAYERS.flatMap((p) => [p.name, p.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "")]);
+  const featuredNames = ALL_FEATURED_PLAYERS.flatMap((p) =>
+    [p.name, ...(p.aliases ?? [])].flatMap((n) => [n, n.normalize("NFD").replace(/[\u0300-\u036f]/g, "")]),
+  );
   const { data: featuredRows } = await supabase
     .from("players")
     .select("id, full_name, is_active")
     .in("full_name", [...new Set(featuredNames)]);
-  const featuredLinks = FEATURED_PLAYERS.flatMap((fp) => {
+  const featuredLinks = ALL_FEATURED_PLAYERS.flatMap((fp) => {
     const rows = (featuredRows ?? []).filter((r) => featuredPlayerFor(r.full_name) === fp);
     const row = rows.find((r) => r.is_active) ?? rows[0];
     return row ? [{ id: row.id, nameJa: fp.nameJa }] : [];
