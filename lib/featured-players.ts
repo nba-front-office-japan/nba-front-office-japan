@@ -25,6 +25,7 @@ export type FeaturedPlayer = {
 };
 
 import { FEATURED_PLAYERS_2 } from "@/lib/featured-players-2";
+import { FEATURED_PLAYERS_3 } from "@/lib/featured-players-3";
 
 const AS_OF = "2026年10月";
 
@@ -446,8 +447,8 @@ function normalizeName(name: string): string {
   return name.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 }
 
-/** 解説のある選手すべて(第1弾15人+第2弾) */
-export const ALL_FEATURED_PLAYERS: FeaturedPlayer[] = [...FEATURED_PLAYERS, ...FEATURED_PLAYERS_2];
+/** 解説のある選手すべて(第1弾15人+第2弾50人+第3弾35人) */
+export const ALL_FEATURED_PLAYERS: FeaturedPlayer[] = [...FEATURED_PLAYERS, ...FEATURED_PLAYERS_2, ...FEATURED_PLAYERS_3];
 
 const FEATURED_BY_NAME = new Map(
   ALL_FEATURED_PLAYERS.flatMap((p) => [p.name, ...(p.aliases ?? [])].map((n) => [normalizeName(n), p] as const)),
