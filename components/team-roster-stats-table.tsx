@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { formatStat, formatPct, type DerivedStats } from "@/lib/stats";
+import { STICKY_BODY_FIRST_CELL, STICKY_HEAD_CELL, STICKY_HEAD_FIRST_CELL, STICKY_TABLE_SCROLL } from "@/lib/sticky-table";
 
 export interface TeamStatsRow {
   id: string;
@@ -47,18 +48,20 @@ function SortHeader({
   sortKey,
   sortDirection,
   onSort,
+  stickyClassName = STICKY_HEAD_CELL,
 }: {
   label: string;
   columnKey: SortKey;
   sortKey: SortKey;
   sortDirection: SortDirection;
   onSort: (key: SortKey) => void;
+  stickyClassName?: string;
 }) {
   const active = sortKey === columnKey;
   return (
     <th
       aria-sort={active ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
-      className="whitespace-nowrap p-0 text-left text-[11px] font-bold text-muted"
+      className={`whitespace-nowrap p-0 text-left text-[11px] font-bold text-muted ${stickyClassName}`}
     >
       <button
         type="button"
@@ -113,13 +116,14 @@ export function TeamRosterStatsTable({ rows, variant = "guide" }: { rows: TeamSt
   const headerProps = { sortKey, sortDirection, onSort: handleSort };
 
   return (
-    <div className="overflow-x-auto border border-line bg-surface">
+    // スマホではヘッダー行と選手名の列を固定する(lib/sticky-table.ts)
+    <div className={`overflow-x-auto border border-line bg-surface ${STICKY_TABLE_SCROLL}`}>
       <table className="w-full min-w-[900px] border-collapse text-[13px]">
         <thead>
           <tr className="border-b border-line">
-            <SortHeader label="選手名" columnKey="name" {...headerProps} />
+            <SortHeader label="選手名" columnKey="name" stickyClassName={STICKY_HEAD_FIRST_CELL} {...headerProps} />
             {showTeam && (
-              <th className="whitespace-nowrap px-2 py-2.5 text-left text-[11px] font-bold text-muted">
+              <th className={`whitespace-nowrap px-2 py-2.5 text-left text-[11px] font-bold text-muted ${STICKY_HEAD_CELL}`}>
                 チーム
               </th>
             )}
@@ -133,7 +137,7 @@ export function TeamRosterStatsTable({ rows, variant = "guide" }: { rows: TeamSt
         <tbody>
           {sortedRows.map((row) => (
             <tr key={row.id} className="border-b border-line/60 hover:bg-[#f6f9ff] dark:hover:bg-white/[.03]">
-              <td className="whitespace-nowrap px-2 py-3 font-semibold">
+              <td className={`whitespace-nowrap px-2 py-3 font-semibold ${STICKY_BODY_FIRST_CELL}`}>
                 <Link href={`/players/${row.id}`} className="hover:text-blue">
                   {row.name}
                 </Link>

@@ -3,6 +3,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import type { Database } from "@/lib/supabase/types";
 import { deriveStats, formatStat, formatPct } from "@/lib/stats";
+import { STICKY_BODY_FIRST_CELL, STICKY_HEAD_CELL, STICKY_HEAD_FIRST_CELL, STICKY_TABLE_SCROLL } from "@/lib/sticky-table";
 
 type SeasonType =
   Database["public"]["Tables"]["player_stats"]["Row"]["season_type"];
@@ -267,15 +268,16 @@ export function StatsTable({
       </p>
       <p className="mb-2 text-xs text-muted sm:hidden">→ 横にスクロールできます</p>
 
-      <div className="overflow-x-auto border border-line bg-surface">
+      {/* スマホではヘッダー行と選手名の列を固定する(lib/sticky-table.ts) */}
+      <div className={`overflow-x-auto border border-line bg-surface ${STICKY_TABLE_SCROLL}`}>
         <table className="w-full min-w-[900px] border-collapse text-[13px]">
           <thead>
             <tr className="border-b border-line">
-              {COLUMNS.map((col) => (
+              {COLUMNS.map((col, i) => (
                 <th
                   key={col.key}
                   onClick={() => handleSort(col.key)}
-                  className="cursor-pointer select-none whitespace-nowrap px-1.5 py-2.5 text-left text-[11px] font-bold text-muted hover:text-foreground"
+                  className={`cursor-pointer select-none whitespace-nowrap px-1.5 py-2.5 text-left text-[11px] font-bold text-muted hover:text-foreground ${i === 0 ? STICKY_HEAD_FIRST_CELL : STICKY_HEAD_CELL}`}
                 >
                   {col.label}
                   {sortKey === col.key
@@ -300,10 +302,10 @@ export function StatsTable({
             ) : (
               sortedRows.map((row) => (
                 <tr key={row.id} className="border-b border-line/60 hover:bg-[#f6f9ff] dark:hover:bg-white/[.03]">
-                  {COLUMNS.map((col) => (
+                  {COLUMNS.map((col, i) => (
                     <td
                       key={col.key}
-                      className={`whitespace-nowrap px-1.5 py-3 font-semibold ${col.cellClassName ?? ""}`}
+                      className={`whitespace-nowrap px-1.5 py-3 font-semibold ${col.cellClassName ?? ""} ${i === 0 ? STICKY_BODY_FIRST_CELL : ""}`}
                     >
                       {col.render(row)}
                     </td>
