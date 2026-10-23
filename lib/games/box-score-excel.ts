@@ -2,6 +2,9 @@
 // 2つの書式に対応する(Game Summary の列で見分ける):
 // ・NBA公式書式(現行): Game Summary は1試合1行(Game ID, Date (ET), Status, Away, Home, Away Total, Home Total, Away Q1〜Q4, Away OT, Home Q1〜Q4, Home OT …)。
 //   Player Box Scores は Side(away/home)・NBA Player ID・Status(Played 以外は出場なし)・Comment(出場なしの理由)。parseNbaOfficialFormat()
+//   同じ書式で列名が違う Excel(別の手順で作ったもの)にも対応する: Date (US)・Away/Home OT1〜OT5(延長1回ずつ)・H/A・Pos・MP・
+//   Status が Starter / Bench / DNP(Comment なし)・Team Totals の TRB (players) / TOV (players)(選手の合計。チームだけの数は別の列)・
+//   BRef Player ID・GmSc (calc)・Metadata(Item / Value)・Errors(Error Type / Details / Resolution)
 // ・Basketball-Reference 書式(旧): Game Summary は1試合 × 1チーム1行(Date, Away Team, Home Team, Team, Home/Away, Q1〜Q4, Total。OT1, OT2 … は延長があるときだけ)。
 // どちらも Metadata(取り込み状況のメモ)・Errors(取得時のエラーの履歴)は表示するだけで取り込まない。
 // 1試合ごとに両チームの検査(得点の合計・チーム合計・個人成績の合計)がすべて通った試合だけを取り込む。
@@ -191,9 +194,20 @@ const STAT_COLUMNS: [keyof BoxStats, string][] = [
   ["pts", "PTS"],
 ];
 
+/** 成績の列名。TRB / TOV が「TRB (players)」「TOV (players)」(選手の合計)という名前の Excel もある */
+function statColumn(t: Table, column: string): string {
+  return !t.header.has(column) && t.header.has(`${column} (players)`) ? `${column} (players)` : column;
+}
+
+/** 列名の候補のうち、その表にある最初の列(どれもなければ最初の候補) */
+function pickColumn(t: Table, ...names: string[]): string {
+  return names.find((n) => t.header.has(n)) ?? names[0];
+}
+
 function readStats(t: Table, row: CellValue[], issues: string[]): BoxStats {
   const stats = {} as BoxStats;
-  for (const [key, column] of STAT_COLUMNS) {
+  for (const [key, name] of STAT_COLUMNS) {
+    const column = statColumn(t, name);
     const v = num(cell(t, row, column));
     if (v !== null && (Number.isNaN(v) || v < 0 || !Number.isInteger(v))) {
       issues.push(`${column} の値「${String(cell(t, row, column))}」が正しくありません`);
@@ -558,15 +572,33 @@ function parseNbaOfficialFormat(
 ): ParsedBoxScores {
   const { errors, warnings } = result;
   const quarterCols = (side: "Away" | "Home") => [`${side} Q1`, `${side} Q2`, `${side} Q3`, `${side} Q4`];
+  // 延長: 「Away OT」(延長の合計)か、「Away OT1」「Away OT2」…(延長1回ずつ)
+  const otCols = (side: "Away" | "Home") => {
+    const perPeriod = [1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => `${side} OT${i}`).filter((c) => summary.header.has(c));
+    return perPeriod.length > 0 ? perPeriod : [`${side} OT`];
+  };
+  // 同じ内容で列名が違う Excel にも対応する(先に書いた名前を優先)
+  const dateCol = pickColumn(summary, "Date (ET)", "Date (US)");
+  const playerSideCol = pickColumn(playerTable, "Side", "H/A");
+  const positionCol = pickColumn(playerTable, "Position", "Pos");
+  const playerMinCol = pickColumn(playerTable, "MIN", "MP");
+  const brefIdCol = pickColumn(playerTable, "Basketball-Reference ID", "BRef Player ID");
+  const totalSideCol = pickColumn(totalTable, "Side", "H/A");
+  const totalMinCol = pickColumn(totalTable, "MIN", "MP");
   const okColumns = [
     requireColumns(
       summary,
       SHEETS.summary,
-      ["Game ID", "Date (ET)", "Status", "Away", "Home", "Away Total", "Home Total", ...quarterCols("Away"), "Away OT", ...quarterCols("Home"), "Home OT"],
+      ["Game ID", dateCol, "Status", "Away", "Home", "Away Total", "Home Total", ...quarterCols("Away"), ...otCols("Away"), ...quarterCols("Home"), ...otCols("Home")],
       errors
     ),
-    requireColumns(playerTable, SHEETS.players, ["Game ID", "Team", "Side", "Player", "Position", "Status", "Comment", "MIN", ...STAT_COLUMNS.map(([, c]) => c)], errors),
-    requireColumns(totalTable, SHEETS.totals, ["Game ID", "Team", "Side", "MIN", ...STAT_COLUMNS.map(([, c]) => c)], errors),
+    requireColumns(
+      playerTable,
+      SHEETS.players,
+      ["Game ID", "Team", playerSideCol, "Player", positionCol, "Status", playerMinCol, ...STAT_COLUMNS.map(([, c]) => statColumn(playerTable, c))],
+      errors
+    ),
+    requireColumns(totalTable, SHEETS.totals, ["Game ID", "Team", totalSideCol, totalMinCol, ...STAT_COLUMNS.map(([, c]) => statColumn(totalTable, c))], errors),
   ];
   if (okColumns.includes(false)) return result;
 
@@ -582,15 +614,24 @@ function parseNbaOfficialFormat(
       const url = text(cell(meta, r.cells, "URL"));
       if (type === "Run" && key && value) result.coverage.push(`${key}：${value}`);
       if (type === "Source" && gameId && url && key === "NBA official box score") sourceUrlByGame.set(gameId, url);
+      // Item / Value だけの Metadata(取得方法のメモ)はそのまま表示する
+      const item = text(cell(meta, r.cells, "Item"));
+      if (item && value && !meta.header.has("Type")) result.coverage.push(`${item}：${value}`);
     }
   }
   const errTable = table(sheets, SHEETS.errors);
   if (errTable) {
     for (const r of errTable.rows) {
-      const issue = [text(cell(errTable, r.cells, "Issue")), text(cell(errTable, r.cells, "Detail"))].filter(Boolean).join("：");
+      const issue = [
+        text(cell(errTable, r.cells, "Issue")) ?? text(cell(errTable, r.cells, "Error Type")),
+        text(cell(errTable, r.cells, "Detail")) ?? text(cell(errTable, r.cells, "Details")),
+        text(cell(errTable, r.cells, "Resolution")),
+      ]
+        .filter(Boolean)
+        .join("：");
       result.sourceErrors.push({
         timestamp: null,
-        date: null,
+        date: dateOf(cell(errTable, r.cells, "Date (US)")),
         gameId: text(cell(errTable, r.cells, "Game ID")),
         stage: [text(cell(errTable, r.cells, "Team")), text(cell(errTable, r.cells, "Field / Scope"))].filter(Boolean).join(" "),
         error: issue,
@@ -626,14 +667,15 @@ function parseNbaOfficialFormat(
     const gameErrors: ImportIssue[] = [];
     const fail = (sheet: string, rowNumber: number | null, message: string) => gameErrors.push({ sheet, row: rowNumber, message: `${id}：${message}` });
 
+    // 「Final」や「Final / score verified」のように Final で始まる試合だけを取り込む
     const status = text(cell(summary, row.cells, "Status"));
-    if (status?.toLowerCase() !== "final") {
+    if (!status?.toLowerCase().startsWith("final")) {
       warnings.push({ sheet: SHEETS.summary, row: row.rowNumber, message: `${id}：Status が「${status ?? "空欄"}」のため取り込みません（Final の試合だけを取り込みます）` });
       result.skippedGameIds.push(id);
       continue;
     }
-    const gameDate = dateOf(cell(summary, row.cells, "Date (ET)"));
-    if (!gameDate) fail(SHEETS.summary, row.rowNumber, "Date (ET) が日付として読めません");
+    const gameDate = dateOf(cell(summary, row.cells, dateCol));
+    if (!gameDate) fail(SHEETS.summary, row.rowNumber, `${dateCol} が日付として読めません`);
     const awayAbbr = siteTeamAbbr(text(cell(summary, row.cells, "Away")) ?? "");
     const homeAbbr = siteTeamAbbr(text(cell(summary, row.cells, "Home")) ?? "");
     if (!awayAbbr || !homeAbbr) fail(SHEETS.summary, row.rowNumber, "Away / Home が空欄です");
@@ -645,15 +687,20 @@ function parseNbaOfficialFormat(
 
     const line = (side: "Away" | "Home") => {
       const q = quarterCols(side).map((c) => num(cell(summary, row.cells, c)));
-      const ot = num(cell(summary, row.cells, `${side} OT`));
+      const ots = otCols(side).map((c) => num(cell(summary, row.cells, c)));
       const total = num(cell(summary, row.cells, `${side} Total`));
       if ([...q, total].some((v) => v === null || Number.isNaN(v))) fail(SHEETS.summary, row.rowNumber, `${side} Q1〜Q4・${side} Total に数値でない値か空欄があります`);
-      if (ot !== null && Number.isNaN(ot)) fail(SHEETS.summary, row.rowNumber, `${side} OT の値が数値ではありません`);
-      const sum = [...q, ot].reduce<number>((a, v) => a + (v !== null && !Number.isNaN(v) ? v : 0), 0);
+      if (ots.some((v) => v !== null && Number.isNaN(v))) fail(SHEETS.summary, row.rowNumber, `${side} OT の値が数値ではありません`);
+      const sum = [...q, ...ots].reduce<number>((a, v) => a + (v !== null && !Number.isNaN(v) ? v : 0), 0);
       if (total !== null && !Number.isNaN(total) && sum !== total) {
         fail(SHEETS.summary, row.rowNumber, `${side} Q1〜Q4・${side} OT の合計（${sum}）が ${side} Total（${total}）と一致しません`);
       }
-      return { q: q.map((v) => (v === null || Number.isNaN(v) ? null : v)), ot: ot !== null && !Number.isNaN(ot) ? ot : 0, total };
+      return {
+        q: q.map((v) => (v === null || Number.isNaN(v) ? null : v)),
+        // 延長の得点(1回ずつの列なら1回ずつ、「Away OT」1列なら延長の合計)。空欄は null
+        ots: ots.map((v) => (v === null || Number.isNaN(v) ? null : v)),
+        total,
+      };
     };
     const away = line("Away");
     const home = line("Home");
@@ -662,9 +709,9 @@ function parseNbaOfficialFormat(
     // --- Team Totals(away・home の2行)
     const totalsBySide = new Map<Side, ParsedBoxTotal>();
     for (const r of totalsByGame.get(id) ?? []) {
-      const side = sideOf(cell(totalTable, r.cells, "Side"));
+      const side = sideOf(cell(totalTable, r.cells, totalSideCol));
       if (!side || totalsBySide.has(side)) {
-        fail(SHEETS.totals, r.rowNumber, side ? "同じチームの行が重複しています" : "Side は away か home にしてください");
+        fail(SHEETS.totals, r.rowNumber, side ? "同じチームの行が重複しています" : `${totalSideCol} は away か home にしてください`);
         continue;
       }
       const issues: string[] = [];
@@ -674,21 +721,23 @@ function parseNbaOfficialFormat(
       if (team !== (side === "away" ? awayAbbr : homeAbbr)) issues.push(`Team（${team}）が Game Summary の ${side === "away" ? "Away" : "Home"} と一致しません`);
       const expected = side === "away" ? away.total : home.total;
       if (stats.pts !== expected) issues.push(`PTS（${stats.pts ?? "空欄"}）が Game Summary の ${side === "away" ? "Away" : "Home"} Total（${expected}）と一致しません`);
-      const minutes = minutesOf(cell(totalTable, r.cells, "MIN"));
-      if (minutes !== null && Number.isNaN(minutes)) issues.push("MIN は 240:00 のような形にしてください");
+      const minutes = minutesOf(cell(totalTable, r.cells, totalMinCol));
+      if (minutes !== null && Number.isNaN(minutes)) issues.push(`${totalMinCol} は 240:00 のような形にしてください`);
       for (const m of issues) fail(SHEETS.totals, r.rowNumber, m);
       totalsBySide.set(side, { ...stats, bref_game_id: id, side, team_abbr: team, minutes: minutes === null || Number.isNaN(minutes) ? null : minutes });
     }
-    if (!totalsBySide.has("away") || !totalsBySide.has("home")) fail(SHEETS.totals, null, "両チームのチーム合計（Side が away と home の2行）がそろっていません");
+    if (!totalsBySide.has("away") || !totalsBySide.has("home")) fail(SHEETS.totals, null, `両チームのチーム合計（${totalSideCol} が away と home の2行）がそろっていません`);
 
-    // --- Player Box Scores(Status が Played なら出場。Position がある選手は先発、ない選手は控え。それ以外は出場なし)
+    // --- Player Box Scores
+    // Status が Played なら出場(Position がある選手は先発、ない選手は控え)。Status が Starter / Bench の Excel はその値のとおり。
+    // それ以外(DNP・Inactive など)は出場なし
     const players: ParsedBoxPlayer[] = [];
     const orderBySide = { away: 0, home: 0 };
     for (const r of playersByGame.get(id) ?? []) {
-      const side = sideOf(cell(playerTable, r.cells, "Side"));
+      const side = sideOf(cell(playerTable, r.cells, playerSideCol));
       const name = text(cell(playerTable, r.cells, "Player"));
       if (!side) {
-        fail(SHEETS.players, r.rowNumber, "Side は away か home にしてください");
+        fail(SHEETS.players, r.rowNumber, `${playerSideCol} は away か home にしてください`);
         continue;
       }
       if (!name) {
@@ -699,16 +748,26 @@ function parseNbaOfficialFormat(
       const team = siteTeamAbbr(text(cell(playerTable, r.cells, "Team")) ?? "");
       if (team !== (side === "away" ? awayAbbr : homeAbbr)) issues.push(`Team（${team}）が Game Summary と一致しません`);
       const playerStatus = text(cell(playerTable, r.cells, "Status"));
-      const played = playerStatus?.toLowerCase() === "played";
-      const role: ParsedBoxPlayer["role"] = !played ? "dnp" : text(cell(playerTable, r.cells, "Position")) ? "starter" : "bench";
+      const statusKey = playerStatus?.toLowerCase();
+      const played = statusKey === "played" || statusKey === "starter" || statusKey === "bench";
+      const role: ParsedBoxPlayer["role"] = !played
+        ? "dnp"
+        : statusKey === "starter"
+          ? "starter"
+          : statusKey === "bench"
+            ? "bench"
+            : text(cell(playerTable, r.cells, positionCol))
+              ? "starter"
+              : "bench";
       const stats = readStats(playerTable, r.cells, issues);
       checkStats(stats, issues);
-      const seconds = secondsOf(cell(playerTable, r.cells, "MIN"));
-      if (seconds !== null && Number.isNaN(seconds)) issues.push("MIN は 34:39 のような形にしてください");
+      const seconds = secondsOf(cell(playerTable, r.cells, playerMinCol));
+      if (seconds !== null && Number.isNaN(seconds)) issues.push(`${playerMinCol} は 34:39 のような形にしてください`);
       if (!played && STAT_COLUMNS.some(([k]) => stats[k] !== null && stats[k] !== 0)) {
         warnings.push({ sheet: SHEETS.players, row: r.rowNumber, message: `${id}：${name} は出場なし（${playerStatus ?? "Status 空欄"}）ですが成績が入っています` });
       }
       const plusMinus = num(cell(playerTable, r.cells, "+/-"));
+      const gameScore = num(cell(playerTable, r.cells, "GmSc (calc)"));
       for (const m of issues) fail(SHEETS.players, r.rowNumber, `${name}：${m}`);
       orderBySide[side] += 1;
       players.push({
@@ -718,13 +777,13 @@ function parseNbaOfficialFormat(
         team_abbr: team,
         row_order: orderBySide[side],
         player_name: name,
-        bref_player_id: text(cell(playerTable, r.cells, "Basketball-Reference ID")),
+        bref_player_id: text(cell(playerTable, r.cells, brefIdCol)),
         nba_player_id: text(cell(playerTable, r.cells, "NBA Player ID")),
         role,
         // 出場なしの理由(Comment。例: DNP - Coach's Decision / Inactive - Injury/Illness)。なければ Status
         dnp_reason: played ? null : (text(cell(playerTable, r.cells, "Comment")) ?? playerStatus),
         seconds_played: played && seconds !== null && !Number.isNaN(seconds) ? seconds : null,
-        game_score: null,
+        game_score: played && gameScore !== null && !Number.isNaN(gameScore) ? gameScore : null,
         plus_minus: played && plusMinus !== null && !Number.isNaN(plusMinus) ? plusMinus : null,
       });
     }
@@ -764,7 +823,7 @@ function parseNbaOfficialFormat(
         }
       }
       const starters = list.filter((p) => p.role === "starter").length;
-      if (starters !== 5) warnings.push({ sheet: SHEETS.players, row: null, message: `${id}：${label}の先発（Position がある出場選手）が ${starters} 人です` });
+      if (starters !== 5) warnings.push({ sheet: SHEETS.players, row: null, message: `${id}：${label}の先発が ${starters} 人です` });
     }
 
     if (gameErrors.length > 0 || !gameDate) {
@@ -773,8 +832,14 @@ function parseNbaOfficialFormat(
       continue;
     }
 
-    // 延長は合計得点だけが分かる(OT=0 は延長なし)。延長があれば1つの値として保存する
-    const hasOt = away.ot > 0 || home.ot > 0;
+    // 延長: 1回ずつの列があれば、どちらかに得点がある回までを1回ずつ保存する。
+    // 「Away OT」1列だけの Excel は延長の合計だけが分かる(OT=0 は延長なし)ので、延長があれば1つの値として保存する
+    const otPeriods = Math.max(away.ots.length, home.ots.length);
+    let lastOt = 0;
+    for (let i = 0; i < otPeriods; i++) {
+      if ((away.ots[i] ?? 0) > 0 || (home.ots[i] ?? 0) > 0) lastOt = i + 1;
+    }
+    const otScores = (ots: (number | null)[]) => Array.from({ length: lastOt }, (_, i) => ots[i] ?? 0);
     result.games.push({
       bref_game_id: id,
       game_date: gameDate,
@@ -790,9 +855,9 @@ function parseNbaOfficialFormat(
       home_q2: home.q[1],
       home_q3: home.q[2],
       home_q4: home.q[3],
-      away_ot_scores: hasOt ? [away.ot] : [],
-      home_ot_scores: hasOt ? [home.ot] : [],
-      source_url: sourceUrlByGame.get(id) ?? null,
+      away_ot_scores: otScores(away.ots),
+      home_ot_scores: otScores(home.ots),
+      source_url: sourceUrlByGame.get(id) ?? text(cell(summary, row.cells, "NBA Official URL")) ?? text(cell(summary, row.cells, "Source URL")),
       players_incomplete: incompleteNotes.length > 0,
       players_note: incompleteNotes.length > 0 ? incompleteNotes.join(" / ") : null,
     });

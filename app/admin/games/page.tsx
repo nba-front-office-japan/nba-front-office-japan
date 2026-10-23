@@ -170,6 +170,9 @@ export default async function AdminGamesPage({ searchParams }: PageProps<"/admin
           </li>
           <li>1試合ごとに、両チームの得点（Q1〜Q4・OT の合計 = Total = Team Totals の PTS = 個人成績の合計）がすべて一致した Final の試合だけを取り込みます。</li>
           <li>NBA公式書式では、Status が Played の選手を出場（Position がある選手は先発）、それ以外（DNP・Inactive）を出場なしとし、Comment を理由として表示します。</li>
+          <li>
+            NBA公式書式で列名が違う Excel（Date (US)、Away/Home OT1〜OT5、H/A、Pos、MP、Status が Starter / Bench / DNP、Team Totals の TRB (players) / TOV (players)）も同じ検査で取り込みます。
+          </li>
           <li>チーム略称 BRK / CHO / PHO は当サイトの BKN / CHA / PHX に置き換えます。選手は NBA Player ID（選手データの NBA ID）、次に選手名で照合し、照合できない選手は名前だけで表示します。</li>
           <li>Date は米国東部時間の試合日として保存します。試合結果＆ボックススコアのページでは、日程（balldontlie）の同じ日付・同じ対戦の試合にボックススコアを表示し、日程に無い試合は1日加えた日本時間の日付に表示します。</li>
           <li>Metadata・Errors シートは取り込み結果に表示するだけで、公開ページには使いません。</li>
