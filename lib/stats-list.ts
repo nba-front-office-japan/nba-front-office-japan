@@ -146,7 +146,9 @@ export async function fetchStatsSeasons(supabase: Client): Promise<{ regular_sea
 export type StatsPage = { rows: StatsListRow[]; total: number; page: number; lastPage: number; from: number };
 
 // 英語名で一致した選手のIDを1回の問い合わせに入れる数(URL が長くなりすぎないように分ける)
-const NAME_ID_CHUNK = 100;
+const NAME_ID_CHUNK = 150;
+// 同時に送る問い合わせの数。全シーズン×1文字の検索など問い合わせが多いときに、DB の時間制限を超えないように抑える
+const MAX_PARALLEL_QUERIES = 2;
 // DB から1回に取れる行数の上限
 const MAX_ROWS_PER_REQUEST = 1000;
 
@@ -201,8 +203,10 @@ export async function fetchStatsPage(
 
   // 複数の問い合わせ: それぞれ「表示するページの最後の行」までを取り、まとめて並べ替えてから切り出す
   const need = q.page * STATS_PAGE_SIZE;
-  const parts = await Promise.all(
-    sources.map(async (source) => {
+  const parts = await mapWithConcurrency(
+    sources,
+    MAX_PARALLEL_QUERIES,
+    async (source) => {
       const rows: StatsListRow[] = [];
       let count = 0;
       for (let from = 0; from < need; from += MAX_ROWS_PER_REQUEST) {
@@ -216,7 +220,7 @@ export async function fetchStatsPage(
         if (!data || data.length < to - from + 1) break;
       }
       return { rows, count };
-    })
+    }
   );
   const total = parts.reduce((sum, p) => sum + p.count, 0);
   const lastPage = Math.max(1, Math.ceil(total / STATS_PAGE_SIZE));
@@ -225,6 +229,20 @@ export async function fetchStatsPage(
   const from = (page - 1) * STATS_PAGE_SIZE;
   const merged = parts.flatMap((p) => p.rows).sort(compareRows(STATS_SORT_COLUMNS[q.sort], q.dir));
   return { rows: merged.slice(from, from + STATS_PAGE_SIZE), total, page, lastPage, from };
+}
+
+// items を同時に limit 件までの処理で順に変換する(結果は items と同じ順)
+async function mapWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let next = 0;
+  const worker = async () => {
+    while (next < items.length) {
+      const index = next++;
+      results[index] = await fn(items[index]);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
 }
 
 // DB の並び順(ORDER BY 列 [asc|desc] NULLS LAST, player_name, id)と同じ比較
