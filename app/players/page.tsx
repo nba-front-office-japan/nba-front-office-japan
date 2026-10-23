@@ -4,7 +4,6 @@ import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import { PageShell } from "@/components/page-shell";
 import { ROSTER_SEASON, STATS_SEASON, seasonLabel } from "@/lib/seasons";
 import Link from "next/link";
-import { ALL_FEATURED_PLAYERS, featuredPlayerFor } from "@/lib/featured-players";
 import {
   PlayerTeamDirectory,
   type TeamListItem,
@@ -36,20 +35,6 @@ export default async function PlayersPage({ searchParams }: PageProps<"/players"
     );
   }
 
-  // 人気選手(lib/featured-players.ts)へのリンク。DBの英語名はアクセント記号の有無が揺れるので、両方の表記で探す
-  const featuredNames = ALL_FEATURED_PLAYERS.flatMap((p) =>
-    [p.name, ...(p.aliases ?? [])].flatMap((n) => [n, n.normalize("NFD").replace(/[\u0300-\u036f]/g, "")]),
-  );
-  const { data: featuredRows } = await supabase
-    .from("players")
-    .select("id, full_name, is_active")
-    .in("full_name", [...new Set(featuredNames)]);
-  const featuredLinks = ALL_FEATURED_PLAYERS.flatMap((fp) => {
-    const rows = (featuredRows ?? []).filter((r) => featuredPlayerFor(r.full_name) === fp);
-    const row = rows.find((r) => r.is_active) ?? rows[0];
-    return row ? [{ id: row.id, nameJa: fp.nameJa }] : [];
-  });
-
   const teamList: TeamListItem[] = teams.map((team) => ({
     id: team.id,
     name: team.name,
@@ -63,31 +48,28 @@ export default async function PlayersPage({ searchParams }: PageProps<"/players"
       <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
         Player Database · {ROSTER_LABEL} Season
       </p>
-      <h1 className="mb-2 text-[36px] font-semibold tracking-tight">
+      <h1 className="mb-2 text-[28px] font-semibold leading-tight tracking-tight sm:text-[36px]">
         選手名鑑 {ROSTER_LABEL}
       </h1>
-      <p className="mb-7 text-sm text-muted">
-        {ROSTER_LABEL}開幕時点のロスター（固定）と、各選手の{STATS_LABEL}最終成績です。シーズン途中の移籍・解雇は反映しません（現在のロスター・今季の成績は Teams）。チーム名から選手名鑑のProfileへ、その下のリンクからStats・Team Profileへ進めます。
+      <p className="mb-3 text-[15px]">
+        全30チームの開幕ロスター。チームを選ぶと、所属選手のプロフィールと成績を見られます。
       </p>
-      {featuredLinks.length > 0 && (
-        <section aria-labelledby="featured-players" className="mb-8 border border-line bg-surface p-5">
-          <h2 id="featured-players" className="mb-3 text-base font-semibold">
-            人気選手のプロフィール
-          </h2>
-          <ul className="flex flex-wrap gap-2">
-            {featuredLinks.map((p) => (
-              <li key={p.id}>
-                <Link
-                  href={`/players/${p.id}`}
-                  className="inline-block border border-line px-3 py-1.5 text-sm font-bold hover:text-blue"
-                >
-                  {p.nameJa}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <ul className="mb-8 flex flex-wrap items-center gap-2 text-xs">
+        <li className="bg-surface px-2.5 py-1 font-bold text-muted ring-1 ring-line">
+          ロスター：{ROSTER_LABEL}開幕時点（途中の移籍は反映しません）
+        </li>
+        <li className="bg-surface px-2.5 py-1 font-bold text-muted ring-1 ring-line">成績：{STATS_LABEL}最終</li>
+        <li>
+          <Link href="/players/featured" className="inline-flex min-h-7 items-center px-1 font-bold text-blue hover:underline">
+            人気選手ガイド ›
+          </Link>
+        </li>
+        <li>
+          <Link href="/teams" className="inline-flex min-h-7 items-center px-1 font-bold text-blue hover:underline">
+            今季のロスター・成績は Teams ›
+          </Link>
+        </li>
+      </ul>
       <PlayerTeamDirectory teams={teamList} />
     </PageShell>
   );
