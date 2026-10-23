@@ -187,10 +187,12 @@ export default async function TeamDetailPage({
   );
 
   // タブの上には、チーム名と表示中のシーズンだけを出す(人数・平均年齢などの概要は Team Profile タブ)
+  // 余白は詰める: 上はページ共通の余白(main の py-8 / sm:py-10)を少し打ち消し、チーム名の行の高さを詰め、タブとの間は小さくする
+  // (タブ自体の押しやすさ(py-3.5)は変えない)
   const pageTitle = (
-    <div className="mb-6 py-2 text-foreground sm:py-3">
+    <div className="-mt-3 mb-1 text-foreground sm:-mt-4 sm:mb-2">
       <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-muted">{label} Season</p>
-      <h1 className="text-[28px] font-semibold tracking-tight sm:text-[36px]">{team.name}</h1>
+      <h1 className="text-[28px] font-semibold leading-tight tracking-tight sm:text-[36px]">{team.name}</h1>
     </div>
   );
 
