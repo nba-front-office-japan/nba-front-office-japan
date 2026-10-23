@@ -204,15 +204,21 @@ async function fetchNameSearchPage(
   const columns = [...new Set(["id", "player_id", "player_name", sortColumn])].join(", ");
 
   type KeyRow = { id: string; player_id: string; player_name: string };
-  const keys: KeyRow[] = [];
-  for (let from = 0; ; from += MAX_ROWS_PER_REQUEST) {
-    const { data, error } = await ordered(filtered(columns))
+  // 1回目で件数も取り、残りの範囲はまとめて同時に取る(DB の並び順のまま連結する)
+  const fetchRange = async (from: number, withCount: boolean) => {
+    const { data, count, error } = await ordered(filtered(columns, withCount ? { count: "exact" } : undefined))
       .range(from, from + MAX_ROWS_PER_REQUEST - 1)
       .overrideTypes<KeyRow[], { merge: false }>();
     if (error) throw new Error(`スタッツの取得に失敗しました: ${error.message}`);
-    keys.push(...(data ?? []));
-    if (!data || data.length < MAX_ROWS_PER_REQUEST) break;
-  }
+    return { rows: data ?? [], count: count ?? 0 };
+  };
+  const first = await fetchRange(0, true);
+  const rest = await Promise.all(
+    Array.from({ length: Math.max(0, Math.ceil(first.count / MAX_ROWS_PER_REQUEST) - 1) }, (_, i) =>
+      fetchRange((i + 1) * MAX_ROWS_PER_REQUEST, false)
+    )
+  );
+  const keys: KeyRow[] = [first, ...rest].flatMap((part) => part.rows);
 
   // DB の並び順のまま、名前が一致する行だけを残す
   const matched = keys.filter((r) => r.player_name.toLowerCase().includes(term) || englishMatch.has(r.player_id));
