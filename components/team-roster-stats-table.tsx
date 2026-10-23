@@ -16,25 +16,22 @@ export interface TeamStatsRow {
 type SortKey = "name" | "position" | "gamesPlayed" | keyof DerivedStats;
 type SortDirection = "asc" | "desc";
 
+// 列順(Teams・選手名鑑で共通): 得点のすぐ後にシュート成功率を並べる(PTS → FG% → 3P% → FT% → ORB … PF)
 const COLUMNS: { key: SortKey; label: string; format?: "stat" | "pct" }[] = [
   { key: "mpg", label: "MPG", format: "stat" },
   { key: "ppg", label: "PTS", format: "stat" },
+  { key: "fgPct", label: "FG%", format: "pct" },
+  { key: "threePct", label: "3P%", format: "pct" },
+  { key: "ftPct", label: "FT%", format: "pct" },
   { key: "orbPg", label: "ORB", format: "stat" },
   { key: "drbPg", label: "DRB", format: "stat" },
   { key: "rpg", label: "TRB", format: "stat" },
   { key: "apg", label: "AST", format: "stat" },
   { key: "stlPg", label: "STL", format: "stat" },
   { key: "blkPg", label: "BLK", format: "stat" },
-  { key: "fgPct", label: "FG%", format: "pct" },
-  { key: "threePct", label: "3P%", format: "pct" },
-  { key: "ftPct", label: "FT%", format: "pct" },
   { key: "tovPg", label: "TOV", format: "stat" },
   { key: "pfPg", label: "PF", format: "stat" },
 ];
-
-// Teams の Stats(1チームの選手だけの表)の列順: 得点のすぐ後にシュート成功率(PTS → FG% → 3P% → FT%)を並べる
-const SHOOTING_FIRST_ORDER: SortKey[] = ["mpg", "ppg", "fgPct", "threePct", "ftPct", "orbPg", "drbPg", "rpg", "apg", "stlPg", "blkPg", "tovPg", "pfPg"];
-const SHOOTING_FIRST_COLUMNS = SHOOTING_FIRST_ORDER.map((key) => COLUMNS.find((c) => c.key === key)!);
 
 // 並べ替え対象の値。スタッツ無し(null)は方向に関係なく常に末尾へ送る。
 function sortValue(row: TeamStatsRow, key: SortKey): string | number | null {
@@ -77,11 +74,11 @@ function SortHeader({
   );
 }
 
-// variant="team": Teams の Stats 用。全員同じチームのためチーム列を出さず、列順を PTS → FG% → 3P% → FT% にする。
-// 指定なし(選手名鑑の昨季成績)は従来どおり(チーム列あり・従来の列順)。
+// variant="team": Teams の Stats 用。全員同じチームのためチーム列を出さない。
+// 指定なし(選手名鑑の昨季成績)は、全チームの選手を扱うためチーム列を出す。列順はどちらも同じ。
 export function TeamRosterStatsTable({ rows, variant = "guide" }: { rows: TeamStatsRow[]; variant?: "guide" | "team" }) {
   const showTeam = variant === "guide";
-  const columns = variant === "team" ? SHOOTING_FIRST_COLUMNS : COLUMNS;
+  const columns = COLUMNS;
   const [sortKey, setSortKey] = useState<SortKey>("ppg");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
