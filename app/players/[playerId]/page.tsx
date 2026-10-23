@@ -11,6 +11,9 @@ import {
 import { AWARDS_SEASON, getAwardLabel } from "@/lib/awards/constants";
 import { summarizeAwards } from "@/lib/awards/history";
 import { PlayerAwardHistory } from "@/components/player-award-history";
+import { FeaturedPlayerProfile } from "@/components/featured-player-profile";
+import { featuredPlayerFor } from "@/lib/featured-players";
+import { salaryPlayerByName } from "@/lib/salary/data";
 import {
   fetchPlayerPageBase,
   playerIntroSentence,
@@ -131,6 +134,9 @@ export default async function PlayerDetailPage({
       : { data: null };
   const awardSummaries = summarizeAwards(awardHistory ?? []);
 
+  // 有名選手(lib/featured-players.ts)は、Profile に日本語の解説(経歴・プレースタイル・年俸など)を出す
+  const featured = featuredPlayerFor(player.full_name);
+
   return (
     <PageShell>
       <PlayerHeader
@@ -139,6 +145,9 @@ export default async function PlayerDetailPage({
         currentTeamPending={base.currentRosterTeamId === null}
       />
       {selectedView === "profile" && <p className="mt-4 text-sm text-muted">{playerIntroSentence(base)}</p>}
+      {selectedView === "profile" && featured && (
+        <FeaturedPlayerProfile featured={featured} salary={salaryPlayerByName(player.full_name)} />
+      )}
       <div className="mt-6 flex flex-wrap gap-2">
         {VIEW_OPTIONS.map((opt) => (
           <Link

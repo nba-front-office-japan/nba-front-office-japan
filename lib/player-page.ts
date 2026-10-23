@@ -6,6 +6,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { ROSTER_SEASON } from "@/lib/seasons";
 import { teamNameJa } from "@/lib/team-names-ja";
 import { formatDraftInfo } from "@/lib/draft-format";
+import { featuredPlayerFor } from "@/lib/featured-players";
 import type { Database } from "@/lib/supabase/types";
 
 type PlayerRow = Database["public"]["Tables"]["players"]["Row"];
@@ -65,6 +66,11 @@ function draftText(player: PlayerRow): string | null {
 
 export function playerPageTitle(player: PlayerRow, view: "profile" | "stats"): string {
   const name = playerDisplayName(player);
+  // 有名選手(lib/featured-players.ts)のProfileは、検索されやすい「成績・年俸・経歴」にする
+  const featured = featuredPlayerFor(player.full_name);
+  if (featured && view === "profile") {
+    return `${name}の成績・${featured.hideSalary ? "プロフィール" : "年俸"}・経歴 | NBA Front Office Japan`;
+  }
   return view === "stats"
     ? `${name}のシーズン別成績・スタッツ | NBA Front Office Japan`
     : `${name}のプロフィール・成績・スタッツ | NBA Front Office Japan`;
@@ -73,6 +79,10 @@ export function playerPageTitle(player: PlayerRow, view: "profile" | "stats"): s
 /** meta description。チーム・ポジション・身長が無い場合はその部分を省く */
 export function playerPageDescription({ player, currentTeam }: PlayerPageBase): string {
   const role = roleText(teamLabel(currentTeam), player.position);
+  const featured = featuredPlayerFor(player.full_name);
+  if (featured) {
+    return `${featured.catchphrase}${featured.nameJa}の経歴・プレースタイル・主なタイトル${featured.hideSalary ? "" : "・年俸"}、NBAのシーズン別成績を日本語でまとめています。`;
+  }
   const parts = [
     role ? `${playerDisplayName(player)}は${role}。` : `${playerDisplayName(player)}。`,
     player.height_cm ? `身長${player.height_cm}cm。` : "",

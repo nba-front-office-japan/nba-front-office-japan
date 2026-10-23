@@ -2,6 +2,7 @@
 
 import { SALARY_PLAYERS, SALARY_TEAMS } from "./payroll-data";
 import { teamSlug, type SalaryPlayer, type SalaryTeam } from "./types";
+import { samePlayerName } from "@/lib/featured-players";
 
 const TEAM_BY_ABBR = new Map(SALARY_TEAMS.map((t) => [t.abbr, t]));
 
@@ -16,6 +17,11 @@ export function salaryTeamBySlug(slug: string): SalaryTeam | null {
 /** 選手の一覧(チーム名つき)。team を渡すとそのチームの選手だけ(Excelの並び=2026-27の年俸が高い順) */
 export function salaryPlayerRows(team?: string): (SalaryPlayer & { teamName: string })[] {
   return SALARY_PLAYERS.filter((p) => !team || p.team === team).map((p) => ({ ...p, teamName: TEAM_BY_ABBR.get(p.team)?.name ?? p.team }));
+}
+
+/** 英語名から選手の年俸を探す(アクセント記号・大文字小文字は区別しない)。見つからなければ null */
+export function salaryPlayerByName(name: string): SalaryPlayer | null {
+  return SALARY_PLAYERS.find((p) => samePlayerName(p.name, name)) ?? null;
 }
 
 /** チームの選手の年俸の合計(年度別) */
