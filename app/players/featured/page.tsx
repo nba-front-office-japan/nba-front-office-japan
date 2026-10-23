@@ -31,7 +31,7 @@ export default async function FeaturedPlayersPage() {
   const others = links.filter((l) => !japanese.includes(l.featured) && !starNames.includes(l.featured.name));
   // モラントは注目の選手の3番目(エンビードがいた位置)に置く
   const morant = others.findIndex((l) => l.featured.name === "Ja Morant");
-  if (morant > 0) others.splice(2, 0, ...others.splice(morant, 1));
+  if (morant >= 0) others.splice(2, 0, ...others.splice(morant, 1));
 
   return (
     <PageShell>
