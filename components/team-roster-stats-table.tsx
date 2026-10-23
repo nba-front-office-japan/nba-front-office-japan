@@ -32,6 +32,10 @@ const COLUMNS: { key: SortKey; label: string; format?: "stat" | "pct" }[] = [
   { key: "pfPg", label: "PF", format: "stat" },
 ];
 
+// Teams の Stats(1チームの選手だけの表)の列順: 得点のすぐ後にシュート成功率(PTS → FG% → 3P% → FT%)を並べる
+const SHOOTING_FIRST_ORDER: SortKey[] = ["mpg", "ppg", "fgPct", "threePct", "ftPct", "orbPg", "drbPg", "rpg", "apg", "stlPg", "blkPg", "tovPg", "pfPg"];
+const SHOOTING_FIRST_COLUMNS = SHOOTING_FIRST_ORDER.map((key) => COLUMNS.find((c) => c.key === key)!);
+
 // 並べ替え対象の値。スタッツ無し(null)は方向に関係なく常に末尾へ送る。
 function sortValue(row: TeamStatsRow, key: SortKey): string | number | null {
   if (key === "name") return row.name;
@@ -73,7 +77,11 @@ function SortHeader({
   );
 }
 
-export function TeamRosterStatsTable({ rows }: { rows: TeamStatsRow[] }) {
+// variant="team": Teams の Stats 用。全員同じチームのためチーム列を出さず、列順を PTS → FG% → 3P% → FT% にする。
+// 指定なし(選手名鑑の昨季成績)は従来どおり(チーム列あり・従来の列順)。
+export function TeamRosterStatsTable({ rows, variant = "guide" }: { rows: TeamStatsRow[]; variant?: "guide" | "team" }) {
+  const showTeam = variant === "guide";
+  const columns = variant === "team" ? SHOOTING_FIRST_COLUMNS : COLUMNS;
   const [sortKey, setSortKey] = useState<SortKey>("ppg");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
@@ -113,12 +121,14 @@ export function TeamRosterStatsTable({ rows }: { rows: TeamStatsRow[] }) {
         <thead>
           <tr className="border-b border-line">
             <SortHeader label="選手名" columnKey="name" {...headerProps} />
-            <th className="whitespace-nowrap px-2 py-2.5 text-left text-[11px] font-bold text-muted">
-              チーム
-            </th>
+            {showTeam && (
+              <th className="whitespace-nowrap px-2 py-2.5 text-left text-[11px] font-bold text-muted">
+                チーム
+              </th>
+            )}
             <SortHeader label="POS" columnKey="position" {...headerProps} />
             <SortHeader label="G" columnKey="gamesPlayed" {...headerProps} />
-            {COLUMNS.map((col) => (
+            {columns.map((col) => (
               <SortHeader key={col.key} label={col.label} columnKey={col.key} {...headerProps} />
             ))}
           </tr>
@@ -131,10 +141,10 @@ export function TeamRosterStatsTable({ rows }: { rows: TeamStatsRow[] }) {
                   {row.name}
                 </Link>
               </td>
-              <td className="whitespace-nowrap px-2 py-3 text-muted">{row.teamAbbr}</td>
+              {showTeam && <td className="whitespace-nowrap px-2 py-3 text-muted">{row.teamAbbr}</td>}
               <td className="whitespace-nowrap px-2 py-3">{row.position ?? "—"}</td>
               <td className="whitespace-nowrap px-2 py-3">{row.gamesPlayed ?? "—"}</td>
-              {COLUMNS.map((col) => {
+              {columns.map((col) => {
                 const value = row.stats ? row.stats[col.key as keyof DerivedStats] : null;
                 return (
                   <td key={col.key} className="whitespace-nowrap px-2 py-3">

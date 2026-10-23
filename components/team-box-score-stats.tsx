@@ -47,7 +47,7 @@ export function TeamBoxScoreStats({
         </ul>
       )}
       <p className="mb-2 text-xs text-muted sm:hidden">→ 横にスクロールできます</p>
-      <TeamRosterStatsTable rows={stats.rosterRows} />
+      <TeamRosterStatsTable rows={stats.rosterRows} variant="team" />
 
       {stats.formerRows.length > 0 && (
         <div className="mt-8">
@@ -55,7 +55,7 @@ export function TeamBoxScoreStats({
           <p className="mb-3 text-xs text-muted">
             移籍・契約解除などで現在のロスターにいない選手の、このチームでの成績です。
           </p>
-          <TeamRosterStatsTable rows={stats.formerRows} />
+          <TeamRosterStatsTable rows={stats.formerRows} variant="team" />
         </div>
       )}
     </div>
