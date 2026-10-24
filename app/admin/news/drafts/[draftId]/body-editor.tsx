@@ -5,6 +5,8 @@ import { GHOST_BUTTON_CLASS, PRIMARY_BUTTON_CLASS } from "@/app/admin/_component
 import { classifyLinkUrl, linkTextProblem, toLinkMarkup } from "@/lib/news/inline-links";
 import { MAX_RELATED_MEDIA, SUPPORTED_MEDIA_HINT, mediaLabel, parseRelatedMediaUrl, unsupportedMediaReason } from "@/lib/news/related-media";
 import { bodyMediaOf, toMediaMarker } from "@/lib/news/body-media";
+import { MAX_VIDEO_BYTES, formatMegabytes, looksLikeMp4, toVideoMarker, videoFileProblem } from "@/lib/news/body-video";
+import { createVideoUploadUrlAction } from "../video-upload-action";
 import { ARTICLE_BODY_TEXT_CLASS } from "@/lib/news/body-typography";
 import { isHeadingLine, stripHeading } from "@/lib/news/inline-format";
 import { ARTICLE_FRAME_CLASS } from "@/components/news/article-view";
@@ -14,6 +16,8 @@ import { ARTICLE_FRAME_CLASS } from "@/components/news/article-view";
 // 公開ページでは選択した文字だけがリンクになる(lib/news/inline-links.ts)。
 // 「メディア挿入」は、カーソルの位置に [[media:URL]] の段落(前後を空行で区切る)を入れ、公開ページではその位置に
 // Xポスト・YouTube動画を埋め込む(lib/news/body-media.ts)。URL は対応する形かを確かめ、正規化してから入れる。
+// 「メディア挿入」では MP4 動画のアップロードもできる。ブラウザから Supabase Storage(news-media バケット)へ直接送り、
+// カーソルの位置に [[video:公開URL]] の段落を入れる(lib/news/body-video.ts)。MP4・50MB までだけを受け付ける。
 
 // 本文の入力欄は、公開ページの記事枠(components/news/article-view.tsx の article)と同じ枠線・余白の枠の中に、
 // 余白・枠線なしで置き、公開ページの本文と同じ文字組み(ARTICLE_BODY_TEXT_CLASS)にする。
@@ -21,6 +25,42 @@ import { ARTICLE_FRAME_CLASS } from "@/components/news/article-view";
 // (違いが出るのは、入力欄では [文字](URL) や [[media:URL]] の書式がそのまま見える行だけ)
 
 type Selection = { start: number; end: number };
+
+/**
+ * 発行されたアップロード用URLへ、MP4 をブラウザから直接送る(進み具合を onProgress に 0〜100 で伝える)。
+ * 送り方は supabase-js の uploadToSignedUrl と同じ(PUT・multipart)。種類は video/mp4 として送る
+ */
+function putVideo(signedUrl: string, file: File, onProgress: (percent: number) => void): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const form = new FormData();
+    form.append("cacheControl", "3600");
+    form.append("", new Blob([file], { type: "video/mp4" }));
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", signedUrl);
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
+    xhr.setRequestHeader("apikey", anonKey);
+    xhr.setRequestHeader("authorization", `Bearer ${anonKey}`);
+    xhr.setRequestHeader("x-upsert", "false");
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress(Math.min(100, Math.round((e.loaded / e.total) * 100)));
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) return resolve();
+      // Storage のエラー(JSON の message)を、分かる範囲で日本語にする
+      let detail = "";
+      try {
+        detail = String(JSON.parse(xhr.responseText)?.message ?? "");
+      } catch {
+        detail = xhr.responseText.slice(0, 200);
+      }
+      if (xhr.status === 413 || /size|large/i.test(detail)) return reject(new Error(`動画は1ファイル${formatMegabytes(MAX_VIDEO_BYTES)}までです。`));
+      if (xhr.status === 415 || /mime|type/i.test(detail)) return reject(new Error("MP4ファイル（video/mp4）だけアップロードできます。"));
+      reject(new Error(`アップロードに失敗しました（${xhr.status}${detail ? `：${detail}` : ""}）。`));
+    };
+    xhr.onerror = () => reject(new Error("通信に失敗しました。ネットワークを確認して、もう一度お試しください。"));
+    xhr.send(form);
+  });
+}
 
 export function BodyEditor({ name, defaultValue, onChange }: { name: string; defaultValue: string; onChange: (value: string) => void }) {
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -34,6 +74,8 @@ export function BodyEditor({ name, defaultValue, onChange }: { name: string; def
   const [mediaAt, setMediaAt] = useState<number | null>(null);
   const [mediaUrl, setMediaUrl] = useState("");
   const mediaUrlRef = useRef<HTMLInputElement>(null);
+  // MP4 動画のアップロード中のファイル名と進み具合(%)
+  const [upload, setUpload] = useState<{ name: string; percent: number } | null>(null);
   const fail = (text: string) => setMessage({ text, error: true });
 
   // 入力欄はスクロールバーを出さず、内容に合わせて高さを伸ばす(スクロールバーの分だけ幅が狭くなり、
@@ -97,7 +139,7 @@ export function BodyEditor({ name, defaultValue, onChange }: { name: string; def
     const nl = v.indexOf("\n", endAt);
     const lineEnd = nl === -1 ? v.length : nl;
     const lines = v.slice(lineStart, lineEnd).split("\n");
-    const target = (l: string) => l.trim() !== "" && !/^\[\[media:/.test(l.trim());
+    const target = (l: string) => l.trim() !== "" && !/^\[\[(?:media|video):/.test(l.trim());
     const targets = lines.filter(target);
     const allHeading = targets.length > 0 && targets.every(isHeadingLine);
     const next = lines.map((l) => (!target(l) ? l : allHeading ? stripHeading(l) : isHeadingLine(l) ? l : `## ${l}`)).join("\n");
@@ -268,20 +310,59 @@ export function BodyEditor({ name, defaultValue, onChange }: { name: string; def
       fail(`本文中のメディアは、関連メディアURLと合わせて${MAX_RELATED_MEDIA}件までです。`);
       return;
     }
-    // 前後を空行で区切り、[[media:URL]] だけの段落にする(前後の文章の途中に入った場合も段落を分ける)
-    const at = Math.min(mediaAt, el.value.length);
-    const before = el.value.slice(0, at).replace(/[ \t]+$/, "");
-    const after = el.value.slice(at).replace(/^[ \t]+/, "");
-    const lead = before === "" ? "" : before.endsWith("\n\n") ? "" : before.endsWith("\n") ? "\n" : "\n\n";
-    const trail = after === "" ? "\n" : after.startsWith("\n\n") ? "" : after.startsWith("\n") ? "\n" : "\n\n";
-    const marker = toMediaMarker(media.url);
-    const start = before.length + lead.length;
-    replaceBody(before + lead + marker + trail + after, { start, end: start + marker.length });
+    insertBlockAt(toMediaMarker(media.url), mediaAt);
     setMediaAt(null);
     setMessage({
       text: `${mediaLabel(media)}を本文中に入れました。公開ページではこの位置に表示されます。「保存」を押してください。`,
       error: false,
     });
+  }
+
+  /** 前後を空行で区切り、marker([[media:URL]] / [[video:URL]])だけの段落にして at の位置に入れる(文章の途中に入った場合も段落を分ける) */
+  function insertBlockAt(marker: string, position: number) {
+    const el = ref.current;
+    if (!el) return;
+    const at = Math.min(position, el.value.length);
+    const before = el.value.slice(0, at).replace(/[ \t]+$/, "");
+    const after = el.value.slice(at).replace(/^[ \t]+/, "");
+    const lead = before === "" ? "" : before.endsWith("\n\n") ? "" : before.endsWith("\n") ? "\n" : "\n\n";
+    const trail = after === "" ? "\n" : after.startsWith("\n\n") ? "" : after.startsWith("\n") ? "\n" : "\n\n";
+    const start = before.length + lead.length;
+    replaceBody(before + lead + marker + trail + after, { start, end: start + marker.length });
+  }
+
+  // MP4 動画: ファイルを確かめ(MP4・50MBまで・中身がMP4の形)、アップロード用URLを発行してもらって直接送り、
+  // 送り終わったら「メディア挿入」を押した位置に [[video:公開URL]] の段落を入れる
+  async function uploadVideo(file: File) {
+    if (mediaAt === null || upload) return;
+    keepView();
+    const problem = videoFileProblem(file);
+    if (problem) {
+      fail(problem);
+      return;
+    }
+    const head = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+    if (!looksLikeMp4(head)) {
+      fail(`「${file.name}」はMP4の形式ではありません（拡張子だけが .mp4 の別の形式の可能性があります）。MP4に変換してからアップロードしてください。`);
+      return;
+    }
+    setMessage(null);
+    setUpload({ name: file.name, percent: 0 });
+    try {
+      const ticket = await createVideoUploadUrlAction({ name: file.name, type: file.type, size: file.size });
+      if (!ticket.ok) throw new Error(ticket.message);
+      await putVideo(ticket.signedUrl, file, (percent) => setUpload({ name: file.name, percent }));
+      insertBlockAt(toVideoMarker(ticket.publicUrl), mediaAt);
+      setMediaAt(null);
+      setMessage({
+        text: `動画「${file.name}」（${formatMegabytes(file.size)}）をアップロードし、本文中に入れました。公開ページではこの位置に表示されます。「保存」を押してください。`,
+        error: false,
+      });
+    } catch (e) {
+      fail(e instanceof Error ? e.message : "アップロードに失敗しました。もう一度お試しください。");
+    } finally {
+      setUpload(null);
+    }
   }
 
   return (
@@ -318,6 +399,10 @@ export function BodyEditor({ name, defaultValue, onChange }: { name: string; def
             Xポスト・YouTube動画・Instagram投稿／リール・TikTok動画を本文の途中に入れるときは、入れたい位置にカーソルを置いて「メディア挿入」を押し、URLを貼り付けて確定します。本文には{" "}
             <code>[[media:URL]]</code> だけの段落として入り、公開ページではその位置に表示されます（本文中と関連メディアURLを合わせて{MAX_RELATED_MEDIA}件まで）。URLをそのまま書いた行は埋め込みにならず、文字のまま表示されます。
           </p>
+          <p className="font-normal">
+            MP4動画は「メディア挿入」の「またはMP4動画をアップロード」でファイルを選ぶと、アップロードして入れたい位置に{" "}
+            <code>[[video:URL]]</code> だけの段落として入ります（.mp4のみ・1ファイル{formatMegabytes(MAX_VIDEO_BYTES).replace(".0", "")}まで。埋め込みの件数には数えません）。公開ページでは再生・音量・全画面の操作ができる動画として表示されます。
+          </p>
         </details>
 
         {mediaAt !== null && (
@@ -343,12 +428,41 @@ export function BodyEditor({ name, defaultValue, onChange }: { name: string; def
               />
             </label>
             <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={confirmMedia} className={`${PRIMARY_BUTTON_CLASS}`}>
+              <button type="button" onClick={confirmMedia} disabled={upload !== null} className={`${PRIMARY_BUTTON_CLASS}`}>
                 確定
               </button>
-              <button type="button" onClick={() => setMediaAt(null)} className={`${GHOST_BUTTON_CLASS}`}>
+              <button type="button" onClick={() => setMediaAt(null)} disabled={upload !== null} className={`${GHOST_BUTTON_CLASS}`}>
                 キャンセル
               </button>
+            </div>
+            {/* MP4 動画のアップロード(選ぶとすぐにアップロードし、終わったら「メディア挿入」を押した位置に入れる) */}
+            <div className="grid gap-1 border-t border-line pt-2">
+              <label htmlFor="body-video-file" className="text-[11px] font-bold text-muted">
+                またはMP4動画をアップロード（.mp4のみ・1ファイル{formatMegabytes(MAX_VIDEO_BYTES).replace(".0", "")}まで）
+              </label>
+              <input
+                id="body-video-file"
+                type="file"
+                accept="video/mp4,.mp4"
+                disabled={upload !== null}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  // 同じファイルを選び直しても反応するよう、選択はすぐに空に戻す
+                  e.target.value = "";
+                  if (file) void uploadVideo(file);
+                }}
+                className="min-w-0 text-xs text-foreground file:mr-3 file:min-h-9 file:cursor-pointer file:border file:border-line file:bg-surface file:px-3 file:text-xs file:font-bold file:text-blue disabled:opacity-60"
+              />
+              {upload && (
+                <div role="status" aria-live="polite" className="grid gap-1">
+                  <p className="text-xs font-semibold text-foreground">
+                    アップロード中：{upload.name}（{upload.percent}%）
+                  </p>
+                  <div className="h-1.5 w-full bg-line">
+                    <div className="h-full bg-blue transition-[width]" style={{ width: `${upload.percent}%` }} />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

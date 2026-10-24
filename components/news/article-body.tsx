@@ -76,6 +76,7 @@ function ParagraphText({ text, onInternalLinkClick }: { text: string; onInternal
 // そのため同じ画面幅なら、入力欄・プレビュー・公開ページで本文の折り返し位置と段落(空行)の間隔が一致する。
 // 本文中の [[media:URL]] だけの段落(管理画面の「メディア挿入」で入れたもの)は、その位置にX・YouTube・Instagram・TikTokを埋め込む
 // (対応する URL のものだけ。それ以外は文字のまま。lib/news/body-media.ts)。
+// [[video:URL]] だけの段落(「メディア挿入」でアップロードした MP4)は、その位置に動画を表示する(lib/news/body-video.ts)。
 // 公開ページ(/news/[articleId])と管理画面の記事プレビューで同じ表示にするため、この部品を共通で使う。
 // onInternalLinkClick は管理画面のプレビュー用(未保存の変更があるときに、内部リンクで画面を離れる前に確認する)。
 export function ArticleBody({
@@ -103,6 +104,20 @@ export function ArticleBody({
             // 上下の余白(32px)は、入力欄でメディアの行の前後に入る空行1行分
             <div key={`media:${segment.media.url}`} className="my-8">
               <MediaEmbed media={segment.media} />
+            </div>
+          ) : segment.kind === "video" ? (
+            // アップロードした MP4 動画。ブラウザ標準の操作(再生/停止・音量・全画面)を出し、幅は本文いっぱい。
+            // 縦長の動画が画面より高くならないよう高さは画面の8割まで(余白は黒)。読み込むのは長さなどの情報だけ(preload="metadata")
+            <div key={`video:${segment.url}`} className="my-8">
+              <video
+                src={segment.url}
+                controls
+                preload="metadata"
+                playsInline
+                className="block h-auto max-h-[80vh] w-full bg-black object-contain"
+              >
+                お使いのブラウザでは動画を再生できません。
+              </video>
             </div>
           ) : (
             <div key={i} className={`${ARTICLE_BODY_TEXT_CLASS} text-foreground/90`}>

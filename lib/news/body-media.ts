@@ -4,8 +4,10 @@
 // 埋め込みとして扱うのは、段落全体がこの形で、かつ URL が lib/news/related-media.ts の検証を通るもの(公開Xポスト・
 // YouTube動画・Shorts)だけ。それ以外(URL をそのまま書いた行、対応外の URL、文中の [[media:…]])は通常の文字のまま表示する。
 // 本文末の関連メディア(article_drafts.related_media_urls)と合わせて最大 MAX_RELATED_MEDIA 件までを埋め込む。
+// アップロードした MP4 動画は [[video:公開URL]] の段落で入れる(lib/news/body-video.ts)。動画は埋め込みの件数には数えない。
 
 import { MAX_RELATED_MEDIA, SUPPORTED_MEDIA_HINT, parseRelatedMediaUrl, readStoredRelatedMedia, unsupportedMediaReason, type RelatedMedia } from "./related-media";
+import { parseBodyVideoUrl, toVideoMarker, videoMarkerUrlOf } from "./body-video";
 
 const MARKER_RE = /^\[\[media:([^\s[\]]+)\]\]$/;
 
@@ -27,16 +29,30 @@ export function markerUrlOf(paragraph: string): string | null {
   return MARKER_RE.exec(paragraph.trim())?.[1] ?? null;
 }
 
-export type BodyBlock = { kind: "text"; text: string } | { kind: "media"; media: RelatedMedia };
+export type BodyBlock =
+  | { kind: "text"; text: string }
+  | { kind: "media"; media: RelatedMedia }
+  | { kind: "video"; url: string };
 
 /**
- * 段落ごとに、文字の段落か埋め込むメディアかを決める。
+ * 段落ごとに、文字の段落か埋め込むメディアか動画かを決める。
  * 埋め込むのは、対応する URL(正規化済みの形と一致するもの)で、まだ出ていないものだけ。上限を超えた分・重複・
  * 対応外の URL は、書かれたとおりの文字として表示する。
+ * 動画は、このサイトの news-media バケットの MP4 の URL で、まだ出ていないものだけ(lib/news/body-video.ts)。
  */
 export function toBodyBlocks(paragraphs: string[]): BodyBlock[] {
   const seen = new Set<string>();
-  return paragraphs.map((text) => {
+  const seenVideos = new Set<string>();
+  return paragraphs.map((text): BodyBlock => {
+    const videoUrl = videoMarkerUrlOf(text);
+    if (videoUrl !== null) {
+      const video = parseBodyVideoUrl(videoUrl);
+      if (video && !seenVideos.has(video)) {
+        seenVideos.add(video);
+        return { kind: "video", url: video };
+      }
+      return { kind: "text", text };
+    }
     const url = markerUrlOf(text);
     const media = url ? parseRelatedMediaUrl(url) : null;
     if (media && media.url === url && !seen.has(media.url) && seen.size < MAX_RELATED_MEDIA) {
@@ -80,6 +96,17 @@ export function bodyMediaProblem(body: string, relatedUrls: string[]): string | 
   }
   const unique = new Set(markers);
   if (unique.size !== markers.length) return "本文中に同じメディアが2回入っています。1回だけにしてください。";
+  // 本文中の動画([[video:URL]])は、このサイトにアップロードした MP4 の URL だけ
+  const videos = splitParagraphs(body).flatMap((p) => {
+    const url = videoMarkerUrlOf(p);
+    return url === null ? [] : [url];
+  });
+  for (const url of videos) {
+    if (!parseBodyVideoUrl(url)) {
+      return `本文中の動画「${url}」は使えません。「メディア挿入」からMP4ファイルをアップロードして入れ直してください。`;
+    }
+  }
+  if (new Set(videos).size !== videos.length) return "本文中に同じ動画が2回入っています。1回だけにしてください。";
   const total = new Set([...markers, ...relatedUrls]).size;
   if (total > MAX_RELATED_MEDIA) {
     return `本文中のメディアと関連メディアURLは、合わせて${MAX_RELATED_MEDIA}件までです（現在${total}件）。`;
@@ -87,7 +114,7 @@ export function bodyMediaProblem(body: string, relatedUrls: string[]): string | 
   return null;
 }
 
-export type BodySegment = { kind: "text"; text: string } | { kind: "media"; media: RelatedMedia };
+export type BodySegment = { kind: "text"; text: string } | { kind: "media"; media: RelatedMedia } | { kind: "video"; url: string };
 
 /**
  * 本文を、表示する文字の部分と埋め込むメディアに分ける(公開ページ・プレビュー用)。
@@ -111,20 +138,24 @@ export function toBodySegments(body: string, trailingCredit: string | null): Bod
   if (parts.length > 0) parts[parts.length - 1] = parts[parts.length - 1].trimEnd();
 
   const blocks = toBodyBlocks(parts.filter((_, i) => i % 2 === 0).map((p) => p.trim()).filter(Boolean));
-  const mediaByMarker = new Map<string, RelatedMedia>();
-  for (const b of blocks) if (b.kind === "media") mediaByMarker.set(toMediaMarker(b.media.url), b.media);
+  // 埋め込むメディア・動画の段落(書かれた形) → 表示する部品
+  const blockByMarker = new Map<string, BodySegment>();
+  for (const b of blocks) {
+    if (b.kind === "media") blockByMarker.set(toMediaMarker(b.media.url), b);
+    if (b.kind === "video") blockByMarker.set(toVideoMarker(b.url), b);
+  }
 
   const segments: BodySegment[] = [];
   let text = "";
   for (let i = 0; i < parts.length; i++) {
     const part = parts[i];
-    const media = i % 2 === 0 ? mediaByMarker.get(part.trim()) : undefined;
-    if (media) {
-      // メディアの直前の区切り(空行)は除き、メディアの上下の余白で表す
+    const block = i % 2 === 0 ? blockByMarker.get(part.trim()) : undefined;
+    if (block) {
+      // メディア・動画の直前の区切り(空行)は除き、上下の余白で表す
       text = text.replace(/\n[ \t\n]*$/, "");
       if (text) segments.push({ kind: "text", text });
-      segments.push({ kind: "media", media });
-      mediaByMarker.delete(part.trim());
+      segments.push(block);
+      blockByMarker.delete(part.trim());
       text = "";
       i++; // メディアの直後の区切り(空行)も除く
       continue;
