@@ -26,16 +26,26 @@ function publicUrlPrefix(): string {
   return `${base}/storage/v1/object/public/${NEWS_MEDIA_BUCKET}/`;
 }
 
+/** news-media バケット内の置き場所 → 公開URL(動画・写真で共通) */
+export function newsMediaPublicUrl(path: string): string {
+  return `${publicUrlPrefix()}${path}`;
+}
+
+/** このサイトの news-media バケットの公開URLなら、バケット内の置き場所を返す(それ以外は null。動画・写真で共通) */
+export function newsMediaPathOf(url: string): string | null {
+  const prefix = publicUrlPrefix();
+  return url.startsWith(prefix) ? url.slice(prefix.length) : null;
+}
+
 /** バケット内の置き場所 → 公開URL */
 export function videoPublicUrl(path: string): string {
-  return `${publicUrlPrefix()}${path}`;
+  return newsMediaPublicUrl(path);
 }
 
 /** このサイトの news-media バケットの動画の公開URLなら、その URL を返す(それ以外は null) */
 export function parseBodyVideoUrl(url: string): string | null {
-  const prefix = publicUrlPrefix();
-  if (!url.startsWith(prefix)) return null;
-  return VIDEO_PATH_RE.test(url.slice(prefix.length)) ? url : null;
+  const path = newsMediaPathOf(url);
+  return path !== null && VIDEO_PATH_RE.test(path) ? url : null;
 }
 
 /** 本文に入れる動画の段落 */

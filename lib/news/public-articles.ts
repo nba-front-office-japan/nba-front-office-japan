@@ -42,7 +42,7 @@ function normalizeForSearch(text: string): string {
 // 本文(Markdown)から、検索に使う文字だけを取り出す(埋め込みメディアの URL・リンク先 URL・見出し/太字の記号は除く)
 function bodyTextForSearch(markdown: string): string {
   return markdown
-    .replace(/\[\[(?:media|video):[^\]]*\]\]/g, " ")
+    .replace(/\[\[(?:media|video|image):[^\]]*\]\]/g, " ")
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
     .replace(/\*\*/g, "")
     .replace(/^##\s+/gm, "");

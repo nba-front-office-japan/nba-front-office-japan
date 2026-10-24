@@ -8,6 +8,7 @@
 
 import { MAX_RELATED_MEDIA, SUPPORTED_MEDIA_HINT, parseRelatedMediaUrl, readStoredRelatedMedia, unsupportedMediaReason, type RelatedMedia } from "./related-media";
 import { parseBodyVideoUrl, toVideoMarker, videoMarkerUrlOf } from "./body-video";
+import { imageMarkerOf, parseBodyImageUrl } from "./body-image";
 
 const MARKER_RE = /^\[\[media:([^\s[\]]+)\]\]$/;
 
@@ -32,7 +33,8 @@ export function markerUrlOf(paragraph: string): string | null {
 export type BodyBlock =
   | { kind: "text"; text: string }
   | { kind: "media"; media: RelatedMedia }
-  | { kind: "video"; url: string };
+  | { kind: "video"; url: string }
+  | { kind: "image"; url: string; alt: string };
 
 /**
  * 段落ごとに、文字の段落か埋め込むメディアか動画かを決める。
@@ -43,7 +45,18 @@ export type BodyBlock =
 export function toBodyBlocks(paragraphs: string[]): BodyBlock[] {
   const seen = new Set<string>();
   const seenVideos = new Set<string>();
+  const seenImages = new Set<string>();
   return paragraphs.map((text): BodyBlock => {
+    // 写真: このサイトの news-media バケットの images/ の URL で、まだ出ていないものだけ(lib/news/body-image.ts)
+    const image = imageMarkerOf(text);
+    if (image !== null) {
+      const url = parseBodyImageUrl(image.url);
+      if (url && !seenImages.has(url)) {
+        seenImages.add(url);
+        return { kind: "image", url, alt: image.alt };
+      }
+      return { kind: "text", text };
+    }
     const videoUrl = videoMarkerUrlOf(text);
     if (videoUrl !== null) {
       const video = parseBodyVideoUrl(videoUrl);
@@ -107,6 +120,17 @@ export function bodyMediaProblem(body: string, relatedUrls: string[]): string | 
     }
   }
   if (new Set(videos).size !== videos.length) return "本文中に同じ動画が2回入っています。1回だけにしてください。";
+  // 本文中の写真([[image:URL|代替テキスト]])は、このサイトにアップロードした写真の URL だけ
+  const images = splitParagraphs(body).flatMap((p) => {
+    const image = imageMarkerOf(p);
+    return image === null ? [] : [image.url];
+  });
+  for (const url of images) {
+    if (!parseBodyImageUrl(url)) {
+      return `本文中の写真「${url}」は使えません。「メディア挿入」から写真をアップロードして入れ直してください。`;
+    }
+  }
+  if (new Set(images).size !== images.length) return "本文中に同じ写真が2回入っています。1回だけにしてください。";
   const total = new Set([...markers, ...relatedUrls]).size;
   if (total > MAX_RELATED_MEDIA) {
     return `本文中のメディアと関連メディアURLは、合わせて${MAX_RELATED_MEDIA}件までです（現在${total}件）。`;
@@ -114,7 +138,11 @@ export function bodyMediaProblem(body: string, relatedUrls: string[]): string | 
   return null;
 }
 
-export type BodySegment = { kind: "text"; text: string } | { kind: "media"; media: RelatedMedia } | { kind: "video"; url: string };
+export type BodySegment =
+  | { kind: "text"; text: string }
+  | { kind: "media"; media: RelatedMedia }
+  | { kind: "video"; url: string }
+  | { kind: "image"; url: string; alt: string };
 
 /**
  * 本文を、表示する文字の部分と埋め込むメディアに分ける(公開ページ・プレビュー用)。
@@ -143,6 +171,12 @@ export function toBodySegments(body: string, trailingCredit: string | null): Bod
   for (const b of blocks) {
     if (b.kind === "media") blockByMarker.set(toMediaMarker(b.media.url), b);
     if (b.kind === "video") blockByMarker.set(toVideoMarker(b.url), b);
+  }
+  // 写真の段落は代替テキストを含むため、書かれた形そのもの(前後の空白を除く)で対応させる
+  for (const p of parts.filter((_, i) => i % 2 === 0)) {
+    const image = imageMarkerOf(p);
+    const block = image ? blocks.find((b) => b.kind === "image" && b.url === image.url) : undefined;
+    if (block && ![...blockByMarker.values()].includes(block)) blockByMarker.set(p.trim(), block);
   }
 
   const segments: BodySegment[] = [];

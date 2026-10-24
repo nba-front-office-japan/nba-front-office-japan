@@ -77,6 +77,7 @@ function ParagraphText({ text, onInternalLinkClick }: { text: string; onInternal
 // 本文中の [[media:URL]] だけの段落(管理画面の「メディア挿入」で入れたもの)は、その位置にX・YouTube・Instagram・TikTokを埋め込む
 // (対応する URL のものだけ。それ以外は文字のまま。lib/news/body-media.ts)。
 // [[video:URL]] だけの段落(「メディア挿入」でアップロードした MP4)は、その位置に動画を表示する(lib/news/body-video.ts)。
+// [[image:URL|代替テキスト]] だけの段落(アップロードした写真)は、その位置に写真を表示する(lib/news/body-image.ts)。
 // 公開ページ(/news/[articleId])と管理画面の記事プレビューで同じ表示にするため、この部品を共通で使う。
 // onInternalLinkClick は管理画面のプレビュー用(未保存の変更があるときに、内部リンクで画面を離れる前に確認する)。
 export function ArticleBody({
@@ -104,6 +105,13 @@ export function ArticleBody({
             // 上下の余白(32px)は、入力欄でメディアの行の前後に入る空行1行分
             <div key={`media:${segment.media.url}`} className="my-8">
               <MediaEmbed media={segment.media} />
+            </div>
+          ) : segment.kind === "image" ? (
+            // アップロードした写真。幅は本文いっぱいで、縦横比はそのまま(高さは自動)。
+            // 代替テキストはファイル名から作ったもの(lib/news/body-image.ts。React が文字として出すため HTML にはならない)
+            <div key={`image:${segment.url}`} className="my-8">
+              {/* eslint-disable-next-line @next/next/no-img-element -- Supabase Storage の公開URLをそのまま表示する(画像の最適化は使わない) */}
+              <img src={segment.url} alt={segment.alt} loading="lazy" decoding="async" className="block h-auto w-full" />
             </div>
           ) : segment.kind === "video" ? (
             // アップロードした MP4 動画。ブラウザ標準の操作(再生/停止・音量・全画面)を出し、幅は本文いっぱい。
