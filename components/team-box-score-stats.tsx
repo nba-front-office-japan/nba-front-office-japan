@@ -37,7 +37,7 @@ export function TeamBoxScoreStats({
         <Link href="/games" className="underline underline-offset-2 hover:no-underline">
           試合結果＆ボックススコア
         </Link>
-        から集計しています（プレシーズンは含みません）。成績はこのチームでの出場分です。選手はTeamsのロスターの選手で、出場のない選手は末尾に「—」で表示します。
+        から集計しています（プレシーズンは含みません）。成績はこのチームでの出場分です。選手は現在のロスターの選手で、出場のない選手は末尾に「—」で表示します。
       </p>
       {notes.length > 0 && (
         <ul className="mb-4 space-y-1 border-l-[3px] border-gold pl-3 text-xs font-bold text-foreground">

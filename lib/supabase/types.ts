@@ -185,7 +185,8 @@ export interface Database {
           roster_status: RosterStatus;
           position: string | null;
           years_of_service: number | null;
-          jersey_number: number | null;
+          // 背番号(文字列。0 と 00 を区別する。exports/roster-2026-27-sync-official-2026-10-25.sql で数値から変更)
+          jersey_number: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -197,7 +198,7 @@ export interface Database {
           roster_status?: RosterStatus;
           position?: string | null;
           years_of_service?: number | null;
-          jersey_number?: number | null;
+          jersey_number?: string | null;
         };
         Update: Partial<
           Database["public"]["Tables"]["player_season_rosters"]["Insert"]

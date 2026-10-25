@@ -8,7 +8,8 @@ export interface ProfileRow {
   name: string;
   nameEn: string | null;
   position: string | null;
-  jerseyNumber: number | null;
+  // 背番号(文字列。0 と 00 を区別する)
+  jerseyNumber: string | null;
   birthDate: string | null;
   age: number | null;
   heightCm: number | null;
@@ -85,6 +86,11 @@ function sortValue(row: ProfileRow, key: SortKey): string | number | null {
       return row.draftSort;
     case "gamesPlayed":
       return row.gamesPlayed ?? null;
+    case "jerseyNumber": {
+      // 数の順に並べ、00 は 0 のすぐ後にする
+      if (row.jerseyNumber === null || !/^\d+$/.test(row.jerseyNumber)) return null;
+      return Number(row.jerseyNumber) + (row.jerseyNumber === "00" ? 0.5 : 0);
+    }
     default:
       return row[key];
   }

@@ -25,6 +25,7 @@ import { teamThemeBackground } from "@/lib/team-colors";
 import { fetchTeamProfileData } from "@/lib/team-profile-data";
 import {
   buildSeasonProfileRows,
+  fetchTeamCurrentRoster,
   fetchTeamSnapshotRoster,
   fetchTeamStatsSeasonRecord,
   formatJapaneseDate,
@@ -35,7 +36,8 @@ import type { Database } from "@/lib/supabase/types";
 
 // /teams/[teamId] はシーズンごとのチームページ(Profile / Stats / Team Profile)。
 // ?season= でシーズンを切り替える(初期表示は 2026-27。?season=2025 で 2025-26)。
-// ・2026-27: ロスターは固定スナップショット(最新の基準日)。成績は取り込んだボックススコアのレギュラーシーズンの試合から
+// ・2026-27: Profile・Stats は現在ロスター(player_season_rosters の 2026 年度)、Team Profile は開幕ロスターの
+//   固定スナップショット(最新の基準日。選手名鑑と同じ)。成績は取り込んだボックススコアのレギュラーシーズンの試合から
 //   集計する(lib/team-box-score-stats.ts)。試合が無い間は「未登録」と表示する
 // ・2025-26: レギュラーシーズン・プレーオフの成績から復元したチーム記録
 // タブは ?tab=profile / ?tab=stats / ?tab=team-profile で直接開ける(Teams一覧のリンクもこのURLを使う)。?tab= なしは Team Profile。
@@ -221,13 +223,16 @@ export default async function TeamDetailPage({
     </div>
   );
 
-  // 固定スナップショットのあるシーズン(2026-27): スナップショット時点のロスターを表示する
+  // 固定スナップショットのあるシーズン(2026-27):
+  // ・Profile・Stats は現在ロスター(player_season_rosters。移籍・契約解除・追加を反映)
+  // ・Team Profile は開幕ロスターの固定スナップショット(選手名鑑と同じ。変えない)
   if (snapshotRoster) {
     const asOfText = formatJapaneseDate(snapshotRoster.snapshot.as_of);
     const rows = snapshotRoster.rows;
     const avgAgeText = snapshotRoster.averageAge === null ? "-" : snapshotRoster.averageAge.toFixed(1);
-    // 成績は取り込んだボックススコアのレギュラーシーズンの試合から集計する(試合が無い間は「未登録」)
-    const boxStats = await fetchTeamBoxScoreSeasonStats(supabase, team, season, rows);
+    const currentRows = await fetchTeamCurrentRoster(supabase, teamId, season);
+    // 成績は取り込んだボックススコアのレギュラーシーズンの試合から集計する(試合が無い間は「未登録」)。選手は現在ロスター
+    const boxStats = await fetchTeamBoxScoreSeasonStats(supabase, team, season, currentRows);
     const hasBoxStats = boxStats.gamesCounted > 0;
     const snapshotStatsContent = hasBoxStats ? (
       <TeamBoxScoreStats seasonLabel={label} teamName={team.name} stats={boxStats} />
@@ -245,11 +250,15 @@ export default async function TeamDetailPage({
               <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
                 Profile · {label}
               </p>
-              <h2 className="mb-1 text-lg font-semibold">選手プロフィール</h2>
+              <h2 className="mb-1 text-lg font-semibold">選手プロフィール（現在のロスター）</h2>
               <p className="mb-4 text-xs text-muted">
-                {asOfText}時点の{label}ロスターです。POS・身長・体重・生年月日・出身校・経験年数はこの時点の値です。TW = Two-Way 契約。「—」はデータなし。
+                {label}の現在のロスターです（移籍・契約解除・追加を反映）。POS・背番号・経験年数・TWは現在ロスターの値、身長・体重・生年月日・出身校などは選手データの値です。TW = Two-Way 契約。「—」はデータなし。開幕時点のロスターは Team Profile・選手名鑑で見られます。
               </p>
-              <TeamRosterProfileTable rows={rows} />
+              {currentRows.length > 0 ? (
+                <TeamRosterProfileTable rows={currentRows} />
+              ) : (
+                <p className="text-sm text-muted">現在のロスターは未登録です。</p>
+              )}
             </div>
           }
           stats={snapshotStatsContent}
@@ -266,7 +275,7 @@ export default async function TeamDetailPage({
               ],
               "sm:grid-cols-3",
               <>
-                {asOfText}時点の{label}ロスター（選手名鑑と同じ開幕ロスターの固定スナップショット）です。自動では更新しません。背番号は元データに無いため空欄です。年齢は表示した日の時点。
+                {asOfText}時点の{label}ロスター（選手名鑑と同じ開幕ロスターの固定スナップショット）です。自動では更新しません。年齢は表示した日の時点。移籍などを反映した現在のロスターは Profile・Stats に表示します。
                 {hasBoxStats
                   ? `Statsは、取り込んだボックススコアから集計した${label}レギュラーシーズンの成績です（試合を取り込むと自動で更新）。`
                   : `${label}シーズンのスタッツは未登録です。`}

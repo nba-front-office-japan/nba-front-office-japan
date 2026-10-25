@@ -1,5 +1,7 @@
 // Teams(/teams/[teamId])と選手名鑑(/players/guide/[teamId])で、シーズンごとのチームの選手一覧を読む。
 // ・固定スナップショット(roster_snapshots)があるシーズン: その時点のロスターとプロフィールをスナップショットの値で表示する
+//   (選手名鑑と Teams の Team Profile。開幕ロスターは変えない)
+// ・現在ロスター(player_season_rosters): Teams の Profile・Stats(fetchTeamCurrentRoster)
 // ・成績(player_stats)があるシーズン: そのシーズンにこのチームでプレーした選手を成績から復元する
 // どちらもない場合は空(画面側で「未登録」「準備中」と表示する)。
 import type { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -64,7 +66,7 @@ export async function fetchTeamSnapshotRoster(
       name: player?.full_name_ja ?? nameEn,
       nameEn,
       position: entry.position,
-      jerseyNumber: entry.jersey_number,
+      jerseyNumber: entry.jersey_number === null ? null : String(entry.jersey_number),
       birthDate: entry.birth_date,
       age: ageAt(entry.birth_date, today),
       heightCm: entry.height_cm,
@@ -87,6 +89,53 @@ export async function fetchTeamSnapshotRoster(
     rookieCount: entries.filter((e) => e.years_of_service === 0).length,
     averageAge: ages.length ? ages.reduce((a, b) => a + b, 0) / ages.length : null,
   };
+}
+
+// Teams の現在ロスター(player_season_rosters の season の行)。移籍・契約解除・追加を反映した、今のチームの選手。
+// チーム・ポジション・背番号・経験年数・Two-Way は現在ロスターの値、名前・身長・体重・生年月日・出身校・国籍・ドラフトは
+// 選手データ(players)の値を使う。開幕ロスターの固定スナップショット(fetchTeamSnapshotRoster)とは別のもの。
+export async function fetchTeamCurrentRoster(supabase: ServerClient, teamId: string, season: number): Promise<ProfileRow[]> {
+  const { data: rosterRows } = await supabase
+    .from("player_season_rosters")
+    .select("player_id, roster_status, position, jersey_number, years_of_service")
+    .eq("season", season)
+    .eq("team_id", teamId);
+  const entries = rosterRows ?? [];
+
+  const playerIds = entries.map((e) => e.player_id);
+  const { data: players } =
+    playerIds.length > 0
+      ? await supabase.from("players").select("*").in("id", playerIds)
+      : { data: [] as PlayerRow[] };
+  const playerById = new Map((players ?? []).map((p) => [p.id, p]));
+
+  const today = todayInJapan();
+  const rows: ProfileRow[] = entries.flatMap((entry) => {
+    const player = playerById.get(entry.player_id);
+    if (!player) return [];
+    return [
+      {
+        id: player.id,
+        name: player.full_name_ja ?? player.full_name,
+        nameEn: player.full_name,
+        position: entry.position,
+        // 背番号は文字列(0 と 00 を区別)。列を文字列に変える前の数値の値も文字列にそろえる
+        jerseyNumber: entry.jersey_number === null ? null : String(entry.jersey_number),
+        birthDate: player.birth_date,
+        age: ageAt(player.birth_date, today),
+        heightCm: player.height_cm,
+        weightKg: player.weight_kg,
+        preDraftTeam: player.pre_draft_team ?? null,
+        nationality: player.nationality ?? null,
+        yearsOfService: entry.years_of_service,
+        draftText: formatDraftInfo(player),
+        draftSort: draftSortValue(player),
+        twoWay: entry.roster_status === "two_way",
+      },
+    ];
+  });
+  rows.sort((a, b) => a.name.localeCompare(b.name, "ja"));
+  return rows;
 }
 
 // 移籍があった選手は、このチーム在籍分の行(team_id一致)を優先し、
