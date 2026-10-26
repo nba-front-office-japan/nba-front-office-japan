@@ -88,7 +88,7 @@ export function TeamDirectory({
                         >
                           <Link
                             href={`/teams/${team.id}${seasonSearch(season)}`}
-                            className={`group flex items-center gap-2.5 rounded-xl border px-2 py-1.5 text-sm font-bold transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--team-accent)] ${
+                            className={`selection-button ${isActive ? "" : "selection-team"} group flex items-center gap-2.5 rounded-xl border px-2 py-1.5 text-sm font-bold transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--team-accent)] ${
                               isActive
                                 ? "border-[var(--team-accent)] bg-[var(--team-accent)] text-white shadow-sm"
                                 : "border-transparent hover:-translate-y-1 hover:scale-[1.025] hover:border-[var(--team-accent)] hover:bg-[var(--team-accent)] hover:text-white hover:shadow-lg active:translate-y-1 active:scale-[0.93]"
@@ -106,7 +106,7 @@ export function TeamDirectory({
                             </span>
                             <span className="min-w-0">
                               <span className="block">{japaneseName}</span>
-                              <span className="block text-[10px] font-semibold tracking-wide text-muted transition-colors group-hover:text-white/80">{team.name}</span>
+                              <span className="selection-team-muted block text-[10px] font-semibold tracking-wide text-muted transition-colors group-hover:text-white/80">{team.name}</span>
                             </span>
                           </Link>
                           {/* チームページの各タブを直接開く(?tab= は /teams/[teamId] が受け付ける値) */}
@@ -120,7 +120,7 @@ export function TeamDirectory({
                                 key={link.label}
                                 href={link.href}
                                 aria-label={`${team.name} ${link.label}`}
-                                className="inline-flex min-h-9 min-w-[72px] items-center justify-center rounded-lg border border-line px-3 text-xs font-bold text-blue transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.06] hover:border-[var(--team-accent)] hover:bg-[var(--team-accent)] hover:text-white hover:shadow-lg active:translate-y-1 active:scale-[0.92] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--team-accent)]"
+                                className="selection-button selection-team inline-flex min-h-9 min-w-[72px] items-center justify-center rounded-lg border border-line px-3 text-xs font-bold text-blue transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.06] hover:border-[var(--team-accent)] hover:bg-[var(--team-accent)] hover:text-white hover:shadow-lg active:translate-y-1 active:scale-[0.92] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--team-accent)]"
                               >
                                 {link.label}
                               </Link>

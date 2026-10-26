@@ -73,14 +73,14 @@ export default async function PlayerGuideTeamPage({
           key={opt.view}
           href={guideHref(teamId, opt.view)}
           aria-current={selectedView === opt.view ? "page" : undefined}
-          className={`rounded-lg border px-4 py-2 text-sm font-bold transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
+          className={`selection-button rounded-lg border px-4 py-2 text-sm font-bold transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
             selectedView === opt.view
               ? teamColor
                 ? "border-white bg-white text-[var(--team-tab-accent)] shadow-sm"
                 : "border-blue bg-blue text-white"
               : teamColor
-                ? "border-white/35 bg-white/[.06] text-white hover:-translate-y-0.5 hover:scale-[1.06] hover:border-white hover:bg-white hover:text-[var(--team-tab-accent)] hover:shadow-lg active:translate-y-1 active:scale-[0.92]"
-                : "border-line text-muted hover:-translate-y-0.5 hover:scale-[1.06] hover:border-[var(--team-tab-accent)] hover:bg-[var(--team-tab-accent)] hover:text-white hover:shadow-lg active:translate-y-1 active:scale-[0.92]"
+                ? "selection-team-on-color border-white/35 bg-white/[.06] text-white hover:-translate-y-0.5 hover:scale-[1.06] hover:border-white hover:bg-white hover:text-[var(--team-tab-accent)] hover:shadow-lg active:translate-y-1 active:scale-[0.92]"
+                : "selection-team border-line text-muted hover:-translate-y-0.5 hover:scale-[1.06] hover:border-[var(--team-tab-accent)] hover:bg-[var(--team-tab-accent)] hover:text-white hover:shadow-lg active:translate-y-1 active:scale-[0.92]"
           }`}
         >
           {opt.label}

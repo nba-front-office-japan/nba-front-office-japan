@@ -37,6 +37,7 @@ export function TeamTabs({
       <div
         className="flex gap-3 overflow-x-auto border-b border-line"
         style={{
+          "--team-accent": accent,
           "--team-tab-accent": accent,
           "--team-tab-tint": `${accent}20`,
         } as CSSProperties}
@@ -47,8 +48,8 @@ export function TeamTabs({
             onClick={() => setTab(t)}
             className={`${TAB_BASE} ${
               tab === t
-                ? "border-white bg-surface text-[var(--team-tab-accent)] shadow-sm"
-                : TAB_IDLE
+                ? "selection-button border-white bg-surface text-[var(--team-tab-accent)] shadow-sm"
+                : `selection-button selection-team ${TAB_IDLE}`
             }`}
           >
             {t}

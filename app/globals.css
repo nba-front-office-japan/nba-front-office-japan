@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  color-scheme: light;
   --background: #f5f7fa;
   --foreground: #101827;
   --surface: #ffffff;
@@ -32,21 +33,6 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a1220;
-    --foreground: #e7ebf2;
-    --surface: #101b30;
-    --line: #26324a;
-    --muted: #8b96ab;
-    --accent: #5b9bff;
-
-    --card-foreground: #e7ebf2;
-    --card-muted: #8b96ab;
-    --card-line: #26324a;
-  }
-}
-
 /* チームページ(/teams/[teamId])のチームカラー背景。
    背景の上の文字・罫線・アクセントは白系にし、カード(bg-surface)の中だけ元の配色に戻す。
    --muted の白90%は lib/team-colors.ts のコントラスト計算と同じ値にしておくこと。 */
@@ -76,4 +62,67 @@ body {
    丸いバッジは既存の rounded-full を優先する。 */
 main :where([class~="border"]):not(.rounded-full) {
   border-radius: 0.75rem;
+}
+
+/*
+  選択肢の操作感をブラウザ間で統一する。
+  Tailwind の hover: は「主な入力機器がホバー可能」の場合だけ動くため、
+  タッチ対応PCの Chrome ではマウスがあっても反応しないことがある。
+  any-hover は接続されているマウスの利用可否を見るので、Firefox / Chrome で同じ挙動になる。
+*/
+.selection-button {
+  transition: transform 180ms ease, background-color 180ms ease, color 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+  will-change: transform;
+}
+
+@media (any-hover: hover) {
+  main .selection-button.selection-team:hover {
+    transform: translateY(-4px) scale(1.06) !important;
+    border-color: var(--team-accent) !important;
+    background-color: var(--team-accent) !important;
+    color: #fff !important;
+    box-shadow: 0 10px 18px rgba(16, 24, 39, 0.22) !important;
+  }
+
+  main .selection-button.selection-team-on-color:hover {
+    transform: translateY(-4px) scale(1.06) !important;
+    border-color: #fff !important;
+    background-color: #fff !important;
+    color: var(--team-tab-accent) !important;
+    box-shadow: 0 10px 18px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  main .selection-button.selection-blue:hover {
+    transform: translateY(-4px) scale(1.04) !important;
+    border-color: var(--blue) !important;
+    background-color: var(--blue) !important;
+    color: #fff !important;
+    box-shadow: 0 10px 18px rgba(31, 99, 233, 0.28) !important;
+  }
+
+  main .selection-button.selection-gold:hover {
+    transform: translateY(-4px) scale(1.04) !important;
+    border-color: var(--gold) !important;
+    background-color: var(--gold) !important;
+    color: #182238 !important;
+    box-shadow: 0 10px 18px rgba(243, 184, 63, 0.28) !important;
+  }
+
+  main .selection-team:hover .selection-team-muted,
+  main .selection-blue:hover .selection-blue-muted {
+    color: rgba(255, 255, 255, 0.84) !important;
+  }
+
+  main .selection-blue:hover .selection-blue-text {
+    color: #fff !important;
+  }
+
+  main .selection-blue:hover .selection-blue-action {
+    color: var(--gold) !important;
+  }
+}
+
+main .selection-button:active:not(:disabled) {
+  transform: translateY(4px) scale(0.92) !important;
+  box-shadow: none !important;
 }

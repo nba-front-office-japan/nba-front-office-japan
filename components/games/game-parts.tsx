@@ -63,7 +63,7 @@ export function SpoilerGate({
             type="button"
             onClick={onReveal}
             disabled={loading}
-            className={`rounded-lg border border-current/30 bg-surface/75 px-5 py-4 text-left text-foreground transition-all duration-200 hover:-translate-y-1 hover:scale-[1.04] hover:border-gold hover:bg-gold hover:text-[#182238] hover:shadow-lg active:translate-y-1 active:scale-[0.92] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold disabled:opacity-60 ${
+            className={`selection-button selection-gold rounded-lg border border-current/30 bg-surface/75 px-5 py-4 text-left text-foreground transition-all duration-200 hover:-translate-y-1 hover:scale-[1.04] hover:border-gold hover:bg-gold hover:text-[#182238] hover:shadow-lg active:translate-y-1 active:scale-[0.92] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold disabled:opacity-60 ${
               toneClass ? "dark:border-gold/60" : ""
             }`}
           >
@@ -74,7 +74,7 @@ export function SpoilerGate({
             type="button"
             onClick={onChooseIndividual}
             disabled={loading}
-            className="rounded-lg border border-current/30 bg-surface/75 px-5 py-4 text-left text-foreground transition-all duration-200 hover:-translate-y-1 hover:scale-[1.04] hover:border-blue hover:bg-blue hover:text-white hover:shadow-lg active:translate-y-1 active:scale-[0.92] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue disabled:opacity-60"
+            className="selection-button selection-blue rounded-lg border border-current/30 bg-surface/75 px-5 py-4 text-left text-foreground transition-all duration-200 hover:-translate-y-1 hover:scale-[1.04] hover:border-blue hover:bg-blue hover:text-white hover:shadow-lg active:translate-y-1 active:scale-[0.92] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue disabled:opacity-60"
           >
             <span className="block text-sm font-extrabold">個別にみる</span>
             <span className="mt-1 block text-xs font-medium opacity-70">開きたい試合だけ結果を表示</span>
