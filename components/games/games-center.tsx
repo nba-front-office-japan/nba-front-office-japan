@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { GameSummary, GamesResponse } from "@/lib/games/types";
 import { NotReadyNotice, SpoilerGate, StatusBadge, TipoffTime } from "./game-parts";
 import { GameDayStatusInfo, LEVEL_GATE_CLASS } from "./game-day-status";
@@ -53,6 +54,7 @@ export function GamesCenter({
   adjacent: { prev: string | null; next: string | null };
   initialView: "individual" | null;
 }) {
+  const router = useRouter();
   // このタブで結果を表示済みの日付か(サーバー側・最初の描画では分からないため null)
   const revealedBefore = useSyncExternalStore(subscribeNoop, () => isDateRevealed(date), unknownOnServer);
   const [selectedView, setSelectedView] = useState<"all" | "individual" | null>(initialView);
@@ -83,9 +85,9 @@ export function GamesCenter({
   }
 
   function chooseIndividual() {
-    const cached = getCached<Result>(`matchups:${date}`) ?? null;
-    setResult(cached);
-    setSelectedView("individual");
+    // URLにも個別表示を残す。これにより試合詳細からブラウザの戻るボタンを押しても、
+    // 結果を伏せた対戦カード一覧へ一つずつ戻れる。
+    router.push(`/games?date=${date}&view=individual`);
   }
 
   // 結果を隠している枠全体の配色(その日の入力状況ごと)
