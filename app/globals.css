@@ -68,58 +68,57 @@ main :where([class~="border"]):not(.rounded-full) {
   選択肢の操作感をブラウザ間で統一する。
   Tailwind の hover: は「主な入力機器がホバー可能」の場合だけ動くため、
   タッチ対応PCの Chrome ではマウスがあっても反応しないことがある。
-  any-hover は接続されているマウスの利用可否を見るので、Firefox / Chrome で同じ挙動になる。
+  Chrome がタッチ操作を主入力として扱う環境でも反応するよう、
+  このサイト固有の :hover 表現はメディアクエリで制限しない。
 */
 .selection-button {
   transition: transform 180ms ease, background-color 180ms ease, color 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
   will-change: transform;
 }
 
-@media (any-hover: hover) {
-  main .selection-button.selection-team:hover {
+main .selection-button.selection-team:hover {
     transform: translateY(-4px) scale(1.06) !important;
     border-color: var(--team-accent) !important;
     background-color: var(--team-accent) !important;
     color: #fff !important;
     box-shadow: 0 10px 18px rgba(16, 24, 39, 0.22) !important;
-  }
+}
 
-  main .selection-button.selection-team-on-color:hover {
+main .selection-button.selection-team-on-color:hover {
     transform: translateY(-4px) scale(1.06) !important;
     border-color: #fff !important;
     background-color: #fff !important;
     color: var(--team-tab-accent) !important;
     box-shadow: 0 10px 18px rgba(0, 0, 0, 0.2) !important;
-  }
+}
 
-  main .selection-button.selection-blue:hover {
+main .selection-button.selection-blue:hover {
     transform: translateY(-4px) scale(1.04) !important;
     border-color: var(--blue) !important;
     background-color: var(--blue) !important;
     color: #fff !important;
     box-shadow: 0 10px 18px rgba(31, 99, 233, 0.28) !important;
-  }
+}
 
-  main .selection-button.selection-gold:hover {
+main .selection-button.selection-gold:hover {
     transform: translateY(-4px) scale(1.04) !important;
     border-color: var(--gold) !important;
     background-color: var(--gold) !important;
     color: #182238 !important;
     box-shadow: 0 10px 18px rgba(243, 184, 63, 0.28) !important;
-  }
+}
 
-  main .selection-team:hover .selection-team-muted,
-  main .selection-blue:hover .selection-blue-muted {
+main .selection-team:hover .selection-team-muted,
+main .selection-blue:hover .selection-blue-muted {
     color: rgba(255, 255, 255, 0.84) !important;
-  }
+}
 
-  main .selection-blue:hover .selection-blue-text {
+main .selection-blue:hover .selection-blue-text {
     color: #fff !important;
-  }
+}
 
-  main .selection-blue:hover .selection-blue-action {
+main .selection-blue:hover .selection-blue-action {
     color: var(--gold) !important;
-  }
 }
 
 main .selection-button:active:not(:disabled) {
