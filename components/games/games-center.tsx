@@ -2,13 +2,11 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import type { GameDetail, GameDetailResponse, GameSummary, GamesResponse } from "@/lib/games/types";
+import type { GameSummary, GamesResponse } from "@/lib/games/types";
 import { NotReadyNotice, SpoilerGate, StatusBadge, TipoffTime } from "./game-parts";
 import { GameDayStatusInfo, LEVEL_GATE_CLASS } from "./game-day-status";
 import { gameDayLevel, type GameDayStatus } from "@/lib/games/types";
 import { ScoreTable } from "./score-table";
-import { InlineBoxScore } from "./inline-box-score";
-import { GameBoxScores } from "./game-box-scores";
 import { TeamName } from "./names";
 import { formatJstDateLabel, gamesDateHref } from "@/lib/games/date";
 import { getCached, isDateRevealed, markDateRevealed, markGameRevealed, setCached, subscribeNoop, unknownOnServer } from "./reveal-store";
@@ -122,15 +120,15 @@ export function GamesCenter({
   if (result.games.length === 0) return <NoGamesNotice date={date} today={today} adjacent={adjacent} />;
 
   if (view === "individual") {
-    return <IndividualGamesList games={result.games} onShowAll={reveal} />;
+    return <IndividualGamesList games={result.games} date={date} onShowAll={reveal} />;
   }
 
-  // その日の全試合。各試合のボックススコアは、カードの下の「ボックススコアを表示」でその場で開ける
+  // その日の全試合。試合結果とボックススコアは、専用の試合詳細ページで表示する。
   return (
     <ul className="grid grid-cols-1 gap-3">
       {result.games.map((game) => (
         <li key={game.id} className="min-w-0 border border-line bg-surface">
-          <Link href={`/games/${game.id}`} onClick={() => markGameRevealed(game.id)} className="block p-4 transition-colors hover:bg-background/60">
+          <Link href={`/games/${game.id}?date=${date}`} onClick={() => markGameRevealed(game.id)} className="block p-4 transition-colors hover:bg-background/60">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <StatusBadge game={game} />
               <TipoffTime game={game} />
@@ -138,85 +136,41 @@ export function GamesCenter({
             <ScoreTable game={game} />
             <p className="mt-3 text-right text-xs font-extrabold text-blue">試合詳細 →</p>
           </Link>
-          {game.hasBoxScore ? (
-            <InlineBoxScore gameId={game.id} />
-          ) : (
-            <p className="border-t border-line px-4 py-3 text-xs text-muted">
-              {game.status === "scheduled" ? "試合前です。ボックススコアは試合後に登録します。" : "ボックススコアは準備中です。"}
-            </p>
-          )}
         </li>
       ))}
     </ul>
   );
 }
 
-type DetailState =
-  | { kind: "loading" }
-  | { kind: "ready"; detail: GameDetail }
-  | { kind: "error"; message: string };
-
 // 個別表示の対戦カード。ここでは勝敗・得点を一切描画しない。
-// この試合を押した時だけ詳細APIを呼び、現在の一覧と同じ結果・ボックススコアをその場に開く。
-function IndividualGamesList({ games, onShowAll }: { games: GameSummary[]; onShowAll: () => void }) {
+// この試合を押すと、専用の試合詳細ページで結果とボックススコアを表示する。
+function IndividualGamesList({ games, date, onShowAll }: { games: GameSummary[]; date: string; onShowAll: () => void }) {
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-bold text-muted">対戦カードから、見たい試合だけ結果とボックススコアを開けます。</p>
+        <p className="text-sm font-bold text-muted">対戦カードから、見たい試合だけ試合詳細を開けます。</p>
         <button type="button" onClick={onShowAll} className="rounded-lg border border-line bg-surface px-3 py-2 text-xs font-extrabold text-blue hover:border-blue hover:bg-background">
           全試合の結果を表示
         </button>
       </div>
       <ul className="grid grid-cols-1 gap-3">
-        {games.map((game) => <IndividualGameCard key={game.id} game={game} />)}
+        {games.map((game) => <IndividualGameCard key={game.id} game={game} date={date} />)}
       </ul>
     </div>
   );
 }
 
-function IndividualGameCard({ game }: { game: GameSummary }) {
-  const [state, setState] = useState<DetailState | null>(null);
-
-  async function revealGame() {
-    markGameRevealed(game.id);
-    setState({ kind: "loading" });
-    try {
-      const res = await fetch(`/api/games/${encodeURIComponent(game.id)}`, { cache: "no-store" });
-      const body = (await res.json()) as GameDetailResponse | { error: string };
-      if (!res.ok || "error" in body || body.status !== "ok") {
-        setState({ kind: "error", message: "error" in body ? body.error : "試合データが見つかりませんでした" });
-        return;
-      }
-      setCached(`detail:${game.id}`, { kind: "ready", detail: body.detail });
-      setState({ kind: "ready", detail: body.detail });
-    } catch (err) {
-      setState({ kind: "error", message: err instanceof Error ? err.message : String(err) });
-    }
-  }
-
-  if (state?.kind === "ready") {
-    return (
-      <li className="overflow-hidden rounded-xl border border-line bg-surface">
-        <div className="p-4">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><StatusBadge game={state.detail.game} /><TipoffTime game={state.detail.game} /></div>
-          <ScoreTable game={state.detail.game} />
-        </div>
-        <div className="border-t border-line px-4 py-5"><GameBoxScores detail={state.detail} /></div>
-      </li>
-    );
-  }
-
+function IndividualGameCard({ game, date }: { game: GameSummary; date: string }) {
   return (
-    <li className="rounded-xl border border-line bg-surface p-4 transition-colors hover:border-blue hover:bg-[#f6f9ff]">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><StatusBadge game={game} /><TipoffTime game={game} /></div>
-      <div className="space-y-2.5">
-        <TeamName team={game.away} />
-        <TeamName team={game.home} />
-      </div>
-      <button type="button" onClick={revealGame} disabled={state?.kind === "loading"} className="mt-4 rounded-lg bg-navy px-4 py-2.5 text-sm font-extrabold text-white hover:bg-[#22304d] disabled:opacity-60">
-        {state?.kind === "loading" ? "読み込み中…" : "この試合の結果・ボックススコアを見る"}
-      </button>
-      {state?.kind === "error" && <p className="mt-3 text-sm text-red-600 dark:text-red-400">取得に失敗しました：{state.message}</p>}
+    <li className="overflow-hidden rounded-xl border border-line bg-surface transition-colors hover:border-blue hover:bg-[#f6f9ff]">
+      <Link href={`/games/${game.id}?date=${date}`} onClick={() => markGameRevealed(game.id)} className="block p-4">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><StatusBadge game={game} /><TipoffTime game={game} /></div>
+        <div className="space-y-2.5">
+          <TeamName team={game.away} />
+          <TeamName team={game.home} />
+        </div>
+        <p className="mt-4 text-right text-sm font-extrabold text-blue">試合詳細を見る →</p>
+      </Link>
     </li>
   );
 }

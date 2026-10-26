@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageShell } from "@/components/page-shell";
 import { GameDetailView } from "@/components/games/game-detail-view";
+import { formatJstDateLabel, isValidDateString } from "@/lib/games/date";
 
 // タイトル・説明文にも試合結果やチーム名を含めない(リンクの共有や検索結果でネタバレしないため)
 export const metadata: Metadata = {
@@ -10,13 +11,17 @@ export const metadata: Metadata = {
 };
 
 // このページのHTMLには試合結果を含めない。結果は GameDetailView がブラウザで取得して表示する。
-export default async function GameDetailPage({ params }: PageProps<"/games/[gameId]">) {
+export default async function GameDetailPage({ params, searchParams }: PageProps<"/games/[gameId]">) {
   const { gameId } = await params;
+  const { date: dateParam } = await searchParams;
+  const date = typeof dateParam === "string" && isValidDateString(dateParam) ? dateParam : null;
+  const backHref = date ? `/games?date=${date}` : "/games";
+  const backLabel = date ? `${formatJstDateLabel(date)}の試合一覧に戻る` : "試合結果＆ボックススコアに戻る";
 
   return (
     <PageShell>
       <nav aria-label="パンくずリスト" className="mb-4 text-xs text-muted">
-        <Link href="/games" className="font-semibold text-blue hover:underline">
+        <Link href={backHref} className="font-semibold text-blue hover:underline">
           試合結果＆ボックススコア
         </Link>
         <span aria-hidden className="mx-1.5">›</span>
@@ -27,8 +32,8 @@ export default async function GameDetailPage({ params }: PageProps<"/games/[game
 
       <GameDetailView gameId={gameId} />
 
-      <Link href="/games" className="mt-8 inline-block text-sm font-extrabold text-blue">
-        ← 試合結果＆ボックススコアに戻る
+      <Link href={backHref} className="mt-8 inline-block text-sm font-extrabold text-blue">
+        ← {backLabel}
       </Link>
     </PageShell>
   );
