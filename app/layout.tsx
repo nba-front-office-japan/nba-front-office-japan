@@ -19,6 +19,11 @@ export const metadata: Metadata = {
   title: "NBA Front Office Japan",
   description:
     "NBAの選手・チーム・スタッツ・年俸情報を日本語で提供するファンサイト",
+  icons: {
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
