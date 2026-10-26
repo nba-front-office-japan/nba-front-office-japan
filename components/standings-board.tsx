@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import type { StandingRow } from "@/lib/standings";
 import { rankStandings } from "@/lib/standings";
+import { teamThemeBackground } from "@/lib/team-colors";
 
 type View = "overall" | "conference" | "division";
 
@@ -33,37 +34,40 @@ function StandingTable({ rows, label }: { rows: StandingRow[]; label: string }) 
   return (
     <section className="overflow-hidden border border-line bg-surface">
       <h2 className="border-b border-line px-4 py-3 text-base font-extrabold sm:px-5">{label}</h2>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[560px] text-sm">
+      <div>
+        <table className="w-full table-fixed text-xs sm:text-sm">
           <thead className="bg-background text-[11px] font-extrabold tracking-wide text-muted">
             <tr>
-              <th className="w-12 px-3 py-2.5 text-right">順位</th>
-              <th className="px-3 py-2.5 text-left">チーム</th>
-              <th className="w-12 px-2 py-2.5 text-right">勝</th>
-              <th className="w-12 px-2 py-2.5 text-right">敗</th>
-              <th className="w-16 px-2 py-2.5 text-right">勝率</th>
-              <th className="w-16 px-3 py-2.5 text-right">ゲーム差</th>
+              <th className="w-[10%] px-1 py-2.5 text-right sm:px-3">順位</th>
+              <th className="w-[52%] px-2 py-2.5 text-left sm:px-3">チーム</th>
+              <th className="w-[9.5%] px-1 py-2.5 text-right sm:px-2">勝</th>
+              <th className="w-[9.5%] px-1 py-2.5 text-right sm:px-2">敗</th>
+              <th className="w-[9.5%] px-1 py-2.5 text-right sm:px-2">勝率</th>
+              <th className="w-[9.5%] px-1 py-2.5 text-right sm:px-3"><span className="sm:hidden">差</span><span className="hidden sm:inline">ゲーム差</span></th>
             </tr>
           </thead>
           <tbody>
             {ranked.map((row, index) => (
               <tr key={row.teamId} className="border-t border-line transition-colors hover:bg-[#f5f8ff] dark:hover:bg-white/[.04]">
-                <td className="px-3 py-3 text-right font-bold tabular-nums text-muted">{index + 1}</td>
-                <td className="px-3 py-3">
-                  <Link href={`/teams/${row.teamId}`} className="group flex items-center gap-2.5">
-                    <span className="grid h-8 w-8 flex-none place-items-center rounded-full bg-[#eaf1ff] text-[10px] font-extrabold tracking-wide text-[#2457b7] transition-transform group-hover:scale-105">
+                <td className="px-1 py-3 text-right font-bold tabular-nums text-muted sm:px-3">{index + 1}</td>
+                <td className="px-2 py-3 sm:px-3">
+                  <Link href={`/teams/${row.teamId}`} className="group flex items-center gap-1.5 sm:gap-2.5">
+                    <span
+                      className="grid h-7 w-7 flex-none place-items-center rounded-full text-[9px] font-extrabold tracking-wide text-white transition-transform group-hover:scale-105 sm:h-8 sm:w-8 sm:text-[10px]"
+                      style={{ backgroundColor: teamThemeBackground(row.abbreviation) ?? "#2457b7" }}
+                    >
                       {row.abbreviation}
                     </span>
                     <span className="min-w-0">
-                      <span className="block font-bold group-hover:text-blue">{row.nameJa}</span>
-                      <span className="block text-[10px] font-semibold tracking-wide text-muted">{row.name}</span>
+                      <span className="block break-words font-bold leading-[1.35] group-hover:text-blue">{row.nameJa}</span>
+                      <span className="hidden text-[10px] font-semibold tracking-wide text-muted sm:block">{row.name}</span>
                     </span>
                   </Link>
                 </td>
-                <td className="px-2 py-3 text-right font-bold tabular-nums">{row.wins}</td>
-                <td className="px-2 py-3 text-right tabular-nums">{row.losses}</td>
-                <td className="px-2 py-3 text-right tabular-nums">{formatPct(row.winPct)}</td>
-                <td className="px-3 py-3 text-right tabular-nums">{formatGb(row.gamesBack)}</td>
+                <td className="px-1 py-3 text-right font-bold tabular-nums sm:px-2">{row.wins}</td>
+                <td className="px-1 py-3 text-right tabular-nums sm:px-2">{row.losses}</td>
+                <td className="px-1 py-3 text-right tabular-nums sm:px-2">{formatPct(row.winPct)}</td>
+                <td className="px-1 py-3 text-right tabular-nums sm:px-3">{formatGb(row.gamesBack)}</td>
               </tr>
             ))}
           </tbody>

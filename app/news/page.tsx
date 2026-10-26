@@ -123,7 +123,7 @@ export default async function NewsPage({ searchParams }: PageProps<"/news">) {
               return (
                 <article
                   key={article.id}
-                  className="border border-line bg-surface p-6"
+                  className="group border border-line bg-surface p-6 transition-all duration-200 hover:-translate-y-0.5 hover:border-blue hover:bg-[#f6f9ff] hover:shadow-sm focus-within:-translate-y-0.5 focus-within:border-blue focus-within:bg-[#eef4ff] focus-within:shadow-sm active:scale-[1.01]"
                 >
                   <div className="mb-2 flex flex-wrap gap-2">
                     {/* 自作の解説・コラム記事だけに出す(通常記事には区分ラベルを出さない) */}
@@ -150,7 +150,7 @@ export default async function NewsPage({ searchParams }: PageProps<"/news">) {
                   <h2 className="mb-2 text-xl font-semibold">
                     <Link
                       href={`/news/${article.id}`}
-                      className="hover:underline"
+                      className="transition-colors group-hover:text-blue focus-visible:text-blue focus-visible:outline-none focus-visible:underline"
                     >
                       {article.headlineJa}
                     </Link>
@@ -163,7 +163,7 @@ export default async function NewsPage({ searchParams }: PageProps<"/news">) {
                   </p>
                   <Link
                     href={`/news/${article.id}`}
-                    className="text-sm font-extrabold text-blue"
+                    className="text-sm font-extrabold text-blue transition-transform group-hover:translate-x-0.5"
                   >
                     続きを読む →
                   </Link>

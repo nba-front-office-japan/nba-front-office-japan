@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Database } from "@/lib/supabase/types";
 import { DEFAULT_SEASON, seasonSearch } from "@/lib/seasons";
 import { teamNameJa } from "@/lib/team-names-ja";
+import { teamThemeBackground } from "@/lib/team-colors";
 
 type Team = Database["public"]["Tables"]["teams"]["Row"];
 
@@ -82,11 +83,12 @@ export function TeamDirectory({
                             }`}
                           >
                             <span
-                              className={`inline-grid h-[30px] w-[30px] flex-none place-items-center rounded-full text-[10px] tracking-wide transition-transform duration-200 group-hover:scale-105 ${
+                              className={`inline-grid h-[30px] w-[30px] flex-none place-items-center rounded-full text-[10px] tracking-wide text-white transition-transform duration-200 group-hover:scale-105 ${
                                 isActive
-                                  ? "bg-blue text-white"
-                                  : "bg-[#eaf1ff] text-[#2457b7]"
+                                  ? "ring-2 ring-offset-2 ring-blue"
+                                  : ""
                               }`}
+                              style={{ backgroundColor: teamThemeBackground(team.abbreviation) ?? "#2457b7" }}
                             >
                               {team.abbreviation}
                             </span>
