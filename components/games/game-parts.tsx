@@ -38,12 +38,15 @@ export function TipoffTime({ game }: { game: GameSummary }) {
 export function SpoilerGate({
   message,
   onReveal,
+  onChooseIndividual,
   loading,
   children,
   toneClass,
 }: {
   message: string;
   onReveal: () => void;
+  /** 対戦カードだけを先に表示し、選んだ1試合だけ結果を開く一覧へ進む */
+  onChooseIndividual?: () => void;
   loading: boolean;
   children?: ReactNode;
   toneClass?: string;
@@ -53,17 +56,42 @@ export function SpoilerGate({
       <p className={`mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] ${toneClass ? "" : "text-blue"}`}>Spoiler free</p>
       <p className="mb-2 text-lg font-bold">{message}</p>
       {children && <div className="mb-5 mt-4">{children}</div>}
-      <p className={`mb-5 text-xs leading-6 ${toneClass ? "opacity-85" : "text-muted"}`}>ネタバレ防止のため、試合の勝敗・点数は、ボタンを押すまで表示しません。</p>
-      <button
-        type="button"
-        onClick={onReveal}
-        disabled={loading}
-        className={`px-5 py-3 text-sm font-extrabold disabled:opacity-60 ${
-          toneClass ? "bg-navy text-white hover:bg-[#22304d] dark:bg-gold dark:text-[#182238]" : "bg-gold text-[#182238]"
-        }`}
-      >
-        {loading ? "読み込み中…" : "結果を表示する"}
-      </button>
+      <p className={`mb-5 text-xs leading-6 ${toneClass ? "opacity-85" : "text-muted"}`}>ネタバレ防止のため、試合の勝敗・点数は、選んだ試合だけ表示できます。</p>
+      {onChooseIndividual ? (
+        <div className="mx-auto grid max-w-xl gap-3 text-left sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={onReveal}
+            disabled={loading}
+            className={`rounded-lg px-5 py-4 text-left transition-colors disabled:opacity-60 ${
+              toneClass ? "bg-navy text-white hover:bg-[#22304d] dark:bg-gold dark:text-[#182238]" : "bg-gold text-[#182238] hover:bg-[#e7aa31]"
+            }`}
+          >
+            <span className="block text-sm font-extrabold">一覧でみる</span>
+            <span className="mt-1 block text-xs font-medium opacity-85">全試合の結果を表示</span>
+          </button>
+          <button
+            type="button"
+            onClick={onChooseIndividual}
+            disabled={loading}
+            className="rounded-lg border border-current/30 bg-surface/75 px-5 py-4 text-left text-foreground transition-colors hover:bg-surface disabled:opacity-60"
+          >
+            <span className="block text-sm font-extrabold">個別にみる</span>
+            <span className="mt-1 block text-xs font-medium opacity-70">開きたい試合だけ結果を表示</span>
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={onReveal}
+          disabled={loading}
+          className={`rounded-lg px-5 py-3 text-sm font-extrabold disabled:opacity-60 ${
+            toneClass ? "bg-navy text-white hover:bg-[#22304d] dark:bg-gold dark:text-[#182238]" : "bg-gold text-[#182238]"
+          }`}
+        >
+          {loading ? "読み込み中…" : "結果を表示する"}
+        </button>
+      )}
     </div>
   );
 }

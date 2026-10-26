@@ -2,20 +2,24 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import type { GameSummary, GamesResponse } from "@/lib/games/types";
+import type { GameDetail, GameDetailResponse, GameSummary, GamesResponse } from "@/lib/games/types";
 import { NotReadyNotice, SpoilerGate, StatusBadge, TipoffTime } from "./game-parts";
 import { GameDayStatusInfo, LEVEL_GATE_CLASS } from "./game-day-status";
 import { gameDayLevel, type GameDayStatus } from "@/lib/games/types";
 import { ScoreTable } from "./score-table";
 import { InlineBoxScore } from "./inline-box-score";
+import { GameBoxScores } from "./game-box-scores";
+import { TeamName } from "./names";
 import { formatJstDateLabel, gamesDateHref } from "@/lib/games/date";
 import { getCached, isDateRevealed, markDateRevealed, markGameRevealed, setCached, subscribeNoop, unknownOnServer } from "./reveal-store";
 
 type Result = { kind: "ready"; games: GameSummary[] } | { kind: "not_ready" } | { kind: "error"; message: string };
 
-async function fetchGames(date: string): Promise<Result> {
+async function fetchGames(date: string, view: "all" | "individual"): Promise<Result> {
   try {
-    const res = await fetch(`/api/games?date=${encodeURIComponent(date)}`, { cache: "no-store" });
+    const params = new URLSearchParams({ date });
+    if (view === "individual") params.set("view", "matchups");
+    const res = await fetch(`/api/games?${params.toString()}`, { cache: "no-store" });
     const body = (await res.json()) as GamesResponse | { error: string };
     if (!res.ok || "error" in body) return { kind: "error", message: "error" in body ? body.error : `HTTP ${res.status}` };
     return body.status === "ok" ? { kind: "ready", games: body.games } : { kind: "not_ready" };
@@ -51,27 +55,37 @@ export function GamesCenter({
 }) {
   // このタブで結果を表示済みの日付か(サーバー側・最初の描画では分からないため null)
   const revealedBefore = useSyncExternalStore(subscribeNoop, () => isDateRevealed(date), unknownOnServer);
-  const [clicked, setClicked] = useState(false);
+  const [selectedView, setSelectedView] = useState<"all" | "individual" | null>(null);
   // 一度取得した結果は、このタブのページ間移動の間だけ保持する(戻ったときにすぐ表示する)
+  const view = revealedBefore === true ? "all" : selectedView;
+  const cacheKey = view === "individual" ? `matchups:${date}` : `list:${date}`;
   const [result, setResult] = useState<Result | null>(() => getCached<Result>(`list:${date}`) ?? null);
-  const show = clicked || revealedBefore === true;
+  const show = view !== null;
 
   useEffect(() => {
-    if (!show || result) return;
+    if (!view || result) return;
     let cancelled = false;
-    void fetchGames(date).then((next) => {
+    void fetchGames(date, view).then((next) => {
       if (cancelled) return;
-      if (next.kind !== "error") setCached(`list:${date}`, next);
+      if (next.kind !== "error") setCached(cacheKey, next);
       setResult(next);
     });
     return () => {
       cancelled = true;
     };
-  }, [show, result, date]);
+  }, [view, result, date, cacheKey]);
 
   function reveal() {
     markDateRevealed(date);
-    setClicked(true);
+    // 個別表示から「一覧でみる」へ戻す際は、得点を伏せた対戦カードのキャッシュを使い回さない。
+    setResult(getCached<Result>(`list:${date}`) ?? null);
+    setSelectedView("all");
+  }
+
+  function chooseIndividual() {
+    const cached = getCached<Result>(`matchups:${date}`) ?? null;
+    setResult(cached);
+    setSelectedView("individual");
   }
 
   // 結果を隠している枠全体の配色(その日の入力状況ごと)
@@ -83,14 +97,14 @@ export function GamesCenter({
     // まだ判定できない間(ページを開いた直後の一瞬)は、非表示画面も結果も出さない
     if (revealedBefore === null) return <LoadingNotice />;
     return (
-      <SpoilerGate message={`${dayLabel}の試合結果は非表示です`} onReveal={reveal} loading={false} toneClass={gateTone}>
+      <SpoilerGate message={`${dayLabel}の試合結果は非表示です`} onReveal={reveal} onChooseIndividual={chooseIndividual} loading={false} toneClass={gateTone}>
         {dayStatus && <GameDayStatusInfo status={dayStatus} />}
       </SpoilerGate>
     );
   }
   if (!result) {
-    return clicked ? (
-      <SpoilerGate message={`${dayLabel}の試合結果は非表示です`} onReveal={reveal} loading toneClass={gateTone}>
+    return selectedView ? (
+      <SpoilerGate message={`${dayLabel}の試合結果は非表示です`} onReveal={reveal} onChooseIndividual={chooseIndividual} loading toneClass={gateTone}>
         {dayStatus && <GameDayStatusInfo status={dayStatus} />}
       </SpoilerGate>
     ) : (
@@ -106,6 +120,10 @@ export function GamesCenter({
     );
   }
   if (result.games.length === 0) return <NoGamesNotice date={date} today={today} adjacent={adjacent} />;
+
+  if (view === "individual") {
+    return <IndividualGamesList games={result.games} onShowAll={reveal} />;
+  }
 
   // その日の全試合。各試合のボックススコアは、カードの下の「ボックススコアを表示」でその場で開ける
   return (
@@ -130,6 +148,76 @@ export function GamesCenter({
         </li>
       ))}
     </ul>
+  );
+}
+
+type DetailState =
+  | { kind: "loading" }
+  | { kind: "ready"; detail: GameDetail }
+  | { kind: "error"; message: string };
+
+// 個別表示の対戦カード。ここでは勝敗・得点を一切描画しない。
+// この試合を押した時だけ詳細APIを呼び、現在の一覧と同じ結果・ボックススコアをその場に開く。
+function IndividualGamesList({ games, onShowAll }: { games: GameSummary[]; onShowAll: () => void }) {
+  return (
+    <div>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm font-bold text-muted">対戦カードから、見たい試合だけ結果とボックススコアを開けます。</p>
+        <button type="button" onClick={onShowAll} className="rounded-lg border border-line bg-surface px-3 py-2 text-xs font-extrabold text-blue hover:border-blue hover:bg-background">
+          全試合の結果を表示
+        </button>
+      </div>
+      <ul className="grid grid-cols-1 gap-3">
+        {games.map((game) => <IndividualGameCard key={game.id} game={game} />)}
+      </ul>
+    </div>
+  );
+}
+
+function IndividualGameCard({ game }: { game: GameSummary }) {
+  const [state, setState] = useState<DetailState | null>(null);
+
+  async function revealGame() {
+    markGameRevealed(game.id);
+    setState({ kind: "loading" });
+    try {
+      const res = await fetch(`/api/games/${encodeURIComponent(game.id)}`, { cache: "no-store" });
+      const body = (await res.json()) as GameDetailResponse | { error: string };
+      if (!res.ok || "error" in body || body.status !== "ok") {
+        setState({ kind: "error", message: "error" in body ? body.error : "試合データが見つかりませんでした" });
+        return;
+      }
+      setCached(`detail:${game.id}`, { kind: "ready", detail: body.detail });
+      setState({ kind: "ready", detail: body.detail });
+    } catch (err) {
+      setState({ kind: "error", message: err instanceof Error ? err.message : String(err) });
+    }
+  }
+
+  if (state?.kind === "ready") {
+    return (
+      <li className="overflow-hidden rounded-xl border border-line bg-surface">
+        <div className="p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><StatusBadge game={state.detail.game} /><TipoffTime game={state.detail.game} /></div>
+          <ScoreTable game={state.detail.game} />
+        </div>
+        <div className="border-t border-line px-4 py-5"><GameBoxScores detail={state.detail} /></div>
+      </li>
+    );
+  }
+
+  return (
+    <li className="rounded-xl border border-line bg-surface p-4 transition-colors hover:border-blue hover:bg-[#f6f9ff]">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><StatusBadge game={game} /><TipoffTime game={game} /></div>
+      <div className="space-y-2.5">
+        <TeamName team={game.away} />
+        <TeamName team={game.home} />
+      </div>
+      <button type="button" onClick={revealGame} disabled={state?.kind === "loading"} className="mt-4 rounded-lg bg-navy px-4 py-2.5 text-sm font-extrabold text-white hover:bg-[#22304d] disabled:opacity-60">
+        {state?.kind === "loading" ? "読み込み中…" : "この試合の結果・ボックススコアを見る"}
+      </button>
+      {state?.kind === "error" && <p className="mt-3 text-sm text-red-600 dark:text-red-400">取得に失敗しました：{state.message}</p>}
+    </li>
   );
 }
 
