@@ -20,7 +20,7 @@ import {
 // タイトル・説明文にも試合結果を含めない(検索結果やSNSの共有でネタバレしないため)
 export const metadata: Metadata = {
   title: "試合結果＆ボックススコア | NBA Front Office Japan",
-  description: "NBAの試合結果とボックススコア。ネタバレ防止のため、結果は「結果を表示する」を押したときだけ表示します。",
+  description: "NBAの試合結果とボックススコア。ネタバレ防止のため、全試合の一覧表示か、見たい試合だけを開く個別表示を選べます。",
 };
 
 // 日付は日本時間。?date=YYYY-MM-DD でその日の試合を表示する(指定なしは今日)。
@@ -58,7 +58,7 @@ export default async function GamesPage({ searchParams }: PageProps<"/games">) {
       <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">Games</p>
       <h1 className="mb-3 text-[28px] font-semibold tracking-tight sm:text-[36px]">試合結果＆ボックススコア</h1>
       <p className="mb-6 text-sm leading-7 text-muted">
-        ネタバレ防止のため、試合の勝敗・点数は「結果を表示する」を押したときだけ表示します。日付は日本時間です。カレンダーから日付を選ぶと、プレシーズンを含む過去の試合も見られます。
+        ネタバレ防止のため、全試合の結果を表示する「一覧でみる」と、見たい試合だけ開く「個別にみる」を選べます。日付は日本時間です。カレンダーから日付を選ぶと、プレシーズンを含む過去の試合も見られます。
       </p>
 
       <nav aria-label="試合日" className="mb-4 grid grid-cols-3 lg:mb-6 border border-line bg-surface">
