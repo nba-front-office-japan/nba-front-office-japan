@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 
 const TABS = ["Profile", "Stats", "Team Profile"] as const;
 export type TeamTab = (typeof TABS)[number];
 
 const TAB_BASE =
-  "whitespace-nowrap border-b-[3px] py-3.5 text-[13px] font-bold transition-colors";
-const TAB_IDLE = "border-transparent text-muted hover:text-foreground";
+  "whitespace-nowrap border-b-[3px] px-2 py-3.5 text-[13px] font-bold transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--team-tab-accent)]";
+const TAB_IDLE =
+  "border-transparent text-muted hover:-translate-y-px hover:border-[var(--team-tab-accent)] hover:bg-[var(--team-tab-tint)] hover:text-[var(--team-tab-accent)] active:translate-y-px active:scale-[0.98]";
 
 // チームページの Profile / Stats / Team Profile を画面内で切り替える。初期表示は Team Profile(チームの概要)。
 export function TeamTabs({
@@ -15,11 +16,14 @@ export function TeamTabs({
   stats,
   teamProfile,
   initialTab = "Team Profile",
+  accent = "#1f63e9",
 }: {
   profile: ReactNode;
   stats: ReactNode;
   teamProfile: ReactNode;
   initialTab?: TeamTab;
+  /** 選択・ホバー時に使うチーム固有色 */
+  accent?: string;
 }) {
   const [tab, setTab] = useState<TeamTab>(initialTab);
   const content: Record<TeamTab, ReactNode> = {
@@ -30,13 +34,21 @@ export function TeamTabs({
 
   return (
     <div>
-      <div className="flex gap-6 overflow-x-auto border-b border-line">
+      <div
+        className="flex gap-3 overflow-x-auto border-b border-line"
+        style={{
+          "--team-tab-accent": accent,
+          "--team-tab-tint": `${accent}20`,
+        } as CSSProperties}
+      >
         {TABS.map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={`${TAB_BASE} ${
-              tab === t ? "border-blue text-blue" : TAB_IDLE
+              tab === t
+                ? "border-[var(--team-tab-accent)] bg-[var(--team-tab-tint)] text-[var(--team-tab-accent)] shadow-sm"
+                : TAB_IDLE
             }`}
           >
             {t}

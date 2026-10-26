@@ -91,13 +91,13 @@ export function TeamDirectory({
                             className={`group flex items-center gap-2.5 rounded-xl border px-2 py-1.5 text-sm font-bold transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--team-accent)] ${
                               isActive
                                 ? "border-[var(--team-accent)] bg-[var(--team-tint)] text-[var(--team-accent)] shadow-sm"
-                                : "border-transparent hover:-translate-y-0.5 hover:border-[var(--team-accent)] hover:bg-[var(--team-tint)] hover:shadow-sm hover:text-[var(--team-accent)]"
+                                : "border-transparent hover:-translate-y-0.5 hover:scale-[1.01] hover:border-[var(--team-accent)] hover:bg-[var(--team-tint)] hover:shadow-sm hover:text-[var(--team-accent)] active:translate-y-px active:scale-[0.99]"
                             }`}
                           >
                             <span
                               className={`inline-grid h-[30px] w-[30px] flex-none place-items-center rounded-full text-[10px] tracking-wide text-white transition-transform duration-200 group-hover:scale-105 ${
                                 isActive
-                                  ? "ring-2 ring-offset-2 ring-blue"
+                                  ? "ring-2 ring-offset-2 ring-[var(--team-accent)]"
                                   : ""
                               }`}
                               style={{ backgroundColor: teamAccent }}
@@ -120,7 +120,7 @@ export function TeamDirectory({
                                 key={link.label}
                                 href={link.href}
                                 aria-label={`${team.name} ${link.label}`}
-                                className="inline-flex min-h-9 min-w-[72px] items-center justify-center rounded-lg border border-line px-3 text-xs font-bold text-blue transition-all duration-200 hover:-translate-y-px hover:border-[var(--team-accent)] hover:bg-[var(--team-tint)] hover:text-[var(--team-accent)] hover:shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--team-accent)]"
+                                className="inline-flex min-h-9 min-w-[72px] items-center justify-center rounded-lg border border-line px-3 text-xs font-bold text-blue transition-all duration-200 hover:-translate-y-px hover:scale-[1.03] hover:border-[var(--team-accent)] hover:bg-[var(--team-tint)] hover:text-[var(--team-accent)] hover:shadow-sm active:translate-y-px active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--team-accent)]"
                               >
                                 {link.label}
                               </Link>

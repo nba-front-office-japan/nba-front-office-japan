@@ -123,7 +123,7 @@ export default async function NewsPage({ searchParams }: PageProps<"/news">) {
               return (
                 <article
                   key={article.id}
-                  className="group rounded-xl border border-line bg-surface p-6 transition-all duration-200 hover:-translate-y-1 hover:scale-[1.005] hover:border-blue hover:bg-[#f6f9ff] hover:shadow-md focus-within:-translate-y-1 focus-within:scale-[1.005] focus-within:border-blue focus-within:bg-[#eef4ff] focus-within:shadow-md active:scale-[1.01]"
+                  className="group rounded-xl border border-line bg-surface p-6 transition-all duration-200 hover:-translate-y-1 hover:scale-[1.01] hover:border-blue hover:bg-[#f6f9ff] hover:shadow-md focus-within:-translate-y-1 focus-within:scale-[1.01] focus-within:border-blue focus-within:bg-[#eef4ff] focus-within:shadow-md active:translate-y-px active:scale-[0.99]"
                 >
                   <div className="mb-2 flex flex-wrap gap-2">
                     {/* 自作の解説・コラム記事だけに出す(通常記事には区分ラベルを出さない) */}

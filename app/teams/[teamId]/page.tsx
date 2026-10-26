@@ -245,6 +245,7 @@ export default async function TeamDetailPage({
         {pageTitle}
         <TeamTabs
           initialTab={initialTab}
+          accent={teamColor ?? undefined}
           profile={
             <div className="border border-line bg-surface p-6">
               <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
@@ -334,6 +335,7 @@ export default async function TeamDetailPage({
       ) : (
         <TeamTabs
           initialTab={initialTab}
+          accent={teamColor ?? undefined}
           profile={
             <div className="border border-line bg-surface p-6">
               <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
