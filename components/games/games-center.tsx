@@ -132,7 +132,7 @@ export function GamesCenter({
     <ul className="grid grid-cols-1 gap-3">
       {result.games.map((game) => (
         <li key={game.id} className="min-w-0 overflow-hidden rounded-xl border border-line bg-surface">
-          <Link href={`/games/${game.id}?date=${date}`} onClick={() => markGameRevealed(game.id)} className="selection-button selection-blue block p-4 transition-all duration-200">
+          <Link href={`/games/${game.id}?date=${date}`} onClick={() => markGameRevealed(game.id)} className="selection-button selection-game-card block p-4 transition-all duration-200">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <StatusBadge game={game} />
               <TipoffTime game={game} />
@@ -167,7 +167,7 @@ function IndividualGamesList({ games, date, onShowAll }: { games: GameSummary[];
 function IndividualGameCard({ game, date }: { game: GameSummary; date: string }) {
   return (
     <li className="overflow-hidden rounded-xl border border-line bg-surface">
-      <Link href={`/games/${game.id}?date=${date}&view=individual`} onClick={() => markGameRevealed(game.id)} className="selection-button selection-blue block p-4 transition-all duration-200">
+      <Link href={`/games/${game.id}?date=${date}&view=individual`} onClick={() => markGameRevealed(game.id)} className="selection-button selection-game-card block p-4 transition-all duration-200">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><StatusBadge game={game} /><TipoffTime game={game} /></div>
         <div className="space-y-2.5">
           <TeamName team={game.away} />
