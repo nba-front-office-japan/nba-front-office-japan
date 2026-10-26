@@ -71,3 +71,9 @@ body {
   color: var(--foreground);
   font-family: "Noto Sans JP", "Hiragino Sans", "Yu Gothic", "Meiryo", Arial, Helvetica, sans-serif;
 }
+
+/* 本文で使うカード・検索欄・順位表など、枠線を持つ要素の見た目を統一する。
+   丸いバッジは既存の rounded-full を優先する。 */
+main :where([class~="border"]):not(.rounded-full) {
+  border-radius: 0.75rem;
+}

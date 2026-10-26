@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import type { Database } from "@/lib/supabase/types";
 import { DEFAULT_SEASON, seasonSearch } from "@/lib/seasons";
 import { teamNameJa } from "@/lib/team-names-ja";
@@ -74,12 +75,23 @@ export function TeamDirectory({
                     {divisionTeams.map((team) => {
                       const isActive = team.id === activeTeamId;
                       const japaneseName = teamNameJa(team.abbreviation) ?? team.name;
+                      const teamAccent = teamThemeBackground(team.abbreviation) ?? "#2457b7";
+                      const teamStyle = {
+                        "--team-accent": teamAccent,
+                        "--team-tint": `${teamAccent}18`,
+                      } as CSSProperties;
                       return (
-                        <div key={team.id} className="border-t border-line py-2.5">
+                        <div
+                          key={team.id}
+                          className="border-t border-line py-2.5"
+                          style={teamStyle}
+                        >
                           <Link
                             href={`/teams/${team.id}${seasonSearch(season)}`}
-                            className={`group flex items-center gap-2.5 border border-transparent px-2 py-1.5 text-sm font-bold transition-all duration-200 ${
-                              isActive ? "bg-[#eef4ff] text-blue" : "hover:-translate-y-0.5 hover:border-[#c7d8fb] hover:bg-[#f6f9ff] hover:shadow-sm hover:text-blue"
+                            className={`group flex items-center gap-2.5 rounded-xl border px-2 py-1.5 text-sm font-bold transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--team-accent)] ${
+                              isActive
+                                ? "border-[var(--team-accent)] bg-[var(--team-tint)] text-[var(--team-accent)] shadow-sm"
+                                : "border-transparent hover:-translate-y-0.5 hover:border-[var(--team-accent)] hover:bg-[var(--team-tint)] hover:shadow-sm hover:text-[var(--team-accent)]"
                             }`}
                           >
                             <span
@@ -88,7 +100,7 @@ export function TeamDirectory({
                                   ? "ring-2 ring-offset-2 ring-blue"
                                   : ""
                               }`}
-                              style={{ backgroundColor: teamThemeBackground(team.abbreviation) ?? "#2457b7" }}
+                              style={{ backgroundColor: teamAccent }}
                             >
                               {team.abbreviation}
                             </span>
@@ -108,7 +120,7 @@ export function TeamDirectory({
                                 key={link.label}
                                 href={link.href}
                                 aria-label={`${team.name} ${link.label}`}
-                                className="inline-flex min-h-9 min-w-[72px] items-center justify-center border border-line px-3 text-xs font-bold text-blue hover:border-blue"
+                                className="inline-flex min-h-9 min-w-[72px] items-center justify-center rounded-lg border border-line px-3 text-xs font-bold text-blue transition-all duration-200 hover:-translate-y-px hover:border-[var(--team-accent)] hover:bg-[var(--team-tint)] hover:text-[var(--team-accent)] hover:shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--team-accent)]"
                               >
                                 {link.label}
                               </Link>

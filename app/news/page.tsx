@@ -59,11 +59,11 @@ export default async function NewsPage({ searchParams }: PageProps<"/news">) {
               defaultValue={query}
               maxLength={MAX_QUERY_LENGTH}
               placeholder="NEWS を検索（タイトル・本文）"
-              className="min-h-10 w-full min-w-0 border border-line bg-surface px-3 text-sm"
+              className="min-h-10 w-full min-w-0 rounded-lg border border-line bg-surface px-3 text-sm"
             />
             <button
               type="submit"
-              className="min-h-10 shrink-0 bg-blue px-4 text-sm font-bold text-white hover:bg-[#184fcf]"
+              className="min-h-10 shrink-0 rounded-lg bg-blue px-4 text-sm font-bold text-white transition-colors hover:bg-[#184fcf]"
             >
               検索
             </button>
@@ -94,7 +94,7 @@ export default async function NewsPage({ searchParams }: PageProps<"/news">) {
         )}
         {articles.length === 0 ? (
           query ? (
-            <div className="border border-line bg-surface p-6 text-sm">
+            <div className="rounded-xl border border-line bg-surface p-6 text-sm">
               <p className="font-bold">
                 「<span className="break-all">{query}</span>
                 」に一致する記事はありません。
@@ -110,7 +110,7 @@ export default async function NewsPage({ searchParams }: PageProps<"/news">) {
               </Link>
             </div>
           ) : (
-            <p className="border border-line bg-surface p-6 text-sm text-muted">
+            <p className="rounded-xl border border-line bg-surface p-6 text-sm text-muted">
               まだ公開されている記事がありません。
             </p>
           )
@@ -123,7 +123,7 @@ export default async function NewsPage({ searchParams }: PageProps<"/news">) {
               return (
                 <article
                   key={article.id}
-                  className="group border border-line bg-surface p-6 transition-all duration-200 hover:-translate-y-0.5 hover:border-blue hover:bg-[#f6f9ff] hover:shadow-sm focus-within:-translate-y-0.5 focus-within:border-blue focus-within:bg-[#eef4ff] focus-within:shadow-sm active:scale-[1.01]"
+                  className="group rounded-xl border border-line bg-surface p-6 transition-all duration-200 hover:-translate-y-1 hover:scale-[1.005] hover:border-blue hover:bg-[#f6f9ff] hover:shadow-md focus-within:-translate-y-1 focus-within:scale-[1.005] focus-within:border-blue focus-within:bg-[#eef4ff] focus-within:shadow-md active:scale-[1.01]"
                 >
                   <div className="mb-2 flex flex-wrap gap-2">
                     {/* 自作の解説・コラム記事だけに出す(通常記事には区分ラベルを出さない) */}

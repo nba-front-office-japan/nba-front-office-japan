@@ -32,7 +32,7 @@ function formatGb(value: number | null): string {
 function StandingTable({ rows, label }: { rows: StandingRow[]; label: string }) {
   const ranked = rankStandings(rows);
   return (
-    <section className="overflow-hidden border border-line bg-surface">
+    <section className="overflow-hidden rounded-xl border border-line bg-surface">
       <h2 className="border-b border-line px-4 py-3 text-base font-extrabold sm:px-5">{label}</h2>
       <div>
         <table className="w-full table-fixed text-xs sm:text-sm">
@@ -90,7 +90,7 @@ export function StandingsBoard({ rows }: { rows: StandingRow[] }) {
 
   return (
     <div>
-      <div role="tablist" aria-label="順位表の表示単位" className="mb-5 inline-flex border border-line bg-surface p-1">
+      <div role="tablist" aria-label="順位表の表示単位" className="mb-5 inline-flex overflow-hidden rounded-xl border border-line bg-surface p-1">
         {tabs.map((tab) => (
           <button
             key={tab.key}
