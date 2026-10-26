@@ -131,8 +131,8 @@ export function GamesCenter({
   return (
     <ul className="grid grid-cols-1 gap-3">
       {result.games.map((game) => (
-        <li key={game.id} className="min-w-0 border border-line bg-surface">
-          <Link href={`/games/${game.id}?date=${date}`} onClick={() => markGameRevealed(game.id)} className="block p-4 transition-colors hover:bg-background/60">
+        <li key={game.id} className="min-w-0 overflow-hidden rounded-xl border border-line bg-surface">
+          <Link href={`/games/${game.id}?date=${date}`} onClick={() => markGameRevealed(game.id)} className="selection-button selection-blue block p-4 transition-all duration-200">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <StatusBadge game={game} />
               <TipoffTime game={game} />
@@ -153,7 +153,7 @@ function IndividualGamesList({ games, date, onShowAll }: { games: GameSummary[];
     <div>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-bold text-muted">対戦カードから、見たい試合だけ試合詳細を開けます。</p>
-        <button type="button" onClick={onShowAll} className="rounded-lg border border-line bg-surface px-3 py-2 text-xs font-extrabold text-blue hover:border-blue hover:bg-background">
+        <button type="button" onClick={onShowAll} className="selection-button selection-gold rounded-lg border border-line bg-surface px-3 py-2 text-xs font-extrabold text-blue hover:border-blue hover:bg-background">
           全試合の結果を表示
         </button>
       </div>
@@ -166,8 +166,8 @@ function IndividualGamesList({ games, date, onShowAll }: { games: GameSummary[];
 
 function IndividualGameCard({ game, date }: { game: GameSummary; date: string }) {
   return (
-    <li className="overflow-hidden rounded-xl border border-line bg-surface transition-colors hover:border-blue hover:bg-[#f6f9ff]">
-      <Link href={`/games/${game.id}?date=${date}&view=individual`} onClick={() => markGameRevealed(game.id)} className="block p-4">
+    <li className="overflow-hidden rounded-xl border border-line bg-surface">
+      <Link href={`/games/${game.id}?date=${date}&view=individual`} onClick={() => markGameRevealed(game.id)} className="selection-button selection-blue block p-4 transition-all duration-200">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><StatusBadge game={game} /><TipoffTime game={game} /></div>
         <div className="space-y-2.5">
           <TeamName team={game.away} />

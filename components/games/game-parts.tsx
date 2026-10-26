@@ -85,7 +85,7 @@ export function SpoilerGate({
           type="button"
           onClick={onReveal}
           disabled={loading}
-          className={`rounded-lg px-5 py-3 text-sm font-extrabold disabled:opacity-60 ${
+          className={`selection-button selection-gold rounded-lg px-5 py-3 text-sm font-extrabold disabled:opacity-60 ${
             toneClass ? "bg-navy text-white hover:bg-[#22304d] dark:bg-gold dark:text-[#182238]" : "bg-gold text-[#182238]"
           }`}
         >

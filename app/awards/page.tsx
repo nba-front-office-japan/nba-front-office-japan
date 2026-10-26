@@ -54,7 +54,7 @@ function WinnerItem({ winner, showDetail = false }: { winner: Winner; showDetail
     <li className="min-w-0 border-l-[3px] border-gold pl-3">
       {showDetail && winner.detail && <span className="block text-[11px] font-bold text-muted">{DETAIL_LABEL[winner.detail] ?? winner.detail}</span>}
       {winner.playerId ? (
-        <Link href={`/players/${winner.playerId}`} className="block break-words text-base font-extrabold leading-snug text-blue underline-offset-2 hover:underline">
+        <Link href={`/players/${winner.playerId}`} className="selection-button selection-blue block rounded-lg px-2 py-1.5 break-words text-base font-extrabold leading-snug text-blue underline-offset-2 hover:underline">
           {main}
         </Link>
       ) : (

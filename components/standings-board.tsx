@@ -51,7 +51,7 @@ function StandingTable({ rows, label }: { rows: StandingRow[]; label: string }) 
               <tr key={row.teamId} className="border-t border-line transition-colors hover:bg-[#f5f8ff] dark:hover:bg-white/[.04]">
                 <td className="px-1 py-3 text-right font-bold tabular-nums text-muted sm:px-3">{index + 1}</td>
                 <td className="px-2 py-3 sm:px-3">
-                  <Link href={`/teams/${row.teamId}`} className="group flex items-center gap-1.5 sm:gap-2.5">
+                  <Link href={`/teams/${row.teamId}`} className="selection-button selection-blue group flex items-center gap-1.5 rounded-lg px-1.5 py-1 sm:gap-2.5">
                     <span
                       className="grid h-7 w-7 flex-none place-items-center rounded-full text-[9px] font-extrabold tracking-wide text-white transition-transform group-hover:scale-105 sm:h-8 sm:w-8 sm:text-[10px]"
                       style={{ backgroundColor: teamThemeBackground(row.abbreviation) ?? "#2457b7" }}
@@ -98,7 +98,7 @@ export function StandingsBoard({ rows }: { rows: StandingRow[] }) {
             role="tab"
             aria-selected={view === tab.key}
             onClick={() => setView(tab.key)}
-            className={`min-h-10 px-4 text-sm font-extrabold transition-colors sm:px-5 ${view === tab.key ? "bg-navy text-white" : "text-muted hover:bg-background hover:text-foreground"}`}
+            className={`selection-button selection-blue min-h-10 px-4 text-sm font-extrabold transition-all duration-200 sm:px-5 ${view === tab.key ? "bg-navy text-white" : "text-muted hover:bg-background hover:text-foreground"}`}
           >
             {tab.label}
           </button>

@@ -69,7 +69,7 @@ export function GameCalendar({
         <button
           type="button"
           onClick={() => setMonth((m) => addMonths(m, -1))}
-          className="min-h-9 min-w-9 border border-line px-2 text-sm font-bold hover:border-blue"
+          className="selection-button selection-blue min-h-9 min-w-9 border border-line px-2 text-sm font-bold hover:border-blue"
           aria-label="前の月"
         >
           ‹
@@ -83,7 +83,7 @@ export function GameCalendar({
         <button
           type="button"
           onClick={() => setMonth((m) => addMonths(m, 1))}
-          className="min-h-9 min-w-9 border border-line px-2 text-sm font-bold hover:border-blue"
+          className="selection-button selection-blue min-h-9 min-w-9 border border-line px-2 text-sm font-bold hover:border-blue"
           aria-label="次の月"
         >
           ›

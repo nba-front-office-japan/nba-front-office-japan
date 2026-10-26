@@ -43,7 +43,7 @@ function ExampleList({ examples }: { examples: string[] }) {
           {GUIDE_PAGES[example] ? (
             <Link
               href={GUIDE_PAGES[example]}
-              className="font-semibold text-blue underline underline-offset-4 hover:no-underline"
+              className="selection-button selection-blue inline-block rounded-lg px-1.5 py-1 font-semibold text-blue underline underline-offset-4 hover:no-underline"
             >
               {example}
             </Link>

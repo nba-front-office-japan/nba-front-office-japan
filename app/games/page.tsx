@@ -69,7 +69,7 @@ export default async function GamesPage({ searchParams }: PageProps<"/games">) {
             key={t.key}
             href={t.href}
             aria-current={t.current ? "page" : undefined}
-            className={`border-b-[3px] px-2 py-3 text-center ${t.current ? "border-gold bg-[#fff6e0] dark:bg-white/[.06]" : "border-transparent hover:bg-background"}`}
+            className={`selection-button selection-blue border-b-[3px] px-2 py-3 text-center transition-all duration-200 ${t.current ? "border-gold bg-[#fff6e0] dark:bg-white/[.06]" : "border-transparent hover:bg-background"}`}
           >
             <span className="block text-sm font-extrabold">{t.label}</span>
             <span className="block text-xs text-muted">{formatJstDateLabel(t.date)}</span>

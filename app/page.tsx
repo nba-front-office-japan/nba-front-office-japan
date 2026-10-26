@@ -55,7 +55,7 @@ export default async function Home() {
           </p>
           <Link
             href="/stats"
-            className="mt-5 inline-block bg-gold px-4 py-3 text-sm font-extrabold text-[#182238]"
+            className="selection-button selection-gold mt-5 inline-block bg-gold px-4 py-3 text-sm font-extrabold text-[#182238]"
           >
             {HOME_COPY.statsCta}
           </Link>
@@ -78,7 +78,7 @@ export default async function Home() {
           {featured ? (
             <>
               <h3 className="text-base font-bold">
-                <Link href={`/news/${featured.id}`} className="hover:underline">
+                <Link href={`/news/${featured.id}`} className="selection-button selection-blue block rounded-lg px-2 py-1.5 hover:underline">
                   {featured.headlineJa}
                 </Link>
               </h3>
@@ -110,15 +110,13 @@ export default async function Home() {
       </div>
 
       {/* 試合結果＆ボックススコア(/games)への入口。ネタバレ防止のため、ホームには試合の勝敗・点数・チーム名を一切表示しない */}
-      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border border-line bg-surface px-6 py-4">
+      <Link href="/games" className="selection-button selection-blue mt-5 flex flex-wrap items-center justify-between gap-3 border border-line bg-surface px-6 py-4">
         <div>
           <p className="text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">Games</p>
           <p className="text-sm text-muted">試合結果は、ネタバレ防止のため「試合結果＆ボックススコア」のページでだけ表示します。</p>
         </div>
-        <Link href="/games" className="bg-navy px-4 py-2.5 text-sm font-extrabold text-white">
-          試合結果＆ボックススコアへ →
-        </Link>
-      </div>
+        <span className="bg-navy px-4 py-2.5 text-sm font-extrabold text-white">試合結果＆ボックススコアへ →</span>
+      </Link>
 
       <div className="mt-5 grid grid-cols-1 gap-4.5 lg:grid-cols-[1.55fr_1fr]">
         {/* お知らせ(管理画面で公開したものを新しい順に最大3件)。0件のときは「現在お知らせはありません」と表示する */}
@@ -168,7 +166,7 @@ export default async function Home() {
               <Link
                 key={pick.sort}
                 href={`/stats?sort=${pick.sort}${"minGames" in pick ? `&minGames=${pick.minGames}` : ""}`}
-                className="border border-line bg-surface px-3 py-2 text-[13px] font-bold"
+                className="selection-button selection-blue border border-line bg-surface px-3 py-2 text-[13px] font-bold"
               >
                 {pick.label}
               </Link>
@@ -191,7 +189,7 @@ export default async function Home() {
           <p>サラリーキャップ。MAX契約。ドラフト。トレード。オーナー。放映権。そして戦力均衡。</p>
           <p>NBA Front Office Japanでは、「誰が勝ったか」だけではなく、「なぜ、そうなったのか」まで掘り下げます。</p>
         </div>
-        <Link href="/guide/introduction" className="mt-5 inline-block bg-navy px-4 py-3 text-sm font-extrabold text-white">
+        <Link href="/guide/introduction" className="selection-button selection-blue mt-5 inline-block bg-navy px-4 py-3 text-sm font-extrabold text-white">
           GUIDEで読む →
         </Link>
       </section>
