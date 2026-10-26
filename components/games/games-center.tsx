@@ -42,6 +42,7 @@ export function GamesCenter({
   gameCount,
   dayStatus,
   adjacent,
+  initialView,
 }: {
   date: string;
   dayLabel: string;
@@ -50,14 +51,15 @@ export function GamesCenter({
   // その日のデータの入力状況(試合数だけ。対戦カード・得点は含まない)
   dayStatus?: GameDayStatus | null;
   adjacent: { prev: string | null; next: string | null };
+  initialView: "individual" | null;
 }) {
   // このタブで結果を表示済みの日付か(サーバー側・最初の描画では分からないため null)
   const revealedBefore = useSyncExternalStore(subscribeNoop, () => isDateRevealed(date), unknownOnServer);
-  const [selectedView, setSelectedView] = useState<"all" | "individual" | null>(null);
+  const [selectedView, setSelectedView] = useState<"all" | "individual" | null>(initialView);
   // 一度取得した結果は、このタブのページ間移動の間だけ保持する(戻ったときにすぐ表示する)
   const view = revealedBefore === true ? "all" : selectedView;
   const cacheKey = view === "individual" ? `matchups:${date}` : `list:${date}`;
-  const [result, setResult] = useState<Result | null>(() => getCached<Result>(`list:${date}`) ?? null);
+  const [result, setResult] = useState<Result | null>(() => getCached<Result>(initialView === "individual" ? `matchups:${date}` : `list:${date}`) ?? null);
   const show = view !== null;
 
   useEffect(() => {
@@ -163,7 +165,7 @@ function IndividualGamesList({ games, date, onShowAll }: { games: GameSummary[];
 function IndividualGameCard({ game, date }: { game: GameSummary; date: string }) {
   return (
     <li className="overflow-hidden rounded-xl border border-line bg-surface transition-colors hover:border-blue hover:bg-[#f6f9ff]">
-      <Link href={`/games/${game.id}?date=${date}`} onClick={() => markGameRevealed(game.id)} className="block p-4">
+      <Link href={`/games/${game.id}?date=${date}&view=individual`} onClick={() => markGameRevealed(game.id)} className="block p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><StatusBadge game={game} /><TipoffTime game={game} /></div>
         <div className="space-y-2.5">
           <TeamName team={game.away} />

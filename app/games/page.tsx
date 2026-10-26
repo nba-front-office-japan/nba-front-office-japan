@@ -28,7 +28,7 @@ export const metadata: Metadata = {
 // 公開済みの ?day=yesterday / tomorrow は、今日から前後1日の日付として扱う。
 // このページのHTMLには試合結果を含めない(カレンダーは日付ごとの試合数だけ)。結果は GamesCenter がボタン操作後に /api/games から取得する。
 export default async function GamesPage({ searchParams }: PageProps<"/games">) {
-  const { date: dateParam, day } = await searchParams;
+  const { date: dateParam, day, view: viewParam } = await searchParams;
   const today = todayJst();
   const legacyOffset = isGameDayKey(day) ? (GAME_DAY_TABS.find((t) => t.key === day)?.offset ?? 0) : 0;
   const selected = typeof dateParam === "string" && isValidDateString(dateParam) ? dateParam : addDays(today, legacyOffset);
@@ -46,6 +46,8 @@ export default async function GamesPage({ searchParams }: PageProps<"/games">) {
 
   const dayLabel = formatJstDateLabel(selected);
   const relative = selected === today ? "今日" : selected === addDays(today, -1) ? "昨日" : selected === addDays(today, 1) ? "明日" : null;
+  // 個別表示の試合詳細から戻るときだけ、対戦カード一覧を復元する。
+  const initialView = viewParam === "individual" ? "individual" : null;
 
   const navItems = [
     { key: "prev", label: "← 前日", date: prevDate, href: gamesDateHref(prevDate, today), current: false },
@@ -83,7 +85,7 @@ export default async function GamesPage({ searchParams }: PageProps<"/games">) {
             {gameCount !== null && gameCount > 0 && <span className="text-xs font-bold text-blue">{gameCount}試合</span>}
           </h2>
 
-          <GamesCenter key={selected} date={selected} dayLabel={dayLabel} today={today} gameCount={gameCount} dayStatus={dayStatus} adjacent={adjacent} />
+          <GamesCenter key={`${selected}:${initialView ?? "choose"}`} date={selected} dayLabel={dayLabel} today={today} gameCount={gameCount} dayStatus={dayStatus} adjacent={adjacent} initialView={initialView} />
         </div>
 
         <div className="order-1 lg:order-2">
