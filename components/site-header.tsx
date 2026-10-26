@@ -8,6 +8,7 @@ const navItems = [
   { href: "/", label: "HOME" },
   { href: "/news", label: "NEWS" },
   { href: "/games", label: "試合結果" },
+  { href: "/standings", label: "順位表" },
   { href: "/teams", label: "TEAMS" },
   { href: "/stats", label: "PLAYERS" },
   { href: "/awards", label: "AWARDS" },

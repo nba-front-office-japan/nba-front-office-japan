@@ -21,7 +21,7 @@ export default async function TeamsPage({ searchParams }: PageProps<"/teams">) {
       <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
         Team Database · {label} Season
       </p>
-      <h1 className="mb-2 text-[36px] font-semibold tracking-tight">Teams</h1>
+      <h1 className="mb-2 text-[36px] font-semibold tracking-tight">チーム一覧</h1>
       <p className="mb-5 text-sm text-muted">
         {season === ROSTER_SEASON
           ? `チーム名から${label}のチームページ（${label}ロスター）へ、その下のリンクから Profile・Stats・Team Profile へ直接進めます。`

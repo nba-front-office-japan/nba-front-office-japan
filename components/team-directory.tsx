@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Database } from "@/lib/supabase/types";
 import { DEFAULT_SEASON, seasonSearch } from "@/lib/seasons";
+import { teamNameJa } from "@/lib/team-names-ja";
 
 type Team = Database["public"]["Tables"]["teams"]["Row"];
 
@@ -10,8 +11,17 @@ const DIVISION_ORDER: Record<string, string[]> = {
 };
 
 const CONFERENCE_LABEL: Record<string, string> = {
-  East: "Eastern Conference",
-  West: "Western Conference",
+  East: "イースタン・カンファレンス",
+  West: "ウエスタン・カンファレンス",
+};
+
+const DIVISION_LABEL: Record<string, string> = {
+  Atlantic: "アトランティック",
+  Central: "セントラル",
+  Southeast: "サウスイースト",
+  Northwest: "ノースウェスト",
+  Pacific: "パシフィック",
+  Southwest: "サウスウェスト",
 };
 
 // チーム名はチームページ(Overview)へ。その下の Profile / Stats / Team Profile は該当タブを直接開く。
@@ -59,19 +69,20 @@ export function TeamDirectory({
                     key={division}
                     className="border-t-2 border-foreground pt-2.5"
                   >
-                    <h3 className="mb-2 text-[13px] font-bold">{division}</h3>
+                    <h3 className="mb-2 text-[13px] font-bold">{DIVISION_LABEL[division] ?? division}</h3>
                     {divisionTeams.map((team) => {
                       const isActive = team.id === activeTeamId;
+                      const japaneseName = teamNameJa(team.abbreviation) ?? team.name;
                       return (
                         <div key={team.id} className="border-t border-line py-2.5">
                           <Link
                             href={`/teams/${team.id}${seasonSearch(season)}`}
-                            className={`flex items-center gap-2.5 text-sm font-bold ${
-                              isActive ? "text-blue" : "hover:text-blue"
+                            className={`group flex items-center gap-2.5 border border-transparent px-2 py-1.5 text-sm font-bold transition-all duration-200 ${
+                              isActive ? "bg-[#eef4ff] text-blue" : "hover:-translate-y-0.5 hover:border-[#c7d8fb] hover:bg-[#f6f9ff] hover:shadow-sm hover:text-blue"
                             }`}
                           >
                             <span
-                              className={`inline-grid h-[30px] w-[30px] flex-none place-items-center rounded-full text-[10px] tracking-wide ${
+                              className={`inline-grid h-[30px] w-[30px] flex-none place-items-center rounded-full text-[10px] tracking-wide transition-transform duration-200 group-hover:scale-105 ${
                                 isActive
                                   ? "bg-blue text-white"
                                   : "bg-[#eaf1ff] text-[#2457b7]"
@@ -79,7 +90,10 @@ export function TeamDirectory({
                             >
                               {team.abbreviation}
                             </span>
-                            <span>{team.name}</span>
+                            <span className="min-w-0">
+                              <span className="block">{japaneseName}</span>
+                              <span className="block text-[10px] font-semibold tracking-wide text-muted">{team.name}</span>
+                            </span>
                           </Link>
                           {/* チームページの各タブを直接開く(?tab= は /teams/[teamId] が受け付ける値) */}
                           <div className="ml-10 mt-1.5 flex flex-wrap gap-2">
