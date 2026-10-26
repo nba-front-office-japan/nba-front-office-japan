@@ -69,7 +69,7 @@ export function PlayerTeamDirectory({
                         <div key={team.id} className="border-t border-line py-2.5" style={teamStyle}>
                           <Link
                             href={`/players/guide/${team.id}${seasonSearch(season)}`}
-                            className="group flex items-center gap-2.5 rounded-xl border border-transparent px-2 py-1.5 text-sm font-bold transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.01] hover:border-[var(--team-accent)] hover:bg-[var(--team-tint)] hover:text-[var(--team-accent)] hover:shadow-sm active:translate-y-px active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--team-accent)]"
+                            className="group flex items-center gap-2.5 rounded-xl border border-transparent px-2 py-1.5 text-sm font-bold transition-all duration-200 hover:-translate-y-1 hover:scale-[1.025] hover:border-[var(--team-accent)] hover:bg-[var(--team-accent)] hover:text-white hover:shadow-lg active:translate-y-1 active:scale-[0.93] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--team-accent)]"
                           >
                             <span
                               className="inline-grid h-[30px] w-[30px] flex-none place-items-center rounded-full text-[10px] tracking-wide text-white transition-transform duration-200 group-hover:scale-105"
@@ -88,7 +88,7 @@ export function PlayerTeamDirectory({
                               <Link
                                 key={link.label}
                                 href={link.href}
-                                className="inline-flex min-h-9 min-w-[72px] items-center justify-center rounded-lg border border-line px-3 text-xs font-bold text-blue transition-all duration-200 hover:-translate-y-px hover:scale-[1.03] hover:border-[var(--team-accent)] hover:bg-[var(--team-tint)] hover:text-[var(--team-accent)] hover:shadow-sm active:translate-y-px active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--team-accent)]"
+                                className="inline-flex min-h-9 min-w-[72px] items-center justify-center rounded-lg border border-line px-3 text-xs font-bold text-blue transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.06] hover:border-[var(--team-accent)] hover:bg-[var(--team-accent)] hover:text-white hover:shadow-lg active:translate-y-1 active:scale-[0.92] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--team-accent)]"
                               >
                                 {link.label}
                               </Link>

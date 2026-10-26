@@ -79,8 +79,8 @@ export default async function PlayerGuideTeamPage({
                 ? "border-white bg-white text-[var(--team-tab-accent)] shadow-sm"
                 : "border-blue bg-blue text-white"
               : teamColor
-                ? "border-white/35 bg-white/[.06] text-white hover:-translate-y-px hover:scale-[1.03] hover:border-white hover:bg-white hover:text-[var(--team-tab-accent)] hover:shadow-sm active:translate-y-px active:scale-[0.98]"
-                : "border-line text-muted hover:-translate-y-px hover:scale-[1.03] hover:border-[var(--team-tab-accent)] hover:bg-[var(--team-tab-tint)] hover:text-[var(--team-tab-accent)] hover:shadow-sm active:translate-y-px active:scale-[0.98]"
+                ? "border-white/35 bg-white/[.06] text-white hover:-translate-y-0.5 hover:scale-[1.06] hover:border-white hover:bg-white hover:text-[var(--team-tab-accent)] hover:shadow-lg active:translate-y-1 active:scale-[0.92]"
+                : "border-line text-muted hover:-translate-y-0.5 hover:scale-[1.06] hover:border-[var(--team-tab-accent)] hover:bg-[var(--team-tab-accent)] hover:text-white hover:shadow-lg active:translate-y-1 active:scale-[0.92]"
           }`}
         >
           {opt.label}

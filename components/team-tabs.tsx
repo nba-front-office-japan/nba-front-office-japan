@@ -8,7 +8,7 @@ export type TeamTab = (typeof TABS)[number];
 const TAB_BASE =
   "whitespace-nowrap border-b-[3px] px-2 py-3.5 text-[13px] font-bold transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--team-tab-accent)]";
 const TAB_IDLE =
-  "border-transparent text-muted hover:-translate-y-px hover:border-[var(--team-tab-accent)] hover:bg-[var(--team-tab-tint)] hover:text-[var(--team-tab-accent)] active:translate-y-px active:scale-[0.98]";
+  "border-transparent text-muted hover:-translate-y-0.5 hover:scale-[1.06] hover:border-[var(--team-tab-accent)] hover:bg-[var(--team-tab-accent)] hover:text-white hover:shadow-lg active:translate-y-1 active:scale-[0.92]";
 
 // チームページの Profile / Stats / Team Profile を画面内で切り替える。初期表示は Team Profile(チームの概要)。
 export function TeamTabs({
@@ -47,7 +47,7 @@ export function TeamTabs({
             onClick={() => setTab(t)}
             className={`${TAB_BASE} ${
               tab === t
-                ? "border-[var(--team-tab-accent)] bg-[var(--team-tab-tint)] text-[var(--team-tab-accent)] shadow-sm"
+                ? "border-white bg-surface text-[var(--team-tab-accent)] shadow-sm"
                 : TAB_IDLE
             }`}
           >

@@ -123,7 +123,7 @@ export default async function NewsPage({ searchParams }: PageProps<"/news">) {
               return (
                 <article
                   key={article.id}
-                  className="group rounded-xl border border-line bg-surface p-6 transition-all duration-200 hover:-translate-y-1 hover:scale-[1.01] hover:border-blue hover:bg-[#f6f9ff] hover:shadow-md focus-within:-translate-y-1 focus-within:scale-[1.01] focus-within:border-blue focus-within:bg-[#eef4ff] focus-within:shadow-md active:translate-y-px active:scale-[0.99]"
+                  className="group rounded-xl border border-line bg-surface p-6 transition-all duration-200 hover:-translate-y-1 hover:scale-[1.025] hover:border-blue hover:bg-blue hover:text-white hover:shadow-lg focus-within:-translate-y-1 focus-within:scale-[1.025] focus-within:border-blue focus-within:bg-blue focus-within:text-white focus-within:shadow-lg active:translate-y-1 active:scale-[0.93]"
                 >
                   <div className="mb-2 flex flex-wrap gap-2">
                     {/* 自作の解説・コラム記事だけに出す(通常記事には区分ラベルを出さない) */}
@@ -150,20 +150,20 @@ export default async function NewsPage({ searchParams }: PageProps<"/news">) {
                   <h2 className="mb-2 text-xl font-semibold">
                     <Link
                       href={`/news/${article.id}`}
-                      className="transition-colors group-hover:text-blue focus-visible:text-blue focus-visible:outline-none focus-visible:underline"
+                      className="transition-colors group-hover:text-white focus-visible:text-white focus-visible:outline-none focus-visible:underline"
                     >
                       {article.headlineJa}
                     </Link>
                   </h2>
                   {article.dekJa && (
-                    <p className="mb-3 text-sm text-muted">{article.dekJa}</p>
+                    <p className="mb-3 text-sm text-muted transition-colors group-hover:text-white/85">{article.dekJa}</p>
                   )}
-                  <p className="mb-3 text-xs text-muted">
+                  <p className="mb-3 text-xs text-muted transition-colors group-hover:text-white/80">
                     {formatDate(article.publishedAt)}
                   </p>
                   <Link
                     href={`/news/${article.id}`}
-                    className="text-sm font-extrabold text-blue transition-transform group-hover:translate-x-0.5"
+                    className="text-sm font-extrabold text-blue transition-all group-hover:translate-x-0.5 group-hover:text-gold"
                   >
                     続きを読む →
                   </Link>
