@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { notFound, redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { PageShell } from "@/components/page-shell";
@@ -58,19 +59,28 @@ export default async function PlayerGuideTeamPage({
   // チームページ(/teams/[teamId])と同じく、ヘッダーより下の背景をチームのメインカラーにする
   const teamColor = teamThemeBackground(team.abbreviation);
 
+  const tabAccent = teamColor ?? "#1f63e9";
   const viewToggle = (
-    <div className="mb-6 flex flex-wrap gap-2">
+    <div
+      className="mb-6 flex flex-wrap gap-2"
+      style={{
+        "--team-tab-accent": tabAccent,
+        "--team-tab-tint": `${tabAccent}20`,
+      } as CSSProperties}
+    >
       {VIEW_OPTIONS.map((opt) => (
         <Link
           key={opt.view}
           href={guideHref(teamId, opt.view)}
           aria-current={selectedView === opt.view ? "page" : undefined}
-          className={`px-4 py-2 text-sm font-bold transition-colors ${
+          className={`rounded-lg border px-4 py-2 text-sm font-bold transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
             selectedView === opt.view
               ? teamColor
-                ? "border border-surface bg-surface text-foreground"
-                : "bg-blue text-white"
-              : "border border-line text-muted hover:text-foreground"
+                ? "border-white bg-white text-[var(--team-tab-accent)] shadow-sm"
+                : "border-blue bg-blue text-white"
+              : teamColor
+                ? "border-white/35 bg-white/[.06] text-white hover:-translate-y-px hover:scale-[1.03] hover:border-white hover:bg-white hover:text-[var(--team-tab-accent)] hover:shadow-sm active:translate-y-px active:scale-[0.98]"
+                : "border-line text-muted hover:-translate-y-px hover:scale-[1.03] hover:border-[var(--team-tab-accent)] hover:bg-[var(--team-tab-tint)] hover:text-[var(--team-tab-accent)] hover:shadow-sm active:translate-y-px active:scale-[0.98]"
           }`}
         >
           {opt.label}

@@ -1,5 +1,7 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { DEFAULT_SEASON, seasonSearch } from "@/lib/seasons";
+import { teamThemeBackground } from "@/lib/team-colors";
 
 export interface TeamListItem {
   id: string;
@@ -57,34 +59,44 @@ export function PlayerTeamDirectory({
                 return (
                   <div key={division} className="border-t-2 border-foreground pt-2.5">
                     <h3 className="mb-2 text-[13px] font-bold">{division}</h3>
-                    {divisionTeams.map((team) => (
-                      <div key={team.id} className="border-t border-line py-2.5">
-                        <Link
-                          href={`/players/guide/${team.id}${seasonSearch(season)}`}
-                          className="flex items-center gap-2.5 text-sm font-bold hover:text-blue"
-                        >
-                          <span className="inline-grid h-[30px] w-[30px] flex-none place-items-center rounded-full bg-[#eaf1ff] text-[10px] tracking-wide text-[#2457b7]">
-                            {team.abbreviation}
-                          </span>
-                          <span>{team.name}</span>
-                        </Link>
-                        <div className="ml-10 mt-1 flex flex-wrap gap-x-4 gap-y-0.5">
-                          {[
-                            { label: "Profile", href: `/players/guide/${team.id}${seasonSearch(season)}` },
-                            { label: "Stats", href: `/players/guide/${team.id}${seasonSearch(season, { view: "stats" })}` },
-                            { label: "Team Profile", href: `/players/guide/${team.id}${seasonSearch(season, { view: "team-profile" })}` },
-                          ].map((link) => (
-                            <Link
-                              key={link.label}
-                              href={link.href}
-                              className="inline-flex min-h-9 items-center text-xs font-semibold text-blue hover:underline"
+                    {divisionTeams.map((team) => {
+                      const teamAccent = teamThemeBackground(team.abbreviation) ?? "#2457b7";
+                      const teamStyle = {
+                        "--team-accent": teamAccent,
+                        "--team-tint": `${teamAccent}18`,
+                      } as CSSProperties;
+                      return (
+                        <div key={team.id} className="border-t border-line py-2.5" style={teamStyle}>
+                          <Link
+                            href={`/players/guide/${team.id}${seasonSearch(season)}`}
+                            className="group flex items-center gap-2.5 rounded-xl border border-transparent px-2 py-1.5 text-sm font-bold transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.01] hover:border-[var(--team-accent)] hover:bg-[var(--team-tint)] hover:text-[var(--team-accent)] hover:shadow-sm active:translate-y-px active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--team-accent)]"
+                          >
+                            <span
+                              className="inline-grid h-[30px] w-[30px] flex-none place-items-center rounded-full text-[10px] tracking-wide text-white transition-transform duration-200 group-hover:scale-105"
+                              style={{ backgroundColor: teamAccent }}
                             >
-                              {link.label}
-                            </Link>
-                          ))}
+                              {team.abbreviation}
+                            </span>
+                            <span>{team.name}</span>
+                          </Link>
+                          <div className="ml-10 mt-1.5 flex flex-wrap gap-2">
+                            {[
+                              { label: "Profile", href: `/players/guide/${team.id}${seasonSearch(season)}` },
+                              { label: "Stats", href: `/players/guide/${team.id}${seasonSearch(season, { view: "stats" })}` },
+                              { label: "Team Profile", href: `/players/guide/${team.id}${seasonSearch(season, { view: "team-profile" })}` },
+                            ].map((link) => (
+                              <Link
+                                key={link.label}
+                                href={link.href}
+                                className="inline-flex min-h-9 min-w-[72px] items-center justify-center rounded-lg border border-line px-3 text-xs font-bold text-blue transition-all duration-200 hover:-translate-y-px hover:scale-[1.03] hover:border-[var(--team-accent)] hover:bg-[var(--team-tint)] hover:text-[var(--team-accent)] hover:shadow-sm active:translate-y-px active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--team-accent)]"
+                              >
+                                {link.label}
+                              </Link>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 );
               })}
