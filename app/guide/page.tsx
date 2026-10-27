@@ -15,6 +15,7 @@ export const metadata: Metadata = {
 const GUIDE_CATEGORIES: { category: string; examples: string[] }[] = [
   // 最初に読む導入ページ
   { category: "はじめに", examples: ["NBAを試合結果だけで終わらせない"] },
+  { category: "NBAの歴史", examples: ["NBAの歴史"] },
   {
     category: "NBA制度",
     examples: ["サラリーキャップ", "ラグジュアリータックス", "1st Apron / 2nd Apron", "Revenue Sharing"],

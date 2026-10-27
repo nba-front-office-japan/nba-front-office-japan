@@ -13,6 +13,7 @@ export const revalidate = 3600;
 // 公開ページの一覧。新しい固定ページを追加したらここにも足す。
 const STATIC_PATHS = [
   "", "/news", "/players", "/players/featured", "/teams", "/stats", "/games", "/awards", "/draft",
+  "/history",
   "/salary", "/salary/players", "/salary/teams",
   "/rankings", "/rankings/owner-net-worth", "/rankings/team-valuations",
   "/premium",

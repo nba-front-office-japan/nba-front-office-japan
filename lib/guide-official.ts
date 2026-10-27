@@ -96,6 +96,7 @@ export const OFFICIAL_SOURCES: OfficialSource[] = [
 export const GUIDE_PAGES: Record<string, string> = {
   // GUIDEの導入ページ(「はじめに」)
   NBAを試合結果だけで終わらせない: "/guide/introduction",
+  "NBAの歴史": "/history",
   サラリーキャップ: "/guide/salary-cap",
   ラグジュアリータックス: "/guide/luxury-tax",
   "1st Apron / 2nd Apron": "/guide/aprons",
