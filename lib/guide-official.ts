@@ -120,6 +120,7 @@ export const GUIDE_PAGES: Record<string, string> = {
   サラリーキャップ迂回に関する処分: "/guide/salary-cap-circumvention",
   // 「用語一覧」(URL は /guide/glossary のまま)の各分類へリンクする
   "ドラフト・制度": "/guide/glossary#draft-system",
+  "スタッツ・指標": "/guide/glossary#stats-metrics",
   "怪我・インジュリー用語": "/guide/glossary#injury",
   プレー用語: "/guide/glossary#play",
   ドラフト指名権: "/guide/draft-picks",
