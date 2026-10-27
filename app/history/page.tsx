@@ -3,6 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
 
+export { default } from "./history-documentary";
+
 export const metadata: Metadata = {
   title: "NBAはなぜルールを変え始めたのか | NBA Front Office Japan",
   description:
@@ -17,6 +19,13 @@ type Exhibit = {
   body: string;
   details?: string[];
   facts: string[];
+  context?: {
+    strategy: string;
+    culture: string;
+    stars: string[];
+    teams: string[];
+    timeline: string[];
+  };
   label: string;
   kind: "archive" | "motion" | "clock" | "gallery";
   photos?: ArchivePhoto[];
@@ -78,8 +87,8 @@ const eraMilestones = [
 
 const exhibits: Exhibit[] = [
   {
-    era: "1950.11.22",
-    title: "19-18が突きつけた、止まる試合という問題",
+    era: "1946–1954",
+    title: "NBA創設期 — 止まる試合からの出発",
     body: "ショットクロックのない時代、リードしたチームはシュートを打たず、ボールを持ち続けることができた。フォートウェイン対ミネアポリスの19-18は、バスケットボールの試合そのものが止まりうることを象徴する一戦として残っている。",
     details: [
       "1946年にBAAとして始まり、1949年にNBAとなった当時のプロバスケットボールには、オフェンスの持ち時間がなかった。リードしたチームはシュートを打たず、ボールを保持し続けることができた。",
@@ -87,6 +96,13 @@ const exhibits: Exhibit[] = [
       "この試合が示したのは、ボールを持ち続ければ試合そのものを止められるという問題だった。NBAは競技を成立させるための解決策を迫られていく。",
     ],
     facts: ["NBA史上最低得点の試合", "両チーム合計 37得点", "成功FGは両軍4本ずつ", "マイカンは18得点中15得点"],
+    context: {
+      strategy: "ビッグマン中心、低テンポ、セットプレー。主導権を握った側が時間を使い切れる構造だった。",
+      culture: "地域興行から全国スポーツへ向かう準備期間。NBAというブランドの原型が形づくられた。",
+      stars: ["ジョージ・マイカン", "ボブ・クージー", "ドルフ・シェイズ"],
+      teams: ["ミネアポリス・レイカーズ", "ロチェスター・ロイヤルズ", "シラキュース・ナショナルズ"],
+      timeline: ["1946　BAA創設", "1949　NBLとの統合でNBA誕生", "1950　フォートウェイン対ミネアポリスが19対18", "1951　制限区域を6ftから12ftへ拡大", "1954　24秒ショットクロック導入"],
+    },
     label: "ARCHIVE 01",
     kind: "gallery",
     photos: [
@@ -121,15 +137,23 @@ const exhibits: Exhibit[] = [
     kind: "clock",
   },
   {
-    era: "1959 → 1964",
-    title: "チェンバレンの存在は、ルールの外側まで届いた",
-    body: "ルーキーイヤーから圧倒的な数字を残したウィルト・チェンバレンは、1961-62シーズンに平均50.4得点、1962年には1試合100得点を記録した。ペイントの拡大だけでなく、ゴール周辺やフリースローをめぐる規則を考える契機にもなった。",
+    era: "1954–1964",
+    title: "24秒とビッグマンの時代",
+    body: "24秒ショットクロックが試合を動かし、ラッセルとチェンバレンが勝利と個人記録の両極を体現した。突出したセンターの存在は、ペイントの拡大だけでなく、ゴール周辺のルールを考える契機にもなった。",
     details: [
+      "48分は2,880秒。テンポのよい試合で両チーム合計120本程度のシュートが打たれると考え、2,880を120で割って24秒が導かれた。導入前年に79.5点だった1チーム平均得点は、1954-55シーズンには93.1点へ上昇した。",
       "1959年にNBAへ現れたチェンバレンは、ルーキーシーズンから平均37.6得点、27.0リバウンドを記録。1961-62シーズンには平均50.4得点、1962年3月2日には現在もNBA記録の1試合100得点を残した。",
       "1964-65シーズンから制限区域は12フィートから16フィートへ再び拡大された。現在のNBAコートに残る16フィートのペイントエリアには、マイカンとチェンバレンという二人の支配的なビッグマンの影響が刻まれている。",
       "チェンバレンの跳躍力は、フリースローやゴール周辺の規則を競技としてどう運用するかまで考えさせた。高さという圧倒的な優位を、いかにバスケットボールとして成立させるか。それもNBAが向き合った課題だった。",
     ],
     facts: ["1961-62：平均50.4得点", "1962.03.02：1試合100得点", "1964-65：ペイントを16ftへ"],
+    context: {
+      strategy: "24秒で加速した攻防に、リバウンド、アウトレットパス、速攻という新しい勝ち筋が重なった。",
+      culture: "個人記録の極限と王朝の勝利が対比され、NBAにスターをどう語るかという物語性が生まれた。",
+      stars: eraFigures.slice(0, 4).map((player) => player.name),
+      teams: ["ボストン・セルティックス", "フィラデルフィア／サンフランシスコ・ウォリアーズ", "ロサンゼルス・レイカーズ"],
+      timeline: eraMilestones,
+    },
     label: "WILT'S ERA",
     kind: "gallery",
     photos: [
@@ -138,8 +162,8 @@ const exhibits: Exhibit[] = [
     ],
   },
   {
-    era: "1967 → 1977",
-    title: "ダンク禁止と、ジャバーのスカイフックへの道",
+    era: "1964–1977",
+    title: "カリームへ続く時代",
     body: "大学バスケットボールでは、ルー・アルシンダーが活躍した時代にダンクが禁止された。NBAのルール変更ではないが、圧倒的な才能が競技のルールや戦術に影響を与えるという時代の空気をよく表している。後のカリーム・アブドゥル＝ジャバーは、別の止められない武器を完成させていった。",
     details: [
       "UCLAのルー・アルシンダー（後のカリーム・アブドゥル＝ジャバー）が大学バスケットボールを支配していた時代、NCAAは1967-68シーズンから試合中と試合前ウォームアップでのダンクを禁止した。これはNBAではなく、NCAAにおけるルール変更である。",
@@ -147,6 +171,13 @@ const exhibits: Exhibit[] = [
       "ダンクに頼らず得点する必要があったアルシンダーはフックシュートを磨き、後にNBA史上を代表する武器となるスカイフックへつなげていく。白黒中心の展示からカラー写真へ移ることで、時代が進んだことも見せている。",
     ],
     facts: ["NCAAのダンク禁止：9シーズン", "のちのカリーム・アブドゥル＝ジャバー", "スカイフックという回答"],
+    context: {
+      strategy: "ポストプレーはさらに洗練され、フックシュート、ジャンプシュート、守備の位置取りがビッグマンの価値を広げた。",
+      culture: "白黒中心だった初期NBAの記録は、カラー映像とともに次のスター時代へ進んでいく。",
+      stars: ["カリーム・アブドゥル＝ジャバー", "ジェリー・ウェスト", "ウィリス・リード", "エルヴィン・ヘイズ"],
+      teams: ["ロサンゼルス・レイカーズ", "ミルウォーキー・バックス", "ニューヨーク・ニックス"],
+      timeline: ["1965　レイカーズがロサンゼルスでの人気チームとして定着", "1967　NCAAがダンクを禁止", "1969　ルー・アルシンダーがバックスへ加入", "1971　バックスがNBA優勝", "1976-77　NCAAのダンク禁止が終了"],
+    },
     label: "THE NEXT ANSWER",
     kind: "gallery",
     photos: [
@@ -160,20 +191,18 @@ const exhibits: Exhibit[] = [
 function ExhibitVisual({ exhibit }: { exhibit: Exhibit }) {
   if (exhibit.kind === "gallery" && exhibit.photos) {
     return (
-      <div className={`grid gap-3 ${exhibit.photos.length === 2 ? "grid-cols-2" : "grid-cols-2"}`}>
-        {exhibit.photos.map((photo, index) => (
+      <div className="grid grid-cols-2 items-start gap-3">
+        {exhibit.photos.map((photo) => (
           <figure
             key={photo.src}
-            className={`history-gallery__photo overflow-hidden rounded-xl border border-[#8d754c] bg-[#050606] p-1.5 ${
-              exhibit.photos && exhibit.photos.length === 3 && index === 0 ? "col-span-2" : ""
-            }`}
+            className="history-gallery__photo overflow-hidden rounded-xl border border-[#8d754c] bg-[#050606] p-1.5"
           >
             <Image
               src={photo.src}
               alt={photo.alt}
               width={960}
               height={960}
-              className={`w-full rounded-lg bg-[#050606] object-contain ${exhibit.photos && exhibit.photos.length === 3 && index === 0 ? "aspect-[16/9]" : "aspect-[4/5]"}`}
+              className="h-auto w-full rounded-lg bg-[#050606]"
             />
             <figcaption className="px-1.5 pb-1 pt-2 text-[11px] leading-4 text-[#d9c7a5]">{photo.caption}</figcaption>
           </figure>
@@ -257,9 +286,9 @@ function ExhibitVisual({ exhibit }: { exhibit: Exhibit }) {
   );
 }
 
-export default function HistoryPage() {
+export function LegacyHistoryPage() {
   return (
-    <div className="history-gallery flex min-h-screen flex-1 flex-col">
+    <div className="history-gallery flex min-h-screen w-full flex-1 flex-col">
       <SiteHeader />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-7 sm:py-10">
       <nav aria-label="パンくずリスト" className="mb-5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[#c4b69e]">
@@ -300,46 +329,16 @@ export default function HistoryPage() {
           </p>
         </section>
 
-        <section aria-labelledby="era-figures" className="history-gallery__timeline mt-8 rounded-2xl border border-[#66563a] p-5 sm:p-8">
-          <p className="text-[11px] font-extrabold tracking-[.22em] text-[#e1bb71]">THE PEOPLE OF THE ERA</p>
-          <h2 id="era-figures" className="mt-2 font-serif text-2xl font-bold text-[#f5efe1] sm:text-3xl">この時代を形作った名選手たち</h2>
-          <div className="mt-6 grid gap-6 lg:grid-cols-[1.05fr_1fr_1.25fr]">
-            <section aria-label="象徴的なスター">
-              <h3 className="text-sm font-extrabold text-[#f5efe1]">象徴的なスター</h3>
-              <ul className="mt-3 flex flex-wrap gap-2">
-                {eraFigures.map((player) => (
-                  <li key={player.name} title={player.note} className="rounded-full border border-[#66563a] bg-[#1b1d23] px-3 py-1.5 text-sm font-bold text-[#f5efe1]">
-                    {player.name}
-                  </li>
-                ))}
-              </ul>
-            </section>
-            <section aria-label="代表チーム">
-              <h3 className="text-sm font-extrabold text-[#f5efe1]">代表チーム</h3>
-              <ul className="mt-3 space-y-2 text-sm font-bold text-[#f5efe1]">
-                <li className="rounded-xl border border-[#66563a] bg-[#1b1d23] px-3 py-2">ボストン・セルティックス</li>
-                <li className="rounded-xl border border-[#66563a] bg-[#1b1d23] px-3 py-2">フィラデルフィア／サンフランシスコ・ウォリアーズ</li>
-                <li className="rounded-xl border border-[#66563a] bg-[#1b1d23] px-3 py-2">ロサンゼルス・レイカーズ</li>
-              </ul>
-            </section>
-            <section aria-label="時代のタイムライン">
-              <h3 className="text-sm font-extrabold text-[#f5efe1]">時代のタイムライン</h3>
-              <ol className="mt-3 space-y-2 border-l border-[#8d754c] pl-4 text-sm leading-6 text-[#d5ccbd]">
-                {eraMilestones.map((milestone) => <li key={milestone}>{milestone}</li>)}
-              </ol>
-            </section>
-          </div>
-        </section>
-
         <div className="mt-10 space-y-12 sm:space-y-16">
-          {exhibits.map((exhibit, index) => {
+          {exhibits.filter((_, index) => [0, 3, 4].includes(index)).map((exhibit, index) => {
             const reverse = index % 2 === 1;
             return (
-              <section key={exhibit.title} className="history-gallery__exhibit grid gap-6 rounded-2xl border border-[#322d25] p-5 sm:p-8 lg:grid-cols-2 lg:items-center lg:gap-12">
-                <div className={reverse ? "lg:order-2" : ""}>
-                  <ExhibitVisual exhibit={exhibit} />
-                </div>
-                <div className={reverse ? "lg:order-1" : ""}>
+              <section key={exhibit.title} className="history-gallery__exhibit rounded-2xl border border-[#322d25] p-5 sm:p-8">
+                <div className="grid gap-6 lg:grid-cols-2 lg:items-start lg:gap-12">
+                  <div className={reverse ? "lg:order-2" : ""}>
+                    <ExhibitVisual exhibit={exhibit} />
+                  </div>
+                  <div className={reverse ? "lg:order-1" : ""}>
                   <p className="text-[11px] font-extrabold tracking-[.2em] text-[#e1bb71]">{exhibit.era}</p>
                   <h2 className="mt-2 font-serif text-2xl font-bold leading-tight tracking-tight text-[#f5efe1] sm:text-3xl">{exhibit.title}</h2>
                   <p className="mt-4 text-[15px] leading-8 text-[#d5ccbd]">{exhibit.body}</p>
@@ -354,6 +353,35 @@ export default function HistoryPage() {
                     ))}
                   </ul>
                 </div>
+                </div>
+                {exhibit.context && (
+                  <div className="mt-8 border-t border-[#66563a] pt-6">
+                    <div className="grid gap-6 lg:grid-cols-[.85fr_.95fr_1.35fr]">
+                      <section>
+                        <h3 className="text-xs font-extrabold tracking-[.14em] text-[#e1bb71]">象徴的スター</h3>
+                        <ul className="mt-3 space-y-2 text-sm font-bold text-[#f5efe1]">
+                          {exhibit.context.stars.map((star) => <li key={star} className="border-l-2 border-[#8d754c] pl-3">{star}</li>)}
+                        </ul>
+                      </section>
+                      <section>
+                        <h3 className="text-xs font-extrabold tracking-[.14em] text-[#e1bb71]">代表チーム</h3>
+                        <ul className="mt-3 space-y-2 text-sm font-bold text-[#f5efe1]">
+                          {exhibit.context.teams.map((team) => <li key={team} className="border-l-2 border-[#8d754c] pl-3">{team}</li>)}
+                        </ul>
+                      </section>
+                      <section>
+                        <h3 className="text-xs font-extrabold tracking-[.14em] text-[#e1bb71]">タイムライン</h3>
+                        <ol className="mt-3 space-y-2 border-l border-[#8d754c] pl-4 text-sm leading-6 text-[#d5ccbd]">
+                          {exhibit.context.timeline.map((item) => <li key={item}>{item}</li>)}
+                        </ol>
+                      </section>
+                    </div>
+                    <dl className="mt-6 grid gap-5 border-t border-[#66563a] pt-5 sm:grid-cols-2">
+                      <div><dt className="text-xs font-extrabold tracking-[.14em] text-[#e1bb71]">戦術の変化</dt><dd className="mt-2 text-sm leading-7 text-[#d5ccbd]">{exhibit.context.strategy}</dd></div>
+                      <div><dt className="text-xs font-extrabold tracking-[.14em] text-[#e1bb71]">時代の意味</dt><dd className="mt-2 text-sm leading-7 text-[#d5ccbd]">{exhibit.context.culture}</dd></div>
+                    </dl>
+                  </div>
+                )}
               </section>
             );
           })}
