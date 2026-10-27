@@ -156,3 +156,41 @@ main .selection-button:active:not(:disabled) {
   .history-paint-motion__frame { animation: none; opacity: 0; }
   .history-paint-motion__frame--1 { opacity: 1; }
 }
+
+/* NBAの歴史ページ：暗い展示室と、作品だけを照らすスポットライトの演出 */
+.history-gallery {
+  background:
+    radial-gradient(ellipse 65% 30% at 50% 0%, rgba(173, 132, 61, 0.2), transparent 72%),
+    radial-gradient(ellipse 40% 22% at 15% 24%, rgba(98, 76, 38, 0.12), transparent 72%),
+    #090a0b;
+  color: #f5efe1;
+}
+
+.history-gallery__hero,
+.history-gallery__curator,
+.history-gallery__exhibit {
+  background:
+    radial-gradient(ellipse 70% 90% at 50% -12%, rgba(177, 134, 59, 0.2), transparent 62%),
+    linear-gradient(145deg, #181714 0%, #0d0e0f 58%, #15130f 100%);
+  box-shadow: 0 28px 65px rgba(0, 0, 0, 0.46), inset 0 1px rgba(255, 238, 191, 0.06);
+}
+
+.history-gallery__exhibit {
+  position: relative;
+  overflow: hidden;
+}
+
+.history-gallery__exhibit::before {
+  position: absolute;
+  inset: -25% 15% auto;
+  height: 62%;
+  content: "";
+  pointer-events: none;
+  background: radial-gradient(ellipse, rgba(247, 219, 155, 0.13), transparent 68%);
+}
+
+.history-gallery__exhibit > * { position: relative; }
+
+.history-gallery__photo {
+  box-shadow: 0 0 0 1px rgba(255, 227, 166, 0.08), 0 16px 32px rgba(0, 0, 0, 0.7), 0 0 26px rgba(243, 195, 102, 0.12);
+}

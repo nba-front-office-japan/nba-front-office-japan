@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { PageShell } from "@/components/page-shell";
+import { SiteHeader } from "@/components/site-header";
 
 export const metadata: Metadata = {
   title: "NBAはなぜルールを変え始めたのか | NBA Front Office Japan",
@@ -66,14 +66,14 @@ const exhibits: Exhibit[] = [
   },
   {
     era: "1967 → 1977",
-    title: "ダンク禁止と、スカイフックへの道",
-    body: "大学バスケットボールでは、ルー・アルシンダーが活躍した時代にダンクが禁止された。NBAのルール変更ではないが、圧倒的な才能が競技のルールや戦術に影響を与えるという時代の空気をよく表している。後のカリームは、別の止められない武器を完成させていった。",
+    title: "ダンク禁止と、ジャバーのスカイフックへの道",
+    body: "大学バスケットボールでは、ルー・アルシンダーが活躍した時代にダンクが禁止された。NBAのルール変更ではないが、圧倒的な才能が競技のルールや戦術に影響を与えるという時代の空気をよく表している。後のカリーム・アブドゥル＝ジャバーは、別の止められない武器を完成させていった。",
     facts: ["NCAAのダンク禁止：9シーズン", "のちのカリーム・アブドゥル＝ジャバー", "スカイフックという回答"],
     label: "THE NEXT ANSWER",
     kind: "gallery",
     photos: [
       { src: "/history/alcindor-ucla.png", alt: "UCLA時代にダンクを決めるルー・アルシンダー", caption: "UCLA時代のルー・アルシンダー" },
-      { src: "/history/kareem-bucks.png", alt: "ミルウォーキー・バックスのカリーム・アブドゥル＝ジャバー", caption: "NBAで完成したカリームのキャリア" },
+      { src: "/history/kareem-bucks.png", alt: "ミルウォーキー・バックスのカリーム・アブドゥル＝ジャバー", caption: "NBAで完成したカリーム・アブドゥル＝ジャバーのキャリア" },
     ],
   },
 ];
@@ -85,7 +85,7 @@ function ExhibitVisual({ exhibit }: { exhibit: Exhibit }) {
         {exhibit.photos.map((photo, index) => (
           <figure
             key={photo.src}
-            className={`overflow-hidden rounded-xl border border-[#d2b98f] bg-[#f3e7d1] p-1.5 shadow-[0_10px_24px_rgba(53,37,17,.14)] ${
+            className={`history-gallery__photo overflow-hidden rounded-xl border border-[#8d754c] bg-[#050606] p-1.5 ${
               exhibit.photos && exhibit.photos.length === 3 && index === 0 ? "col-span-2" : ""
             }`}
           >
@@ -94,9 +94,9 @@ function ExhibitVisual({ exhibit }: { exhibit: Exhibit }) {
               alt={photo.alt}
               width={960}
               height={960}
-              className={`w-full rounded-lg object-cover ${exhibit.photos && exhibit.photos.length === 3 && index === 0 ? "aspect-[16/9]" : "aspect-[4/5]"}`}
+              className={`w-full rounded-lg bg-[#050606] object-contain ${exhibit.photos && exhibit.photos.length === 3 && index === 0 ? "aspect-[16/9]" : "aspect-[4/5]"}`}
             />
-            <figcaption className="px-1.5 pb-1 pt-2 text-[11px] leading-4 text-[#604b2a]">{photo.caption}</figcaption>
+            <figcaption className="px-1.5 pb-1 pt-2 text-[11px] leading-4 text-[#d9c7a5]">{photo.caption}</figcaption>
           </figure>
         ))}
       </div>
@@ -105,7 +105,7 @@ function ExhibitVisual({ exhibit }: { exhibit: Exhibit }) {
 
   if (exhibit.kind === "motion") {
     return (
-      <figure className="overflow-hidden rounded-2xl border border-[#d2b98f] bg-[#f3e7d1] p-2 shadow-[0_14px_34px_rgba(53,37,17,.16)]" aria-label="NBAペイントエリアが6フィートから12フィート、16フィートへ変化する図解モーション">
+      <figure className="history-gallery__photo overflow-hidden rounded-2xl border border-[#8d754c] bg-[#050606] p-2" aria-label="NBAペイントエリアが6フィートから12フィート、16フィートへ変化する図解モーション">
         <div className="history-paint-motion relative aspect-[4/3] overflow-hidden rounded-xl">
           <Image
             src="/history/paint-motion-01.png"
@@ -140,7 +140,7 @@ function ExhibitVisual({ exhibit }: { exhibit: Exhibit }) {
             className="history-paint-motion__frame history-paint-motion__frame--4 object-cover"
           />
         </div>
-        <figcaption className="px-2 pb-1 pt-3 text-xs leading-5 text-[#604b2a]">
+        <figcaption className="px-2 pb-1 pt-3 text-xs leading-5 text-[#d9c7a5]">
           資料：ペイントエリアの変遷。6ft → 12ft → 16ft と順に広がります。
         </figcaption>
       </figure>
@@ -180,14 +180,16 @@ function ExhibitVisual({ exhibit }: { exhibit: Exhibit }) {
 
 export default function HistoryPage() {
   return (
-    <PageShell>
-      <nav aria-label="パンくずリスト" className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
-        <Link href="/guide" className="font-semibold text-blue hover:underline">NBAガイド</Link>
+    <div className="history-gallery flex min-h-full flex-1 flex-col">
+      <SiteHeader />
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-7 sm:py-10">
+      <nav aria-label="パンくずリスト" className="mb-5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[#c4b69e]">
+        <Link href="/guide" className="font-semibold text-[#e7bf70] hover:underline">NBAガイド</Link>
         <span aria-hidden>›</span>
-        <span className="font-semibold text-foreground">NBAの歴史</span>
+        <span className="font-semibold text-[#f5efe1]">NBAの歴史</span>
       </nav>
 
-      <section className="overflow-hidden rounded-2xl border border-[#3c4d62] bg-[#13233a] text-[#f6efdE] shadow-[0_18px_45px_rgba(18,35,58,.18)]">
+      <section className="history-gallery__hero overflow-hidden rounded-2xl border border-[#655433] text-[#f6efde]">
         <div className="border-b border-[#cda657] px-6 py-3 text-center text-[11px] font-extrabold tracking-[.22em] text-[#e1bb71] sm:px-10">
           NBA HISTORY ARCHIVES
         </div>
@@ -209,9 +211,9 @@ export default function HistoryPage() {
       </section>
 
       <div className="mx-auto mt-10 max-w-5xl">
-        <section className="rounded-2xl border border-[#d7c6a7] bg-[#f9f2e5] p-5 text-[#283446] sm:p-7">
-          <p className="text-[11px] font-extrabold tracking-[.2em] text-[#87652d]">CURATOR&apos;S NOTE</p>
-          <p className="mt-2 font-serif text-xl font-bold leading-8 sm:text-2xl">
+        <section className="history-gallery__curator rounded-2xl border border-[#66563a] p-5 sm:p-7">
+          <p className="text-[11px] font-extrabold tracking-[.2em] text-[#e1bb71]">CURATOR&apos;S NOTE</p>
+          <p className="mt-2 font-serif text-xl font-bold leading-8 text-[#f5efe1] sm:text-2xl">
             このページは、NBAのルールが「選手に適応するだけ」のものではなく、競技そのものを成立させるために変わってきた歴史をたどる展示です。
           </p>
         </section>
@@ -220,17 +222,17 @@ export default function HistoryPage() {
           {exhibits.map((exhibit, index) => {
             const reverse = index % 2 === 1;
             return (
-              <section key={exhibit.title} className="grid gap-6 lg:grid-cols-2 lg:items-center lg:gap-12">
+              <section key={exhibit.title} className="history-gallery__exhibit grid gap-6 rounded-2xl border border-[#322d25] p-5 sm:p-8 lg:grid-cols-2 lg:items-center lg:gap-12">
                 <div className={reverse ? "lg:order-2" : ""}>
                   <ExhibitVisual exhibit={exhibit} />
                 </div>
                 <div className={reverse ? "lg:order-1" : ""}>
-                  <p className="text-[11px] font-extrabold tracking-[.2em] text-[#9a7030]">{exhibit.era}</p>
-                  <h2 className="mt-2 font-serif text-2xl font-bold leading-tight tracking-tight text-[#17263a] sm:text-3xl">{exhibit.title}</h2>
-                  <p className="mt-4 text-[15px] leading-8 text-[#4a5564]">{exhibit.body}</p>
-                  <ul className="mt-5 divide-y divide-[#d9c9ae] border-y border-[#d9c9ae] text-sm text-[#443c31]">
+                  <p className="text-[11px] font-extrabold tracking-[.2em] text-[#e1bb71]">{exhibit.era}</p>
+                  <h2 className="mt-2 font-serif text-2xl font-bold leading-tight tracking-tight text-[#f5efe1] sm:text-3xl">{exhibit.title}</h2>
+                  <p className="mt-4 text-[15px] leading-8 text-[#d5ccbd]">{exhibit.body}</p>
+                  <ul className="mt-5 divide-y divide-[#66563a] border-y border-[#66563a] text-sm text-[#e2d7c4]">
                     {exhibit.facts.map((fact) => (
-                      <li key={fact} className="py-2.5 pl-4 before:mr-3 before:text-[#b98a38] before:content-['◆']">{fact}</li>
+                      <li key={fact} className="py-2.5 pl-4 before:mr-3 before:text-[#e1bb71] before:content-['◆']">{fact}</li>
                     ))}
                   </ul>
                 </div>
@@ -239,16 +241,17 @@ export default function HistoryPage() {
           })}
         </div>
 
-        <section className="mt-14 border-t-2 border-[#283b53] py-8 text-center">
-          <p className="text-[11px] font-extrabold tracking-[.22em] text-[#9a7030]">NEXT EXHIBITION</p>
-          <h2 className="mt-2 font-serif text-2xl font-bold text-[#17263a]">3ポイントはNBAをどう変えたのか</h2>
-          <p className="mt-3 text-sm leading-7 text-muted">距離によってシュートの価値を変えた、次の大きなルール革命へ。</p>
+        <section className="mt-14 border-t-2 border-[#66563a] py-8 text-center">
+          <p className="text-[11px] font-extrabold tracking-[.22em] text-[#e1bb71]">NEXT EXHIBITION</p>
+          <h2 className="mt-2 font-serif text-2xl font-bold text-[#f5efe1]">3ポイントはNBAをどう変えたのか</h2>
+          <p className="mt-3 text-sm leading-7 text-[#c4b69e]">距離によってシュートの価値を変えた、次の大きなルール革命へ。</p>
         </section>
       </div>
 
-      <Link href="/guide" className="selection-button selection-blue mt-8 inline-block rounded-lg px-2 py-1 text-sm font-extrabold text-blue underline underline-offset-4 hover:no-underline">
+      <Link href="/guide" className="selection-button mt-8 inline-block rounded-lg px-2 py-1 text-sm font-extrabold text-[#e7bf70] underline underline-offset-4 hover:text-white hover:no-underline">
         ← NBAガイド一覧に戻る
       </Link>
-    </PageShell>
+      </main>
+    </div>
   );
 }

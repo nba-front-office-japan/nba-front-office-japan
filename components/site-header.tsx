@@ -16,6 +16,7 @@ const navItems = [
   { href: "/draft", label: "DRAFT" },
   { href: "/salary", label: "サラリー" },
   { href: "/rankings", label: "ランキング" },
+  { href: "/history", label: "歴史" },
   { href: "/guide", label: "ガイド" },
   { href: "/premium", label: "PREMIUM" },
 ];
