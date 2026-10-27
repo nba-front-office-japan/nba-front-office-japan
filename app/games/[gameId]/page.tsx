@@ -6,8 +6,8 @@ import { formatJstDateLabel, isValidDateString } from "@/lib/games/date";
 
 // タイトル・説明文にも試合結果やチーム名を含めない(リンクの共有や検索結果でネタバレしないため)
 export const metadata: Metadata = {
-  title: "試合詳細 | 試合結果＆ボックススコア | NBA Front Office Japan",
-  description: "NBAの試合のスコアとボックススコア。ネタバレ防止のため、結果は操作したときだけ表示します。",
+  title: "試合詳細・ボックススコア（ネタバレ防止） | NBA Front Office Japan",
+  description: "NBAの試合のスコアとボックススコア（選手別スタッツ）。ネタバレ防止のため、結果は操作したときだけ表示します。",
 };
 
 // このページのHTMLには試合結果を含めない。結果は GameDetailView がブラウザで取得して表示する。

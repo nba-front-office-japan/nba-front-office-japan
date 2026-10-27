@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { PageShell } from "@/components/page-shell";
 import { StatsListFilters } from "@/components/stats-list-filters";
@@ -34,6 +35,12 @@ async function loadStats(params: Record<string, string | string[] | undefined>) 
     result,
   };
 }
+
+export const metadata: Metadata = {
+  title: "NBA選手スタッツ一覧（得点・リバウンド・アシスト） | NBA Front Office Japan",
+  description: "NBA全選手のシーズン成績を一覧で。得点・リバウンド・アシストなどで並べ替え、チームや選手名で絞り込めます。",
+  alternates: { canonical: "/stats" },
+};
 
 export default async function StatsPage({ searchParams }: PageProps<"/stats">) {
   const params = await searchParams;

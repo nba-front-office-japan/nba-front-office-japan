@@ -18,9 +18,12 @@ import {
 } from "@/lib/games/date";
 
 // タイトル・説明文にも試合結果を含めない(検索結果やSNSの共有でネタバレしないため)
+// ?date= 付きのURLも中身は同じページなので、canonical は /games にまとめる
 export const metadata: Metadata = {
-  title: "試合結果＆ボックススコア | NBA Front Office Japan",
-  description: "NBAの試合結果とボックススコア。ネタバレ防止のため、全試合の一覧表示か、見たい試合だけを開く個別表示を選べます。",
+  title: "NBA試合結果・ボックススコア（ネタバレ防止） | NBA Front Office Japan",
+  description:
+    "NBAの試合結果とボックススコア（選手別スタッツ）を日本時間で。ネタバレ防止のため結果は最初は隠してあり、全試合のスコアを一覧で見るか、見たい試合だけ開いてスコアとボックススコアを見るかを選べます。",
+  alternates: { canonical: "/games" },
 };
 
 // 日付は日本時間。?date=YYYY-MM-DD でその日の試合を表示する(指定なしは今日)。

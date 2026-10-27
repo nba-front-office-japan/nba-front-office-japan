@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { PageShell } from "@/components/page-shell";
 import { TeamDirectory } from "@/components/team-directory";
@@ -5,6 +6,12 @@ import { SeasonSelect } from "@/components/season-select";
 import { ROSTER_SEASON, parseSeasonParam, seasonLabel, seasonOptionLinks } from "@/lib/seasons";
 
 // Teams 一覧。?season= でシーズンを切り替える(初期表示は 2026-27。?season=2025 で 2025-26)。
+export const metadata: Metadata = {
+  title: "NBA全30チーム一覧 | NBA Front Office Japan",
+  description: "NBA全30チームの一覧。各チームのロスター・成績・チーム情報を日本語で確認できます。",
+  alternates: { canonical: "/teams" },
+};
+
 export default async function TeamsPage({ searchParams }: PageProps<"/teams">) {
   const { season: seasonParam } = await searchParams;
   const season = parseSeasonParam(seasonParam);

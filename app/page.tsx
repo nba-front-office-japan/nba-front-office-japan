@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
@@ -26,6 +27,13 @@ const STATS_PICKS = [
   { label: "TS%", sort: "tsPct", minGames: 20 },
   { label: "アシスト", sort: "apg" },
 ];
+
+export const metadata: Metadata = {
+  title: "NBA Front Office Japan｜NBAの試合結果・スタッツ・年俸・移籍ニュース",
+  description:
+    "NBAの試合結果・ボックススコア、選手スタッツ、年俸、トレード・移籍ニュースを日本語で。勝敗の裏側にあるフロントオフィスの意思決定を読むNBAファンサイトです。",
+  alternates: { canonical: "/" },
+};
 
 export default async function Home() {
   const supabase = createServerSupabaseClient();

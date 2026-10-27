@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { notFound, permanentRedirect } from "next/navigation";
@@ -22,6 +23,7 @@ import {
   seasonSearch,
 } from "@/lib/seasons";
 import { teamThemeBackground } from "@/lib/team-colors";
+import { teamNameJa } from "@/lib/team-names-ja";
 import { fetchTeamProfileData } from "@/lib/team-profile-data";
 import {
   buildSeasonProfileRows,
@@ -77,6 +79,18 @@ function toStatRow(
 
 function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
+}
+
+export async function generateMetadata({ params }: PageProps<"/teams/[teamId]">): Promise<Metadata> {
+  const { teamId } = await params;
+  const { data: team } = await createServerSupabaseClient().from("teams").select("name, abbreviation").eq("id", teamId).maybeSingle();
+  if (!team) return {};
+  const nameJa = teamNameJa(team.abbreviation);
+  const name = nameJa ? `${nameJa}（${team.name}）` : team.name;
+  return {
+    title: `${name}のロスター・成績 | NBA Front Office Japan`,
+    description: `NBA・${nameJa ?? team.name}の${seasonLabel(ROSTER_SEASON)}ロスター、選手別成績、チーム情報を日本語でまとめています。`,
+  };
 }
 
 export default async function TeamDetailPage({

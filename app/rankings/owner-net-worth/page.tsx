@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -49,6 +50,12 @@ function PageHeading({ kicker }: { kicker: string }) {
     </>
   );
 }
+
+export const metadata: Metadata = {
+  title: "NBAオーナー資産ランキング | NBA Front Office Japan",
+  description: "NBA各チームの代表オーナーの推定純資産（個人資産）を順位で並べたランキングです。",
+  alternates: { canonical: "/rankings/owner-net-worth" },
+};
 
 export default async function OwnerNetWorthPage() {
   const supabase = createServerSupabaseClient();

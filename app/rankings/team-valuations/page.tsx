@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -47,6 +48,12 @@ function PageHeading({ kicker }: { kicker: string }) {
     </>
   );
 }
+
+export const metadata: Metadata = {
+  title: "NBAチーム資産価値ランキング | NBA Front Office Japan",
+  description: "NBA全30チームの資産価値（推計値）を順位で並べたランキングです。",
+  alternates: { canonical: "/rankings/team-valuations" },
+};
 
 export default async function TeamValuationsPage() {
   const supabase = createServerSupabaseClient();

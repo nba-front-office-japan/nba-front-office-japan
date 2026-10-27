@@ -1,9 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { notFound, redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { PageShell } from "@/components/page-shell";
 import { teamThemeBackground } from "@/lib/team-colors";
+import { teamNameJa } from "@/lib/team-names-ja";
 import { TeamRosterProfileTable } from "@/components/team-roster-profile-table";
 import { TeamRosterStatsTable } from "@/components/team-roster-stats-table";
 import { TeamProfileView } from "@/components/team-profile-view";
@@ -30,6 +32,17 @@ const VIEW_OPTIONS: { view: GuideView; label: string }[] = [
 
 function guideHref(teamId: string, view: GuideView): string {
   return view === "profile" ? `/players/guide/${teamId}` : `/players/guide/${teamId}?view=${view}`;
+}
+
+export async function generateMetadata({ params }: PageProps<"/players/guide/[teamId]">): Promise<Metadata> {
+  const { teamId } = await params;
+  const { data: team } = await createServerSupabaseClient().from("teams").select("name, abbreviation").eq("id", teamId).maybeSingle();
+  if (!team) return {};
+  const nameJa = teamNameJa(team.abbreviation) ?? team.name;
+  return {
+    title: `${nameJa}の選手名鑑 ${seasonLabel(ROSTER_SEASON)} | NBA Front Office Japan`,
+    description: `${nameJa}（${team.name}）の${seasonLabel(ROSTER_SEASON)}開幕ロスター。全選手のポジション・身長・年齢・成績を日本語でまとめています。`,
+  };
 }
 
 export default async function PlayerGuideTeamPage({

@@ -1,4 +1,6 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { fetchPublishedArticleById } from "@/lib/news/public-articles";
@@ -13,12 +15,29 @@ const CATEGORY_LABEL = Object.fromEntries(
   CATEGORY_OPTIONS.map((o) => [o.value, o.label])
 );
 
+// generateMetadata とページ本体で共通の取得(1回のリクエストにつきDBへの問い合わせは1回)
+const fetchArticle = cache((articleId: string) => fetchPublishedArticleById(createAdminSupabaseClient(), articleId));
+
+export async function generateMetadata({ params }: PageProps<"/news/[articleId]">): Promise<Metadata> {
+  const { articleId } = await params;
+  const article = await fetchArticle(articleId);
+  if (!article) return {};
+  const title = `${article.headlineJa} | NBA Front Office Japan`;
+  const description = article.dekJa ?? undefined;
+  const canonical = `/news/${articleId}`;
+  return {
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: { title, description, url: canonical, type: "article" },
+  };
+}
+
 export default async function NewsArticlePage({
   params,
 }: PageProps<"/news/[articleId]">) {
   const { articleId } = await params;
-  const supabase = createAdminSupabaseClient();
-  const article = await fetchPublishedArticleById(supabase, articleId);
+  const article = await fetchArticle(articleId);
 
   if (!article) {
     notFound();

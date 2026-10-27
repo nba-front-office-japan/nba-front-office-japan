@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -124,6 +125,12 @@ function RankingCard({ entry, preview }: { entry: RankingEntry; preview: Ranking
     </article>
   );
 }
+
+export const metadata: Metadata = {
+  title: "NBAランキング（チーム資産価値・オーナー資産） | NBA Front Office Japan",
+  description: "NBAのチーム資産価値ランキングやオーナー資産ランキングなど、チーム・選手に関するランキングをまとめています。",
+  alternates: { canonical: "/rankings" },
+};
 
 export default async function RankingsPage() {
   const supabase = createServerSupabaseClient();

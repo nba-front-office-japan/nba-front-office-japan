@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { fetchPublishedArticles } from "@/lib/news/public-articles";
@@ -31,6 +32,12 @@ const MAX_QUERY_LENGTH = 100;
 
 // NEWS の記事一覧。右側(スマホでは上)の検索欄から ?q= で、NEWS の公開記事のタイトル・本文を部分一致で絞り込む。
 // 検索の対象は NEWS の記事だけ(選手・チーム・ガイドなどほかのページは対象にしない)。空欄のときは通常の一覧。
+export const metadata: Metadata = {
+  title: "NBAニュース・トレード速報 | NBA Front Office Japan",
+  description: "NBAのトレード・移籍・契約のニュースを日本語で。情報源と確度を明記して毎日更新しています。",
+  alternates: { canonical: "/news" },
+};
+
 export default async function NewsPage({ searchParams }: PageProps<"/news">) {
   const { q } = await searchParams;
   const query = (Array.isArray(q) ? q[0] : (q ?? ""))

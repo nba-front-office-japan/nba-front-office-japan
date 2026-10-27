@@ -67,13 +67,15 @@ function draftText(player: PlayerRow): string | null {
 export function playerPageTitle(player: PlayerRow, view: "profile" | "stats"): string {
   const name = playerDisplayName(player);
   // 有名選手(lib/featured-players.ts)のProfileは、検索されやすい「成績・年俸・経歴」にする
+  // 「{選手名} 身長」で検索されることが多いため、身長が分かる選手はProfileのタイトルに「身長」を入れる
+  const height = player.height_cm ? "身長・" : "";
   const featured = featuredPlayerFor(player.full_name);
   if (featured && view === "profile") {
-    return `${name}の成績・${featured.hideSalary ? "プロフィール" : "年俸"}・経歴 | NBA Front Office Japan`;
+    return `${name}の${height}成績・${featured.hideSalary ? "プロフィール" : "年俸"}・経歴 | NBA Front Office Japan`;
   }
   return view === "stats"
     ? `${name}のシーズン別成績・スタッツ | NBA Front Office Japan`
-    : `${name}のプロフィール・成績・スタッツ | NBA Front Office Japan`;
+    : `${name}の${height}プロフィール・成績 | NBA Front Office Japan`;
 }
 
 /** meta description。チーム・ポジション・身長が無い場合はその部分を省く */
@@ -81,7 +83,9 @@ export function playerPageDescription({ player, currentTeam }: PlayerPageBase): 
   const role = roleText(teamLabel(currentTeam), player.position);
   const featured = featuredPlayerFor(player.full_name);
   if (featured) {
-    return `${featured.catchphrase}${featured.nameJa}の経歴・プレースタイル・主なタイトル${featured.hideSalary ? "" : "・年俸"}、NBAのシーズン別成績を日本語でまとめています。`;
+    // 紹介文に身長が入っていない選手は「（身長201cm）」を添える
+    const height = player.height_cm && !featured.catchphrase.includes("身長") ? `（身長${player.height_cm}cm）` : "";
+    return `${featured.catchphrase}${featured.nameJa}${height}の経歴・プレースタイル・主なタイトル${featured.hideSalary ? "" : "・年俸"}、NBAのシーズン別成績を日本語でまとめています。`;
   }
   const parts = [
     role ? `${playerDisplayName(player)}は${role}。` : `${playerDisplayName(player)}。`,

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
@@ -14,6 +15,12 @@ const STATS_LABEL = seasonLabel(STATS_SEASON);
 
 // 選手名鑑の一覧。対象は 2026-27 開幕時点の固定ロスターだけ(25-26 の選手名鑑は作らない)。
 // 以前の ?season= 付きの URL は、シーズン指定なしの URL へ移す。
+export const metadata: Metadata = {
+  title: `NBA選手名鑑 ${ROSTER_LABEL} | NBA Front Office Japan`,
+  description: `NBA全30チームの${ROSTER_LABEL}ロスター。全選手のポジション・身長・年齢・成績をチーム別に日本語でまとめています。`,
+  alternates: { canonical: "/players" },
+};
+
 export default async function PlayersPage({ searchParams }: PageProps<"/players">) {
   const { season } = await searchParams;
   if (season !== undefined) redirect("/players");
