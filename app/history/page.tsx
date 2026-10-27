@@ -9,14 +9,31 @@ export const metadata: Metadata = {
     "24秒ショットクロック、ペイントエリア、チェンバレン対策。NBAが競技を変えてきた1950〜60年代のルール史を、資料館のような年表でたどります。",
 };
 
-const exhibits = [
+type ArchivePhoto = { src: string; alt: string; caption: string };
+
+type Exhibit = {
+  era: string;
+  title: string;
+  body: string;
+  facts: string[];
+  label: string;
+  kind: "archive" | "motion" | "clock" | "gallery";
+  photos?: ArchivePhoto[];
+};
+
+const exhibits: Exhibit[] = [
   {
     era: "1950.11.22",
     title: "19-18が突きつけた、止まる試合という問題",
     body: "ショットクロックのない時代、リードしたチームはシュートを打たず、ボールを持ち続けることができた。フォートウェイン対ミネアポリスの19-18は、バスケットボールの試合そのものが止まりうることを象徴する一戦として残っている。",
     facts: ["NBA史上最低得点の試合", "両チーム合計 37得点", "マイカンは18得点中15得点"],
     label: "ARCHIVE 01",
-    kind: "archive" as const,
+    kind: "gallery",
+    photos: [
+      { src: "/history/mikan-fort-wayne.png", alt: "ジョージ・マイカンとフォートウェインの選手を写した新聞写真", caption: "フォートウェイン対ミネアポリス、19-18を伝える新聞資料" },
+      { src: "/history/fort-wayne-boxscore.png", alt: "ミネアポリスとフォートウェインのボックススコア", caption: "両チーム合計37得点を示す当時のボックススコア" },
+      { src: "/history/mikan-layup.png", alt: "ゴール下でシュートを放つジョージ・マイカン", caption: "初期NBAを支配したジョージ・マイカン" },
+    ],
   },
   {
     era: "1951 → 1964",
@@ -24,7 +41,7 @@ const exhibits = [
     body: "ジョージ・マイカンの支配に対応して、制限区域は6フィートから12フィートへ拡大された。さらにウィルト・チェンバレンの登場後、1964-65シーズンから現在の16フィートへ。NBAのコートには、二人のビッグマンの足跡が残っている。",
     facts: ["〜1950-51：幅6ft", "1951-52〜：幅12ft", "1964-65〜：幅16ft"],
     label: "COURT EVOLUTION",
-    kind: "image" as const,
+    kind: "motion",
   },
   {
     era: "1954-55",
@@ -32,7 +49,7 @@ const exhibits = [
     body: "48分は2,880秒。両チーム合計120本程度のシュートが生まれるテンポを基準に、2,880を120で割って24秒が導かれた。ショットクロックは、速さのためだけでなく、試合を商品として成立させるための設計だった。",
     facts: ["48分 × 60秒 = 2,880秒", "2,880 ÷ 120本 = 24秒", "平均得点 79.5 → 93.1"],
     label: "THE 24-SECOND CLOCK",
-    kind: "clock" as const,
+    kind: "clock",
   },
   {
     era: "1959 → 1964",
@@ -40,7 +57,12 @@ const exhibits = [
     body: "ルーキーイヤーから圧倒的な数字を残したウィルト・チェンバレンは、1961-62シーズンに平均50.4得点、1962年には1試合100得点を記録した。ペイントの拡大だけでなく、ゴール周辺やフリースローをめぐる規則を考える契機にもなった。",
     facts: ["1961-62：平均50.4得点", "1962.03.02：1試合100得点", "1964-65：ペイントを16ftへ"],
     label: "WILT'S ERA",
-    kind: "archive" as const,
+    kind: "gallery",
+    photos: [
+      { src: "/history/wilt-action.png", alt: "試合中にシュートを放つウィルト・チェンバレン", caption: "圧倒的な高さでゴール周辺を支配したチェンバレン" },
+      { src: "/history/wilt-100.png", alt: "100点の記録を示すウィルト・チェンバレンの写真", caption: "1962年、現在も残る1試合100得点の記録" },
+      { src: "/history/wilt-jump-shot.png", alt: "高い打点からシュートを放つウィルト・チェンバレン", caption: "規格外のサイズと跳躍力はルールを考え直す契機になった" },
+    ],
   },
   {
     era: "1967 → 1977",
@@ -48,24 +70,78 @@ const exhibits = [
     body: "大学バスケットボールでは、ルー・アルシンダーが活躍した時代にダンクが禁止された。NBAのルール変更ではないが、圧倒的な才能が競技のルールや戦術に影響を与えるという時代の空気をよく表している。後のカリームは、別の止められない武器を完成させていった。",
     facts: ["NCAAのダンク禁止：9シーズン", "のちのカリーム・アブドゥル＝ジャバー", "スカイフックという回答"],
     label: "THE NEXT ANSWER",
-    kind: "clock" as const,
+    kind: "gallery",
+    photos: [
+      { src: "/history/alcindor-ucla.png", alt: "UCLA時代にダンクを決めるルー・アルシンダー", caption: "UCLA時代のルー・アルシンダー" },
+      { src: "/history/kareem-bucks.png", alt: "ミルウォーキー・バックスのカリーム・アブドゥル＝ジャバー", caption: "NBAで完成したカリームのキャリア" },
+    ],
   },
 ];
 
-function ExhibitVisual({ exhibit }: { exhibit: (typeof exhibits)[number] }) {
-  if (exhibit.kind === "image") {
+function ExhibitVisual({ exhibit }: { exhibit: Exhibit }) {
+  if (exhibit.kind === "gallery" && exhibit.photos) {
     return (
-      <figure className="overflow-hidden rounded-2xl border border-[#d2b98f] bg-[#f3e7d1] p-2 shadow-[0_14px_34px_rgba(53,37,17,.16)]">
-        <Image
-          src="/history/paint-area-evolution.jpg"
-          alt="NBAペイントエリアの変遷。6フィート、12フィート、16フィートを比較した図"
-          width={1440}
-          height={1080}
-          className="h-auto w-full rounded-xl"
-          priority
-        />
+      <div className={`grid gap-3 ${exhibit.photos.length === 2 ? "grid-cols-2" : "grid-cols-2"}`}>
+        {exhibit.photos.map((photo, index) => (
+          <figure
+            key={photo.src}
+            className={`overflow-hidden rounded-xl border border-[#d2b98f] bg-[#f3e7d1] p-1.5 shadow-[0_10px_24px_rgba(53,37,17,.14)] ${
+              exhibit.photos && exhibit.photos.length === 3 && index === 0 ? "col-span-2" : ""
+            }`}
+          >
+            <Image
+              src={photo.src}
+              alt={photo.alt}
+              width={960}
+              height={960}
+              className={`w-full rounded-lg object-cover ${exhibit.photos && exhibit.photos.length === 3 && index === 0 ? "aspect-[16/9]" : "aspect-[4/5]"}`}
+            />
+            <figcaption className="px-1.5 pb-1 pt-2 text-[11px] leading-4 text-[#604b2a]">{photo.caption}</figcaption>
+          </figure>
+        ))}
+      </div>
+    );
+  }
+
+  if (exhibit.kind === "motion") {
+    return (
+      <figure className="overflow-hidden rounded-2xl border border-[#d2b98f] bg-[#f3e7d1] p-2 shadow-[0_14px_34px_rgba(53,37,17,.16)]" aria-label="NBAペイントエリアが6フィートから12フィート、16フィートへ変化する図解モーション">
+        <div className="history-paint-motion relative aspect-[4/3] overflow-hidden rounded-xl">
+          <Image
+            src="/history/paint-motion-01.png"
+            alt="NBAペイントエリアの変遷。6フィート、12フィート、16フィートを比較した図"
+            fill
+            sizes="(min-width: 1024px) 42vw, 100vw"
+            className="history-paint-motion__frame history-paint-motion__frame--1 object-cover"
+            priority
+          />
+          <Image
+            src="/history/paint-motion-02.png"
+            alt=""
+            aria-hidden
+            fill
+            sizes="(min-width: 1024px) 42vw, 100vw"
+            className="history-paint-motion__frame history-paint-motion__frame--2 object-cover"
+          />
+          <Image
+            src="/history/paint-motion-03.png"
+            alt=""
+            aria-hidden
+            fill
+            sizes="(min-width: 1024px) 42vw, 100vw"
+            className="history-paint-motion__frame history-paint-motion__frame--3 object-cover"
+          />
+          <Image
+            src="/history/paint-motion-04.png"
+            alt=""
+            aria-hidden
+            fill
+            sizes="(min-width: 1024px) 42vw, 100vw"
+            className="history-paint-motion__frame history-paint-motion__frame--4 object-cover"
+          />
+        </div>
         <figcaption className="px-2 pb-1 pt-3 text-xs leading-5 text-[#604b2a]">
-          資料：ペイントエリアの変遷。6ftから12ft、そして現在の16ftへ。
+          資料：ペイントエリアの変遷。6ft → 12ft → 16ft と順に広がります。
         </figcaption>
       </figure>
     );

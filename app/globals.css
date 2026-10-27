@@ -134,3 +134,25 @@ main .selection-button:active:not(:disabled) {
   transform: translateY(4px) scale(0.92) !important;
   box-shadow: none !important;
 }
+
+/* NBAの歴史ページ：ペイントエリアを6ft → 12ft → 16ftへ見せる資料モーション */
+.history-paint-motion__frame {
+  animation: history-paint-fade 12s ease-in-out infinite;
+  opacity: 0;
+}
+
+.history-paint-motion__frame--1 { animation-delay: 0s; }
+.history-paint-motion__frame--2 { animation-delay: 3s; }
+.history-paint-motion__frame--3 { animation-delay: 6s; }
+.history-paint-motion__frame--4 { animation-delay: 9s; }
+
+@keyframes history-paint-fade {
+  0%, 21% { opacity: 0; }
+  4%, 19% { opacity: 1; }
+  25%, 100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .history-paint-motion__frame { animation: none; opacity: 0; }
+  .history-paint-motion__frame--1 { opacity: 1; }
+}
