@@ -21,6 +21,60 @@ type Exhibit = {
   photos?: ArchivePhoto[];
 };
 
+const ruleTimeline = [
+  {
+    season: "1951-52",
+    title: "制限区域を6ftから12ftへ拡大",
+    detail: "ジョージ・マイカンのような大型センターの支配を抑え、ゴール下により広い空間をつくった。",
+  },
+  {
+    season: "1954-55",
+    title: "24秒ショットクロックを導入",
+    detail: "ボール保持による試合の停滞を防ぎ、NBAの試合テンポを根本から変えた。",
+  },
+  {
+    season: "1964-65",
+    title: "制限区域を現在の16ftへ拡大",
+    detail: "ウィルト・チェンバレンの圧倒的なゴール下支配も背景に、さらに広いペイントエリアになった。",
+  },
+  {
+    season: "1979-80",
+    title: "3ポイントラインを導入",
+    detail: "遠距離からの成功に追加の1点を与え、コートの横幅と戦術の価値を変えた。",
+  },
+  {
+    season: "2001-02",
+    title: "ゾーンディフェンス解禁・ディフェンス3秒",
+    detail: "従来の違法ディフェンス規定を改め、ゾーンを認める一方で、守備側のペイント内滞在を制限した。",
+  },
+  {
+    season: "2018-19",
+    title: "オフェンスリバウンド後は14秒リセット",
+    detail: "リングに当たった後も攻撃側が保持した場合、ショットクロックは24秒ではなく14秒へ。攻防の連続性を高めた。",
+  },
+  {
+    season: "2022-23",
+    title: "トランジション・テイクファウルを強化",
+    detail: "速攻を意図的なファウルで止める行為に、フリースロー1本と攻撃権を与える扱いを導入した。",
+  },
+];
+
+const eraFigures = [
+  { name: "ビル・ラッセル", note: "守備と勝利の基準を変えたセルティックス王朝の中心。" },
+  { name: "ウィルト・チェンバレン", note: "規格外の得点力とサイズで、ルール改変を考えさせた支配者。" },
+  { name: "ボブ・クージー", note: "ボールハンドリングとパスで初期NBAのガード像を広げた。" },
+  { name: "ジェリー・ウェスト", note: "レイカーズを率い、60年代の大舞台を彩った万能ガード。" },
+  { name: "カリーム・アブドゥル＝ジャバー", note: "ルー・アルシンダーから、スカイフックを完成させた次代の象徴。" },
+];
+
+const eraMilestones = [
+  "1956　ラッセルがドラフト当日のトレードでセルティックスへ加入",
+  "1957　ラッセルがセルティックスを球団初優勝へ導く",
+  "1962　チェンバレンがニックス戦で1試合100得点を記録",
+  "1967　チェンバレンが76ersを優勝へ導く",
+  "1969　ラッセルが選手兼HCとしてセルティックスを優勝へ導く",
+];
+
 const exhibits: Exhibit[] = [
   {
     era: "1950.11.22",
@@ -59,7 +113,6 @@ const exhibits: Exhibit[] = [
     label: "WILT'S ERA",
     kind: "gallery",
     photos: [
-      { src: "/history/wilt-action.png", alt: "試合中にシュートを放つウィルト・チェンバレン", caption: "圧倒的な高さでゴール周辺を支配したチェンバレン" },
       { src: "/history/wilt-100.png", alt: "100点の記録を示すウィルト・チェンバレンの写真", caption: "1962年、現在も残る1試合100得点の記録" },
       { src: "/history/wilt-jump-shot.png", alt: "高い打点からシュートを放つウィルト・チェンバレン", caption: "規格外のサイズと跳躍力はルールを考え直す契機になった" },
     ],
@@ -72,6 +125,7 @@ const exhibits: Exhibit[] = [
     label: "THE NEXT ANSWER",
     kind: "gallery",
     photos: [
+      { src: "/history/wilt-action.png", alt: "ロサンゼルス・レイカーズ時代にシュートを放つカリーム・アブドゥル＝ジャバー", caption: "レイカーズ時代、ゴール下でプレーするカリーム・アブドゥル＝ジャバー" },
       { src: "/history/alcindor-ucla.png", alt: "UCLA時代にダンクを決めるルー・アルシンダー", caption: "UCLA時代のルー・アルシンダー" },
       { src: "/history/kareem-bucks.png", alt: "ミルウォーキー・バックスのカリーム・アブドゥル＝ジャバー", caption: "NBAで完成したカリーム・アブドゥル＝ジャバーのキャリア" },
     ],
@@ -180,7 +234,7 @@ function ExhibitVisual({ exhibit }: { exhibit: Exhibit }) {
 
 export default function HistoryPage() {
   return (
-    <div className="history-gallery flex min-h-full flex-1 flex-col">
+    <div className="history-gallery flex min-h-screen flex-1 flex-col">
       <SiteHeader />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-7 sm:py-10">
       <nav aria-label="パンくずリスト" className="mb-5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[#c4b69e]">
@@ -218,6 +272,37 @@ export default function HistoryPage() {
           </p>
         </section>
 
+        <section aria-labelledby="era-figures" className="history-gallery__timeline mt-8 rounded-2xl border border-[#66563a] p-5 sm:p-8">
+          <p className="text-[11px] font-extrabold tracking-[.22em] text-[#e1bb71]">THE PEOPLE OF THE ERA</p>
+          <h2 id="era-figures" className="mt-2 font-serif text-2xl font-bold text-[#f5efe1] sm:text-3xl">この時代を形作った名選手たち</h2>
+          <div className="mt-6 grid gap-6 lg:grid-cols-[1.05fr_1fr_1.25fr]">
+            <section aria-label="象徴的なスター">
+              <h3 className="text-sm font-extrabold text-[#f5efe1]">象徴的なスター</h3>
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {eraFigures.map((player) => (
+                  <li key={player.name} title={player.note} className="rounded-full border border-[#66563a] bg-[#1b1d23] px-3 py-1.5 text-sm font-bold text-[#f5efe1]">
+                    {player.name}
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <section aria-label="代表チーム">
+              <h3 className="text-sm font-extrabold text-[#f5efe1]">代表チーム</h3>
+              <ul className="mt-3 space-y-2 text-sm font-bold text-[#f5efe1]">
+                <li className="rounded-xl border border-[#66563a] bg-[#1b1d23] px-3 py-2">ボストン・セルティックス</li>
+                <li className="rounded-xl border border-[#66563a] bg-[#1b1d23] px-3 py-2">フィラデルフィア／サンフランシスコ・ウォリアーズ</li>
+                <li className="rounded-xl border border-[#66563a] bg-[#1b1d23] px-3 py-2">ロサンゼルス・レイカーズ</li>
+              </ul>
+            </section>
+            <section aria-label="時代のタイムライン">
+              <h3 className="text-sm font-extrabold text-[#f5efe1]">時代のタイムライン</h3>
+              <ol className="mt-3 space-y-2 border-l border-[#8d754c] pl-4 text-sm leading-6 text-[#d5ccbd]">
+                {eraMilestones.map((milestone) => <li key={milestone}>{milestone}</li>)}
+              </ol>
+            </section>
+          </div>
+        </section>
+
         <div className="mt-10 space-y-12 sm:space-y-16">
           {exhibits.map((exhibit, index) => {
             const reverse = index % 2 === 1;
@@ -240,6 +325,25 @@ export default function HistoryPage() {
             );
           })}
         </div>
+
+        <section aria-labelledby="rule-timeline" className="history-gallery__timeline mt-14 rounded-2xl border border-[#66563a] p-5 sm:p-8">
+          <div className="max-w-2xl">
+            <p className="text-[11px] font-extrabold tracking-[.22em] text-[#e1bb71]">RULES TIMELINE</p>
+            <h2 id="rule-timeline" className="mt-2 font-serif text-2xl font-bold text-[#f5efe1] sm:text-3xl">NBAルール改変年表</h2>
+            <p className="mt-3 text-sm leading-7 text-[#d5ccbd]">試合の停滞、センターの支配、戦術の変化。主要な改変を年代順にたどります。</p>
+          </div>
+          <ol className="mt-7 border-l border-[#8d754c] pl-5 sm:ml-3 sm:pl-8">
+            {ruleTimeline.map((item) => (
+              <li key={item.season} className="history-gallery__timeline-item relative pb-7 last:pb-0">
+                <span className="absolute -left-[1.78rem] top-1.5 h-3 w-3 rounded-full border-2 border-[#0e0f10] bg-[#e1bb71] sm:-left-[2.28rem]" aria-hidden />
+                <p className="text-xs font-extrabold tracking-[.16em] text-[#e1bb71]">{item.season}</p>
+                <h3 className="mt-1 text-base font-bold text-[#f5efe1] sm:text-lg">{item.title}</h3>
+                <p className="mt-1 text-sm leading-6 text-[#d5ccbd]">{item.detail}</p>
+              </li>
+            ))}
+          </ol>
+          <p className="mt-7 border-t border-[#66563a] pt-4 text-xs leading-5 text-[#c4b69e]">資料：NBA公式のルール・歴史資料をもとに作成。</p>
+        </section>
 
         <section className="mt-14 border-t-2 border-[#66563a] py-8 text-center">
           <p className="text-[11px] font-extrabold tracking-[.22em] text-[#e1bb71]">NEXT EXHIBITION</p>
