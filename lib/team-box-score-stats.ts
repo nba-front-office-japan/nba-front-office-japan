@@ -50,7 +50,8 @@ export interface TeamBoxScoreSeasonStats {
 
 type GameKind = "regular" | "other" | "unknown";
 
-function classifyGame(game: BoxGameRow, season: number, scheduledRegular: Set<string>): GameKind {
+// 選手ページの今季成績(lib/player-box-score-stats.ts)でも同じ判定を使う
+export function classifyGame(game: BoxGameRow, season: number, scheduledRegular: Set<string>): GameKind {
   const opener = REGULAR_SEASON_OPENER[season];
   if (!opener || game.game_date < opener || game.game_date >= `${season + 1}-08-01`) return "other";
   const nba = NBA_GAME_ID.exec(game.bref_game_id);
@@ -63,11 +64,11 @@ function classifyGame(game: BoxGameRow, season: number, scheduledRegular: Set<st
   return "unknown";
 }
 
-function matchupKey(date: string, homeTeamId: string, awayTeamId: string): string {
+export function matchupKey(date: string, homeTeamId: string, awayTeamId: string): string {
   return `${date}|${homeTeamId}|${awayTeamId}`;
 }
 
-const ZERO: RawStatTotals = {
+export const ZERO: RawStatTotals = {
   gamesPlayed: 0,
   minutesPlayed: 0,
   points: 0,
@@ -88,7 +89,7 @@ const ZERO: RawStatTotals = {
 };
 
 // 1試合分の行を足す。出場時間は秒で保存しているため分に直す(MPG は合計から都度計算)
-function addGame(acc: RawStatTotals, r: BoxPlayerRow): RawStatTotals {
+export function addGame(acc: RawStatTotals, r: BoxPlayerRow): RawStatTotals {
   return {
     gamesPlayed: acc.gamesPlayed + 1,
     minutesPlayed: acc.minutesPlayed + (r.seconds_played ?? 0) / 60,

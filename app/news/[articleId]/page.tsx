@@ -8,6 +8,7 @@ import { CATEGORY_OPTIONS, isRumorOrUnverified, isSingleSource } from "@/lib/new
 import { PageShell } from "@/components/page-shell";
 import { NewsArticleView, formatArticleDate } from "@/components/news/article-view";
 import { trailingRelatedMedia } from "@/lib/news/body-media";
+import { fetchArticlePlayers } from "@/lib/news/player-articles";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +44,9 @@ export default async function NewsArticlePage({
     notFound();
   }
 
+  // この記事の選手: タイトル・本文に日本語名が出てくる選手の選手ページへのリンク(lib/news/player-articles.ts)
+  const players = await fetchArticlePlayers(createAdminSupabaseClient(), `${article.headlineJa}\n${article.bodyMarkdown}`);
+
   const lowConfidence = isRumorOrUnverified(article.verificationStatus);
   return (
     <PageShell>
@@ -58,9 +62,28 @@ export default async function NewsArticlePage({
         trailingMedia={trailingRelatedMedia(article.bodyMarkdown, article.relatedMediaUrls)}
         sources={article.sources}
         footer={
-          <Link href="/news" className="mt-6 inline-block text-sm font-extrabold text-blue">
-            ← News一覧に戻る
-          </Link>
+          <>
+            {players.length > 0 && (
+              <div className="border-t border-line pt-5">
+                <h2 className="mb-3 text-sm font-extrabold">この記事の選手（身長・成績・スタッツ）</h2>
+                <ul className="flex flex-wrap gap-2">
+                  {players.map((p) => (
+                    <li key={p.id}>
+                      <Link
+                        href={`/players/${p.id}`}
+                        className="inline-block rounded-lg border border-line px-3 py-1.5 text-sm font-semibold text-blue hover:bg-surface"
+                      >
+                        {p.nameJa}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <Link href="/news" className="mt-6 inline-block text-sm font-extrabold text-blue">
+              ← News一覧に戻る
+            </Link>
+          </>
         }
       />
     </PageShell>

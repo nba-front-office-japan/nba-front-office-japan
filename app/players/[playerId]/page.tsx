@@ -20,6 +20,12 @@ import {
   playerPageDescription,
   playerPageTitle,
 } from "@/lib/player-page";
+import { fetchPlayerCurrentSeasonStats, gameDateLabel } from "@/lib/player-box-score-stats";
+import { ROSTER_SEASON, seasonLabel } from "@/lib/seasons";
+import { deriveStats, formatPct, formatStat } from "@/lib/stats";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { fetchPlayerRelatedArticles } from "@/lib/news/player-articles";
+import { formatArticleDate } from "@/components/news/article-view";
 
 // 選手ページは Profile(基本情報・受賞歴)と Stats(シーズン別成績)を ?view= で切り替える。
 // 上部の選手情報(PlayerHeader)はどちらの表示でも出す。
@@ -38,8 +44,9 @@ export async function generateMetadata({ params, searchParams }: PageProps<"/pla
   const base = await fetchPlayerPageBase(playerId);
   if (!base) return {};
 
-  const title = playerPageTitle(base.player, view);
-  const description = playerPageDescription(base);
+  const current = await fetchPlayerCurrentSeasonStats(playerId, ROSTER_SEASON);
+  const title = playerPageTitle(base.player, view, current);
+  const description = playerPageDescription(base, current);
   const canonical = view === "stats" ? `/players/${playerId}?view=stats` : `/players/${playerId}`;
   return {
     title,
@@ -66,6 +73,10 @@ export default async function PlayerDetailPage({
     notFound();
   }
   const { player, currentTeam } = base;
+
+  // 今季(2026-27)のレギュラーシーズン成績。ボックススコアを取り込むたびに自動で最新になる(generateMetadata と共通の取得)
+  const current = await fetchPlayerCurrentSeasonStats(playerId, ROSTER_SEASON);
+  const currentDerived = current ? deriveStats(current.totals) : null;
 
   const { data: stats, error: statsError } = await supabase
     .from("player_stats")
@@ -144,9 +155,14 @@ export default async function PlayerDetailPage({
       ? playerDataSummary({
           nameJa: player.full_name_ja ?? player.full_name,
           stats: stats ?? [],
+          current,
           salary: salaryRows.length === 1 ? salaryRows[0] : null,
         })
       : [];
+
+  // 関連ニュース: 公開記事のタイトル・本文に日本語名が出てくるもの(lib/news/player-articles.ts)
+  const relatedArticles =
+    selectedView === "profile" ? await fetchPlayerRelatedArticles(createAdminSupabaseClient(), player.full_name_ja) : [];
 
   return (
     <PageShell>
@@ -173,6 +189,36 @@ export default async function PlayerDetailPage({
           </div>
         }
       />
+      {current && currentDerived && (
+        <section aria-labelledby="player-current-season" className="mt-6 border border-line bg-surface p-5 sm:p-6">
+          <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">This Season</p>
+          <h2 id="player-current-season" className="text-lg font-semibold">
+            {seasonLabel(current.season)} 今季成績
+          </h2>
+          <p className="mb-4 mt-1 text-xs text-muted">
+            レギュラーシーズン・{gameDateLabel(current.lastGameDate)}の試合まで（現地日付）
+          </p>
+          <dl className="grid grid-cols-3 gap-x-4 gap-y-3 text-sm sm:grid-cols-6">
+            {[
+              { label: "試合", value: String(current.totals.gamesPlayed) },
+              { label: "平均得点", value: formatStat(currentDerived.ppg) },
+              { label: "平均リバウンド", value: formatStat(currentDerived.rpg) },
+              { label: "平均アシスト", value: formatStat(currentDerived.apg) },
+              { label: "平均出場時間", value: formatStat(currentDerived.mpg) },
+              { label: "FG%", value: formatPct(currentDerived.fgPct) },
+              { label: "3P%", value: formatPct(currentDerived.threePct) },
+              { label: "FT%", value: formatPct(currentDerived.ftPct) },
+              { label: "平均スティール", value: formatStat(currentDerived.stlPg) },
+              { label: "平均ブロック", value: formatStat(currentDerived.blkPg) },
+            ].map((item) => (
+              <div key={item.label}>
+                <dt className="text-muted">{item.label}</dt>
+                <dd className="font-semibold tabular-nums">{item.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      )}
       {selectedView === "profile" && awardSummaries.length > 0 && <PlayerAwardHistory summaries={awardSummaries} />}
       {selectedView === "profile" && awardLabels.length > 0 && (
         <div className="mt-6 border border-line bg-surface p-6">
@@ -203,6 +249,26 @@ export default async function PlayerDetailPage({
               <p key={text}>{text}</p>
             ))}
           </div>
+        </section>
+      )}
+      {relatedArticles.length > 0 && (
+        <section aria-labelledby="player-related-news" className="mt-8 border border-line bg-surface p-5 sm:p-6">
+          <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">News</p>
+          <h2 id="player-related-news" className="mb-4 text-lg font-semibold">
+            {player.full_name_ja ?? player.full_name}の関連ニュース
+          </h2>
+          <ul className="space-y-3 text-sm">
+            {relatedArticles.map((article) => (
+              <li key={article.id} className="border-l-[3px] border-blue pl-3">
+                <Link href={`/news/${article.id}`} className="font-semibold hover:text-blue hover:underline">
+                  {article.headlineJa}
+                </Link>
+                {article.publishedAt && (
+                  <span className="ml-2 text-xs text-muted">{formatArticleDate(article.publishedAt)}</span>
+                )}
+              </li>
+            ))}
+          </ul>
         </section>
       )}
       {selectedView === "profile" && (

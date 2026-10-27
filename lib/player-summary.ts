@@ -3,6 +3,8 @@
 import { seasonLabel } from "@/lib/seasons";
 import { SALARY_SEASONS, formatUsd, type SalaryPlayer } from "@/lib/salary/types";
 import { formatUsdJa } from "@/lib/salary/lines";
+import { deriveStats, formatStat } from "@/lib/stats";
+import type { PlayerCurrentSeasonStats } from "@/lib/player-box-score-stats";
 
 export type SummaryStatRow = {
   season: number;
@@ -72,18 +74,30 @@ function averagesText(l: SeasonLine): string {
   return `1試合平均${avg(l.points, l.games_played)}得点・${avg(l.rebounds_total, l.games_played)}リバウンド・${avg(l.assists, l.games_played)}アシスト`;
 }
 
+/** 今季成績の1文(説明文・データで見るで共通)。例: 「2026-27シーズンは5試合に出場し、1試合平均21.4得点・5.0リバウンド・4.2アシスト（10月26日の試合まで）。」 */
+export function currentSeasonSentence(current: PlayerCurrentSeasonStats): string {
+  const t = current.totals;
+  const d = deriveStats(t);
+  const [, m, day] = current.lastGameDate.split("-").map(Number);
+  return `${seasonLabel(current.season)}シーズンは${t.gamesPlayed}試合に出場し、1試合平均${formatStat(d.ppg)}得点・${formatStat(d.rpg)}リバウンド・${formatStat(d.apg)}アシスト（${m}月${day}日の試合まで）。`;
+}
+
 /** 文章(段落の配列)。成績も年俸も無い選手は空配列 */
 export function playerDataSummary({
   nameJa,
   stats,
+  current,
   salary,
 }: {
   nameJa: string;
   stats: SummaryStatRow[];
+  /** 今季(ボックススコアから集計)。出場が無ければ null */
+  current: PlayerCurrentSeasonStats | null;
   /** 年俸の文を出さない場合は null */
   salary: SalaryPlayer | null;
 }): string[] {
   const out: string[] = [];
+  if (current) out.push(`${nameJa}の今季成績：${currentSeasonSentence(current)}`);
   const regular = seasonLines(stats, "regular_season");
   if (regular.length > 0) {
     const t = total(regular);
@@ -97,7 +111,7 @@ export function playerDataSummary({
     const latest = regular[regular.length - 1];
     const parts = [`フィールドゴール成功率${pct(latest.field_goals_made, latest.field_goals_attempted)}%`];
     if (n(latest.three_pointers_attempted) >= 20) parts.push(`3ポイント成功率${pct(latest.three_pointers_made, latest.three_pointers_attempted)}%`);
-    out.push(`直近の${seasonLabel(latest.season)}シーズンは${n(latest.games_played)}試合に出場し、${averagesText(latest)}、${parts.join("、")}でした。`);
+    out.push(`${current ? "" : "直近の"}${seasonLabel(latest.season)}シーズンは${n(latest.games_played)}試合に出場し、${averagesText(latest)}、${parts.join("、")}でした。`);
   }
 
   const playoffs = seasonLines(stats, "playoffs");
@@ -106,9 +120,9 @@ export function playerDataSummary({
     out.push(`プレーオフには${playoffs.length}シーズン・通算${n(t.games_played)}試合に出場し、${averagesText(t)}を記録しています。`);
   }
 
-  const current = salary?.salaries[0];
-  if (current !== null && current !== undefined) {
-    out.push(`${SALARY_SEASONS[0]}シーズンの年俸は${formatUsd(current)}(${formatUsdJa(current)})です。`);
+  const currentSalary = salary?.salaries[0];
+  if (currentSalary !== null && currentSalary !== undefined) {
+    out.push(`${SALARY_SEASONS[0]}シーズンの年俸は${formatUsd(currentSalary)}(${formatUsdJa(currentSalary)})です。`);
   }
   return out;
 }

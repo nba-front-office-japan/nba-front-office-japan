@@ -3,11 +3,13 @@
 import "server-only";
 import { cache } from "react";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { ROSTER_SEASON } from "@/lib/seasons";
+import { ROSTER_SEASON, seasonLabel } from "@/lib/seasons";
 import { teamNameJa } from "@/lib/team-names-ja";
 import { formatDraftInfo } from "@/lib/draft-format";
 import { featuredPlayerFor } from "@/lib/featured-players";
 import type { Database } from "@/lib/supabase/types";
+import type { PlayerCurrentSeasonStats } from "@/lib/player-box-score-stats";
+import { currentSeasonSentence } from "@/lib/player-summary";
 
 type PlayerRow = Database["public"]["Tables"]["players"]["Row"];
 type TeamRow = Database["public"]["Tables"]["teams"]["Row"];
@@ -64,7 +66,8 @@ function draftText(player: PlayerRow): string | null {
   return draft.includes("ドラフト外") ? draft.replace(/\s+/g, "") : draft.replace(/^(\d{4}年)\s+/, "$1ドラフト").replace(/\s+/g, "");
 }
 
-export function playerPageTitle(player: PlayerRow, view: "profile" | "stats"): string {
+// current: 今季の成績(ボックススコアから集計)。出場が無ければ null。あれば「選手名 スタッツ」の検索向けにタイトル・説明文へ入れる
+export function playerPageTitle(player: PlayerRow, view: "profile" | "stats", current: PlayerCurrentSeasonStats | null = null): string {
   const name = playerDisplayName(player);
   // 有名選手(lib/featured-players.ts)のProfileは、検索されやすい「成績・年俸・経歴」にする
   // 「{選手名} 身長」で検索されることが多いため、身長が分かる選手はProfileのタイトルに「身長」を入れる
@@ -73,23 +76,31 @@ export function playerPageTitle(player: PlayerRow, view: "profile" | "stats"): s
   if (featured && view === "profile") {
     return `${name}の${height}成績・${featured.hideSalary ? "プロフィール" : "年俸"}・経歴 | NBA Front Office Japan`;
   }
+  const season = current ? `（${seasonLabel(current.season)}）` : "";
   return view === "stats"
-    ? `${name}のシーズン別成績・スタッツ | NBA Front Office Japan`
-    : `${name}の${height}プロフィール・成績 | NBA Front Office Japan`;
+    ? `${name}のシーズン別成績・スタッツ${current ? `（${seasonLabel(current.season)}含む）` : ""} | NBA Front Office Japan`
+    : current
+      ? `${name}の${height}成績・スタッツ${season} | NBA Front Office Japan`
+      : `${name}の${height}プロフィール・成績 | NBA Front Office Japan`;
 }
 
 /** meta description。チーム・ポジション・身長が無い場合はその部分を省く */
-export function playerPageDescription({ player, currentTeam }: PlayerPageBase): string {
+export function playerPageDescription(
+  { player, currentTeam }: PlayerPageBase,
+  current: PlayerCurrentSeasonStats | null = null,
+): string {
   const role = roleText(teamLabel(currentTeam), player.position);
   const featured = featuredPlayerFor(player.full_name);
+  const currentText = current ? currentSeasonSentence(current) : "";
   if (featured) {
     // 紹介文に身長が入っていない選手は「（身長201cm）」を添える
     const height = player.height_cm && !featured.catchphrase.includes("身長") ? `（身長${player.height_cm}cm）` : "";
-    return `${featured.catchphrase}${featured.nameJa}${height}の経歴・プレースタイル・主なタイトル${featured.hideSalary ? "" : "・年俸"}、NBAのシーズン別成績を日本語でまとめています。`;
+    return `${featured.catchphrase}${currentText}${featured.nameJa}${height}の経歴・プレースタイル・主なタイトル${featured.hideSalary ? "" : "・年俸"}、NBAのシーズン別成績を日本語でまとめています。`;
   }
   const parts = [
     role ? `${playerDisplayName(player)}は${role}。` : `${playerDisplayName(player)}。`,
     player.height_cm ? `身長${player.height_cm}cm。` : "",
+    currentText,
     "NBAのシーズン別成績・スタッツ、ドラフト情報、受賞歴などのプロフィールを日本語でまとめています。",
   ];
   return parts.join("");
