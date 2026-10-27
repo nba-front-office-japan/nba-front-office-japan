@@ -6,6 +6,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
+import { ROSTER_SEASON } from "@/lib/seasons";
 
 type Client = SupabaseClient<Database>;
 export type StatsListRow = Database["public"]["Views"]["player_stats_list"]["Row"];
@@ -40,6 +41,27 @@ export type StatsSortKey = keyof typeof STATS_SORT_COLUMNS;
 export const STATS_POSITIONS = ["PG", "SG", "SF", "PF", "C", "G", "F", "GF", "FC"];
 export const STATS_MIN_GAMES = [0, 20, 50];
 
+// 試合のボックススコアから集計して一覧に出す今季(lib/current-season-stats-list.ts)。それより前は player_stats(DB のビュー)
+export const CURRENT_STATS_SEASON = ROSTER_SEASON;
+
+/** 最低試合数。"qualified" は規定試合数(所属チームの試合数の70%以上。今季のレギュラーシーズンだけ選べる) */
+export type StatsMinGames = number | "qualified";
+
+/** 今季のレギュラーシーズンか(ボックススコアから集計する一覧か) */
+export function isCurrentStatsSeason(season: number | null, seasonType: StatsQuery["seasonType"]): boolean {
+  return season === CURRENT_STATS_SEASON && seasonType === "regular_season";
+}
+
+/** 最低試合数の既定値。今季は試合数が少なく1試合だけの選手が上位に来るため、規定試合数にする */
+export function defaultMinGames(season: number | null, seasonType: StatsQuery["seasonType"]): StatsMinGames {
+  return isCurrentStatsSeason(season, seasonType) ? "qualified" : 0;
+}
+
+/** 絞り込みで選べる最低試合数 */
+export function minGamesOptions(season: number | null, seasonType: StatsQuery["seasonType"]): StatsMinGames[] {
+  return isCurrentStatsSeason(season, seasonType) ? ["qualified", 0] : STATS_MIN_GAMES;
+}
+
 export type StatsQuery = {
   seasonType: "regular_season" | "playoffs";
   /** シーズン(開始年)。null はすべてのシーズン */
@@ -47,7 +69,7 @@ export type StatsQuery = {
   position: string | null;
   /** チーム略称(例: BOS)。null はすべてのチーム */
   team: string | null;
-  minGames: number;
+  minGames: StatsMinGames;
   /** 選手名の検索語(日本語名・英語名の部分一致)。null は検索なし */
   q: string | null;
   sort: StatsSortKey;
@@ -67,17 +89,22 @@ export function parseStatsQuery(params: Params, latestSeason: number | null): St
   const sortParam = one(params, "sort");
   const sort = (sortParam && sortParam in STATS_SORT_COLUMNS ? sortParam : "ppg") as StatsSortKey;
   const seasonParam = one(params, "season");
-  const minGames = Number(one(params, "minGames"));
+  const minGamesParam = one(params, "minGames");
   const page = Number(one(params, "page"));
   const position = one(params, "pos");
   const team = one(params, "team");
   const q = normalizeSearchTerm(one(params, "q"));
+  const seasonType = one(params, "type") === "playoffs" ? "playoffs" : "regular_season";
+  const season = seasonParam === "all" ? null : /^\d{4}$/.test(seasonParam ?? "") ? Number(seasonParam) : latestSeason;
+  // URL の値(規定試合数は "q")がそのシーズンで選べなければ既定値にする
+  const minGamesValue: StatsMinGames | null = minGamesParam === "q" ? "qualified" : /^\d+$/.test(minGamesParam ?? "") ? Number(minGamesParam) : null;
+  const options = minGamesOptions(season, seasonType);
   return {
-    seasonType: one(params, "type") === "playoffs" ? "playoffs" : "regular_season",
-    season: seasonParam === "all" ? null : /^\d{4}$/.test(seasonParam ?? "") ? Number(seasonParam) : latestSeason,
+    seasonType,
+    season,
     position: position && STATS_POSITIONS.includes(position) ? position : null,
     team: team && /^[A-Z]{2,3}$/.test(team) ? team : null,
-    minGames: STATS_MIN_GAMES.includes(minGames) ? minGames : 0,
+    minGames: minGamesValue !== null && options.includes(minGamesValue) ? minGamesValue : defaultMinGames(season, seasonType),
     q,
     sort,
     // 名前・チーム・ポジションの既定は昇順、数値の列の既定は降順
@@ -95,7 +122,7 @@ export function statsQueryToSearch(q: StatsQuery, latestSeason: number | null, o
   else if (v.season !== latestSeason) sp.set("season", String(v.season));
   if (v.position) sp.set("pos", v.position);
   if (v.team) sp.set("team", v.team);
-  if (v.minGames) sp.set("minGames", String(v.minGames));
+  if (v.minGames !== defaultMinGames(v.season, v.seasonType)) sp.set("minGames", v.minGames === "qualified" ? "q" : String(v.minGames));
   if (v.q) sp.set("q", v.q);
   if (v.sort !== "ppg") sp.set("sort", v.sort);
   const defaultDir = ["playerName", "teamLabel", "position"].includes(v.sort) ? "asc" : "desc";
@@ -170,7 +197,7 @@ export async function fetchStatsPage(
     if (q.season !== null) query = query.eq("season", q.season);
     if (q.position) query = query.eq("position", q.position);
     if (teamId) query = query.contains("team_ids", [teamId]);
-    if (q.minGames > 0) query = query.gte("games_played", q.minGames);
+    if (typeof q.minGames === "number" && q.minGames > 0) query = query.gte("games_played", q.minGames);
     return query;
   };
   const ordered = <T extends ListQuery>(query: T) =>

@@ -23,8 +23,8 @@ const HOME_COPY = {
 const STATS_PICKS = [
   { label: "得点ランキング", sort: "ppg" },
   { label: "3Pランキング", sort: "threePct" },
-  // TS%は試投数の少ない選手が上位に来やすいため、20試合以上に絞る
-  { label: "TS%", sort: "tsPct", minGames: 20 },
+  // TS%は試投数の少ない選手が上位に来やすいが、今季の一覧は規定試合数に達した選手だけが初期表示のため絞り込みは付けない
+  { label: "TS%", sort: "tsPct" },
   { label: "アシスト", sort: "apg" },
 ];
 
@@ -173,7 +173,7 @@ export default async function Home() {
             {STATS_PICKS.map((pick) => (
               <Link
                 key={pick.sort}
-                href={`/stats?sort=${pick.sort}${"minGames" in pick ? `&minGames=${pick.minGames}` : ""}`}
+                href={`/stats?sort=${pick.sort}`}
                 className="selection-button selection-blue border border-line bg-surface px-3 py-2 text-[13px] font-bold"
               >
                 {pick.label}

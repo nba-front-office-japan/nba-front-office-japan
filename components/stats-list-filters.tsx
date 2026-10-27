@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { seasonLabel } from "@/lib/seasons";
-import { STATS_MIN_GAMES, STATS_POSITIONS, normalizeSearchTerm, statsQueryToSearch, type StatsQuery } from "@/lib/stats-list";
+import { STATS_POSITIONS, defaultMinGames, minGamesOptions, normalizeSearchTerm, statsQueryToSearch, type StatsQuery } from "@/lib/stats-list";
 
 // 選手スタッツ一覧の絞り込み。条件を変えると URL を書き換えて1ページ目に戻す(並べ替えはそのまま)。
 // 選手名の検索は Enter または「検索」で確定する(日本語名・英語名の部分一致。ほかの絞り込みと併用できる)。
@@ -36,7 +36,7 @@ export function StatsListFilters({
           <button
             key={type}
             type="button"
-            onClick={() => go({ seasonType: type })}
+            onClick={() => go({ seasonType: type, minGames: defaultMinGames(query.season, type) })}
             aria-pressed={query.seasonType === type}
             className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${query.seasonType === type ? "bg-blue text-white" : "border border-line text-muted"}`}
           >
@@ -47,7 +47,11 @@ export function StatsListFilters({
 
       <label className="grid gap-1.5 text-[11px] font-bold text-muted">
         SEASON
-        <select value={query.season ?? "all"} onChange={(e) => go({ season: e.target.value === "all" ? null : Number(e.target.value) })} className={selectClass}>
+        <select value={query.season ?? "all"} onChange={(e) => {
+          const season = e.target.value === "all" ? null : Number(e.target.value);
+          // 最低試合数はシーズンごとの既定値に戻す(規定試合数は今季だけ選べるため)
+          go({ season, minGames: defaultMinGames(season, query.seasonType) });
+        }} className={selectClass}>
           <option value="all">All</option>
           {seasons.map((s) => (
             <option key={s} value={s}>
@@ -83,10 +87,10 @@ export function StatsListFilters({
 
       <label className="grid gap-1.5 text-[11px] font-bold text-muted">
         MINIMUM GAMES
-        <select value={query.minGames} onChange={(e) => go({ minGames: Number(e.target.value) })} className={selectClass}>
-          {STATS_MIN_GAMES.map((g) => (
+        <select value={query.minGames} onChange={(e) => go({ minGames: e.target.value === "qualified" ? "qualified" : Number(e.target.value) })} className={selectClass}>
+          {minGamesOptions(query.season, query.seasonType).map((g) => (
             <option key={g} value={g}>
-              {g === 0 ? "All" : g}
+              {g === "qualified" ? "規定（70%以上）" : g === 0 ? "All" : g}
             </option>
           ))}
         </select>
