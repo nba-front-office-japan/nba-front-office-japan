@@ -30,7 +30,7 @@ const GUIDE_CATEGORIES: { category: string; examples: string[] }[] = [
     category: "過去事件",
     examples: ["ジョー・スミス事件", "タンパリング", "サラリーキャップ迂回に関する処分"],
   },
-  { category: "用語一覧", examples: ["ドラフト・制度", "怪我・インジュリー用語", "プレー用語"] },
+  { category: "用語一覧", examples: ["ドラフト・制度", "スタッツ・指標", "怪我・インジュリー用語", "プレー用語"] },
 ];
 
 // 例を「、」区切りで並べる。1項目(例:「1st Apron / 2nd Apron」)が行の途中で折り返さないよう、
