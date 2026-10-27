@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import type { Database } from "@/lib/supabase/types";
 import { formatDraftInfo } from "@/lib/draft-format";
 import { ageAt, todayInJapan } from "@/lib/age";
@@ -14,10 +15,13 @@ export function PlayerHeader({
   player,
   currentTeam,
   currentTeamPending,
+  actions,
 }: {
   player: Player;
   currentTeam: Team | null;
   currentTeamPending: boolean;
+  /** Profile / Stats の切替をロスター情報の直前に置くための領域 */
+  actions?: ReactNode;
 }) {
   const displayName = player.full_name_ja ?? player.full_name;
   const showEnglishSubtitle = Boolean(player.full_name_ja);
@@ -50,6 +54,7 @@ export function PlayerHeader({
         {player.position ?? "-"}
       </p>
 
+      {actions}
       <div className="border border-line bg-surface p-6">
         <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
           Roster Profile

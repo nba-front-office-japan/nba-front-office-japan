@@ -55,8 +55,8 @@ export function FeaturedPlayerProfile({ featured, salary }: { featured: Featured
 
   return (
     <>
-      <p className="mt-4 text-base font-semibold leading-7">{featured.catchphrase}</p>
       <Section id="featured-career" eyebrow="Career" title={`${featured.nameJa}の経歴`}>
+        <p className="mb-4 text-base font-semibold leading-7">{featured.catchphrase}</p>
         <Paragraphs items={featured.career} />
       </Section>
       <Section id="featured-style" eyebrow="Play Style" title="プレースタイル・強み">

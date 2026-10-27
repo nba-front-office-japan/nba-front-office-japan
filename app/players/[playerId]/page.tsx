@@ -17,7 +17,6 @@ import { salaryPlayerByName, salaryPlayersByName } from "@/lib/salary/data";
 import { playerDataSummary } from "@/lib/player-summary";
 import {
   fetchPlayerPageBase,
-  playerIntroSentence,
   playerPageDescription,
   playerPageTitle,
 } from "@/lib/player-page";
@@ -155,8 +154,41 @@ export default async function PlayerDetailPage({
         player={player}
         currentTeam={currentTeam}
         currentTeamPending={base.currentRosterTeamId === null}
+        actions={
+          <div className="mb-4 flex flex-wrap gap-2">
+            {VIEW_OPTIONS.map((opt) => (
+              <Link
+                key={opt.view}
+                href={opt.view === "profile" ? `/players/${playerId}` : `/players/${playerId}?view=${opt.view}`}
+                aria-current={selectedView === opt.view ? "page" : undefined}
+                className={`selection-button selection-blue rounded-lg px-4 py-2 text-sm font-bold transition-all duration-200 ${
+                  selectedView === opt.view
+                    ? "bg-blue text-white"
+                    : "border border-line text-muted hover:text-foreground"
+                }`}
+              >
+                {opt.label}
+              </Link>
+            ))}
+          </div>
+        }
       />
-      {selectedView === "profile" && <p className="mt-4 text-sm text-muted">{playerIntroSentence(base)}</p>}
+      {selectedView === "profile" && awardSummaries.length > 0 && <PlayerAwardHistory summaries={awardSummaries} />}
+      {selectedView === "profile" && awardLabels.length > 0 && (
+        <div className="mt-6 border border-line bg-surface p-6">
+          <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
+            Awards
+          </p>
+          <h2 className="mb-4 text-lg font-semibold">2025-26 Awards</h2>
+          <ul className="space-y-2">
+            {awardLabels.map((label) => (
+              <li key={label} className="border-l-[3px] border-gold pl-3 text-sm font-bold">
+                {label}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {selectedView === "profile" && featured && (
         <FeaturedPlayerProfile featured={featured} salary={salaryPlayerByName(featured.name)} />
       )}
@@ -172,38 +204,6 @@ export default async function PlayerDetailPage({
             ))}
           </div>
         </section>
-      )}
-      <div className="mt-6 flex flex-wrap gap-2">
-        {VIEW_OPTIONS.map((opt) => (
-          <Link
-            key={opt.view}
-            href={opt.view === "profile" ? `/players/${playerId}` : `/players/${playerId}?view=${opt.view}`}
-            aria-current={selectedView === opt.view ? "page" : undefined}
-            className={`px-4 py-2 text-sm font-bold transition-colors ${
-              selectedView === opt.view
-                ? "bg-blue text-white"
-                : "border border-line text-muted hover:text-foreground"
-            }`}
-          >
-            {opt.label}
-          </Link>
-        ))}
-      </div>
-      {selectedView === "profile" && awardSummaries.length > 0 && <PlayerAwardHistory summaries={awardSummaries} />}
-      {selectedView === "profile" && awardLabels.length > 0 && (
-        <div className="mt-8 border border-line bg-surface p-6">
-          <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
-            Awards
-          </p>
-          <h2 className="mb-4 text-lg font-semibold">2025-26 Awards</h2>
-          <ul className="space-y-2">
-            {awardLabels.map((label) => (
-              <li key={label} className="border-l-[3px] border-gold pl-3 text-sm font-bold">
-                {label}
-              </li>
-            ))}
-          </ul>
-        </div>
       )}
       {selectedView === "profile" && (
         <p className="mt-6 text-sm text-muted">

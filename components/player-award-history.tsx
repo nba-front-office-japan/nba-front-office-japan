@@ -20,7 +20,7 @@ function Seasons({ seasons }: { seasons: number[] }) {
 
 export function PlayerAwardHistory({ summaries }: { summaries: AwardSummary[] }) {
   return (
-    <section aria-labelledby="award-history" className="mt-8 border border-line bg-surface p-5 sm:p-6">
+    <section aria-labelledby="award-history" className="mt-6 border border-line bg-surface p-5 sm:p-6">
       <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">Awards & Honors</p>
       <h2 id="award-history" className="mb-4 text-lg font-semibold">
         個人賞・表彰
