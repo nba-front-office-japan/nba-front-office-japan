@@ -688,38 +688,28 @@ body:has(.home-cinema) {
   text-transform: uppercase;
 }
 
-/* ヘッダーと映像のステージで画面の高さちょうどにする(ステージはヘッダーの残りの高さいっぱい) */
-.home-cinema__hero {
-  display: flex;
-  flex-direction: column;
-  height: 100svh;
-  min-height: 30rem;
-}
-
-/* 映像のステージ。ブラウザ幅いっぱい(左右の余白・枠なし) */
+/* 映像のステージ。ブラウザ幅いっぱい(左右の余白・枠なし)。ヘッダーの直下から始まり、画面の高さには合わせない */
 .home-cinema__stage {
   position: relative;
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: hidden;
   background: #0b0c0d;
 }
 
-/* 正方形の映像を object-cover で敷き詰める。スマホ縦は高さ全体が入り左右が切れるので中央。
-   横長の画面は上下が切れるので、上部の湾曲したリングボードが必ず全部入るよう上寄りにする(手前の観客席側は切れてよい) */
+/* 映像の枠。上のリングボードは切らずに上端から見せる。
+   スマホは横幅いっぱいの正方形で全体表示。PCは全幅の正方形のまま(画面からはみ出す分はスクロールで続きが見える) */
+.home-cinema__screen {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+}
+
 .home-cinema__video {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 50% 50%;
-}
-
-@media (min-aspect-ratio: 1 / 1) {
-  .home-cinema__video {
-    object-position: 50% 5%;
-  }
+  object-position: 50% 0%;
 }
 
 .home-cinema__edges {
@@ -727,53 +717,44 @@ body:has(.home-cinema) {
   inset: 0;
   pointer-events: none;
   background:
-    linear-gradient(180deg, rgba(10, 10, 11, 0.45) 0%, rgba(10, 10, 11, 0) 9%),
-    linear-gradient(0deg, rgba(10, 10, 11, 0.55) 0%, rgba(10, 10, 11, 0) 14%);
+    linear-gradient(180deg, rgba(10, 10, 11, 0.45) 0%, rgba(10, 10, 11, 0) 7%),
+    linear-gradient(0deg, rgba(11, 12, 13, 0.7) 0%, rgba(11, 12, 13, 0) 10%);
 }
 
-/* 映像が終わった後に重ねるコピー。中央のボードに重ならないよう、下寄り(DATA UPDATE の上)に左寄せで置く */
+/* 映像が終わった後のコピー。スマホは映像の下に続けて出し、PCは最初の画面内に入る映像の上部左側(リングボードの下)に重ねる */
 .home-cinema__copy {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  padding-bottom: 5.5rem;
-  pointer-events: none;
+  position: relative;
+  padding: 1.5rem 0 0.5rem;
 }
 
 @media (min-width: 640px) {
   .home-cinema__copy {
-    padding-bottom: 5rem;
+    position: absolute;
+    inset: 20vw 0 auto;
+    padding: 0;
+    pointer-events: none;
   }
 }
 
-.home-cinema__copy a,
-.home-cinema__copy button {
-  pointer-events: auto;
-}
-
-/* 終わった場面を少しずつ暗くし、見出しの背後だけ柔らかく陰影を足す(スマホは下から、PCは左下から) */
+/* 終わった場面を少しずつ暗くし、PCでは見出しの背後(上部左側)だけ柔らかく陰影を足す */
 .home-cinema__dim {
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(0deg, rgba(10, 10, 11, 0.88) 0%, rgba(10, 10, 11, 0.7) 35%, rgba(10, 10, 11, 0) 62%),
-    rgba(10, 10, 11, 0.18);
+  background: rgba(10, 10, 11, 0.2);
   opacity: 0;
+  pointer-events: none;
   transition: opacity 1.8s ease;
 }
 
-/* 文字は opacity・わずかに下から上へ・ぼかし解除で、ゆっくり浮かび上がらせる。金線とリード文は少し遅れて続く */
 @media (min-width: 640px) {
   .home-cinema__dim {
     background:
-      linear-gradient(90deg, rgba(10, 10, 11, 0.62) 0%, rgba(10, 10, 11, 0.32) 40%, rgba(10, 10, 11, 0) 68%),
-      linear-gradient(0deg, rgba(10, 10, 11, 0.5) 0%, rgba(10, 10, 11, 0) 55%),
+      radial-gradient(ellipse 50% 32% at 24% 34%, rgba(10, 10, 11, 0.62) 0%, rgba(10, 10, 11, 0.38) 45%, rgba(10, 10, 11, 0) 100%),
       rgba(10, 10, 11, 0.2);
   }
 }
 
+/* 文字は opacity・わずかに下から上へ・ぼかし解除で、ゆっくり浮かび上がらせる。金線とリード文は少し遅れて続く */
 .home-cinema__rise {
   opacity: 0;
   transform: translateY(14px);
@@ -792,23 +773,23 @@ body:has(.home-cinema) {
   transition-delay: 1.8s;
 }
 
-.home-cinema__copy.is-visible .home-cinema__dim,
-.home-cinema__copy.is-visible .home-cinema__rise {
+.home-cinema__stage.is-ended .home-cinema__dim,
+.home-cinema__stage.is-ended .home-cinema__rise {
   opacity: 1;
   transform: none;
   filter: none;
 }
 
 /* 戻すとき(再生ボタンで再び見るとき)はすぐ消す */
-.home-cinema__copy:not(.is-visible) .home-cinema__dim,
-.home-cinema__copy:not(.is-visible) .home-cinema__rise {
+.home-cinema__stage:not(.is-ended) .home-cinema__dim,
+.home-cinema__stage:not(.is-ended) .home-cinema__rise {
   transition-duration: 0.3s;
   transition-delay: 0s;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .home-cinema__copy .home-cinema__dim,
-  .home-cinema__copy .home-cinema__rise {
+  .home-cinema__stage .home-cinema__dim,
+  .home-cinema__stage .home-cinema__rise {
     opacity: 1;
     transform: none;
     filter: none;
