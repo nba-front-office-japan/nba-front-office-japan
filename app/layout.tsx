@@ -19,11 +19,14 @@ export const metadata: Metadata = {
   title: "NBA Front Office Japan",
   description:
     "NBAの選手・チーム・スタッツ・年俸情報を日本語で提供するファンサイト",
-  icons: {
-    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
-    shortcut: "/icon.svg",
-    apple: "/icon.svg",
+  // アイコンと共有画像は app/ 直下の favicon.ico・icon.png・apple-icon.png・
+  // opengraph-image.jpg・twitter-image.jpg から Next.js が自動で出力する。
+  openGraph: {
+    siteName: "NBA Front Office Japan",
+    locale: "ja_JP",
+    type: "website",
   },
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
