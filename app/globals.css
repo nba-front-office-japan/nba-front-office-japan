@@ -705,8 +705,8 @@ body:has(.home-cinema) {
   background: #0b0c0d;
 }
 
-/* 正方形の映像を object-cover で敷き詰める。スマホ縦は左右が切れるので中央、
-   横長の画面は上下が切れるので、下の床・トロフィーと中央のボードが残るよう少し下寄りにする */
+/* 正方形の映像を object-cover で敷き詰める。スマホ縦は高さ全体が入り左右が切れるので中央。
+   横長の画面は上下が切れるので、上部の湾曲したリングボードが必ず全部入るよう上寄りにする(手前の観客席側は切れてよい) */
 .home-cinema__video {
   position: absolute;
   inset: 0;
@@ -718,7 +718,7 @@ body:has(.home-cinema) {
 
 @media (min-aspect-ratio: 1 / 1) {
   .home-cinema__video {
-    object-position: 50% 62%;
+    object-position: 50% 5%;
   }
 }
 
@@ -731,15 +731,21 @@ body:has(.home-cinema) {
     linear-gradient(0deg, rgba(10, 10, 11, 0.55) 0%, rgba(10, 10, 11, 0) 14%);
 }
 
-/* 映像が終わった後に重ねるコピー。見出しは画面の中ほどに左寄せで置く */
+/* 映像が終わった後に重ねるコピー。中央のボードに重ならないよう、下寄り(DATA UPDATE の上)に左寄せで置く */
 .home-cinema__copy {
   position: absolute;
   inset: 0;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  padding-bottom: 3rem;
+  justify-content: flex-end;
+  padding-bottom: 5.5rem;
   pointer-events: none;
+}
+
+@media (min-width: 640px) {
+  .home-cinema__copy {
+    padding-bottom: 5rem;
+  }
 }
 
 .home-cinema__copy a,
@@ -747,18 +753,27 @@ body:has(.home-cinema) {
   pointer-events: auto;
 }
 
-/* 終わった場面を少しずつ暗くし、見出しの背後(左側)だけ柔らかく陰影を足す */
+/* 終わった場面を少しずつ暗くし、見出しの背後だけ柔らかく陰影を足す(スマホは下から、PCは左下から) */
 .home-cinema__dim {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(90deg, rgba(10, 10, 11, 0.62) 0%, rgba(10, 10, 11, 0.32) 40%, rgba(10, 10, 11, 0) 68%),
-    rgba(10, 10, 11, 0.22);
+    linear-gradient(0deg, rgba(10, 10, 11, 0.88) 0%, rgba(10, 10, 11, 0.7) 35%, rgba(10, 10, 11, 0) 62%),
+    rgba(10, 10, 11, 0.18);
   opacity: 0;
   transition: opacity 1.8s ease;
 }
 
 /* 文字は opacity・わずかに下から上へ・ぼかし解除で、ゆっくり浮かび上がらせる。金線とリード文は少し遅れて続く */
+@media (min-width: 640px) {
+  .home-cinema__dim {
+    background:
+      linear-gradient(90deg, rgba(10, 10, 11, 0.62) 0%, rgba(10, 10, 11, 0.32) 40%, rgba(10, 10, 11, 0) 68%),
+      linear-gradient(0deg, rgba(10, 10, 11, 0.5) 0%, rgba(10, 10, 11, 0) 55%),
+      rgba(10, 10, 11, 0.2);
+  }
+}
+
 .home-cinema__rise {
   opacity: 0;
   transform: translateY(14px);
