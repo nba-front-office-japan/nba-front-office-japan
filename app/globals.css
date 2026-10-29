@@ -688,66 +688,115 @@ body:has(.home-cinema) {
   text-transform: uppercase;
 }
 
-/* 映像のステージ。スマホは横幅いっぱい(main の左右余白を打ち消す)の正方形。
-   sm 以上は高さを画面の高さいっぱい近く(ヘッダーと上余白の分を引く)にし、正方形の映像を中央に置く。左右は暗いグレーで埋める */
+/* ヘッダーと映像のステージで画面の高さちょうどにする(ステージはヘッダーの残りの高さいっぱい) */
+.home-cinema__hero {
+  display: flex;
+  flex-direction: column;
+  height: 100svh;
+  min-height: 30rem;
+}
+
+/* 映像のステージ。ブラウザ幅いっぱい(左右の余白・枠なし) */
 .home-cinema__stage {
   position: relative;
-  margin-inline: -1rem;
-  background: radial-gradient(ellipse 60% 70% at 50% 50%, #3e3f42 0%, #2e2f31 70%, #26272a 100%);
-}
-
-@media (min-width: 640px) {
-  .home-cinema__stage {
-    margin-inline: 0;
-    height: min(calc(100vw - 3.5rem), 72rem, calc(100svh - 10.5rem));
-    min-height: 22rem;
-    border: 1px solid rgba(205, 166, 87, 0.45);
-    border-radius: 1rem;
-    overflow: hidden;
-    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.42), 0 0 28px rgba(225, 187, 113, 0.09);
-  }
-}
-
-/* 正方形の映像枠。スマホは横幅いっぱい、sm 以上はステージの高さに合わせた正方形を中央に置く */
-.home-cinema__frame {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1 / 1;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
   background: #0b0c0d;
 }
 
-@media (min-width: 640px) {
-  .home-cinema__frame {
-    width: auto;
-    max-width: 100%;
-    height: 100%;
-    margin-inline: auto;
+/* 正方形の映像を object-cover で敷き詰める。スマホ縦は左右が切れるので中央、
+   横長の画面は上下が切れるので、下の床・トロフィーと中央のボードが残るよう少し下寄りにする */
+.home-cinema__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 50%;
+}
+
+@media (min-aspect-ratio: 1 / 1) {
+  .home-cinema__video {
+    object-position: 50% 62%;
   }
 }
 
-/* 映像が終わった後に重ねるコピー。下側に薄い陰影を置き、映像の最後のフレームはそのまま見せる */
+.home-cinema__edges {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(10, 10, 11, 0.45) 0%, rgba(10, 10, 11, 0) 9%),
+    linear-gradient(0deg, rgba(10, 10, 11, 0.55) 0%, rgba(10, 10, 11, 0) 14%);
+}
+
+/* 映像が終わった後に重ねるコピー。見出しは画面の中ほどに左寄せで置く */
 .home-cinema__copy {
   position: absolute;
   inset: 0;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  background: linear-gradient(0deg, rgba(10, 10, 11, 0.82) 0%, rgba(10, 10, 11, 0.45) 40%, rgba(10, 10, 11, 0) 68%);
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 1.2s ease, visibility 0s linear 1.2s;
+  justify-content: center;
+  padding-bottom: 3rem;
+  pointer-events: none;
 }
 
-.home-cinema__copy.is-visible {
+.home-cinema__copy a,
+.home-cinema__copy button {
+  pointer-events: auto;
+}
+
+/* 終わった場面を少しずつ暗くし、見出しの背後(左側)だけ柔らかく陰影を足す */
+.home-cinema__dim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(10, 10, 11, 0.62) 0%, rgba(10, 10, 11, 0.32) 40%, rgba(10, 10, 11, 0) 68%),
+    rgba(10, 10, 11, 0.22);
+  opacity: 0;
+  transition: opacity 1.8s ease;
+}
+
+/* 文字は opacity・わずかに下から上へ・ぼかし解除で、ゆっくり浮かび上がらせる。金線とリード文は少し遅れて続く */
+.home-cinema__rise {
+  opacity: 0;
+  transform: translateY(14px);
+  filter: blur(8px);
+  transition:
+    opacity 2.4s ease 0.6s,
+    transform 2.4s cubic-bezier(0.22, 1, 0.36, 1) 0.6s,
+    filter 2.4s ease 0.6s;
+}
+
+.home-cinema__rise--late {
+  transition-delay: 1.4s;
+}
+
+.home-cinema__rise--later {
+  transition-delay: 1.8s;
+}
+
+.home-cinema__copy.is-visible .home-cinema__dim,
+.home-cinema__copy.is-visible .home-cinema__rise {
   opacity: 1;
-  visibility: visible;
-  transition: opacity 1.2s ease, visibility 0s;
+  transform: none;
+  filter: none;
+}
+
+/* 戻すとき(再生ボタンで再び見るとき)はすぐ消す */
+.home-cinema__copy:not(.is-visible) .home-cinema__dim,
+.home-cinema__copy:not(.is-visible) .home-cinema__rise {
+  transition-duration: 0.3s;
+  transition-delay: 0s;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .home-cinema__copy {
+  .home-cinema__copy .home-cinema__dim,
+  .home-cinema__copy .home-cinema__rise {
     opacity: 1;
-    visibility: visible;
+    transform: none;
+    filter: none;
     transition: none;
   }
 }
