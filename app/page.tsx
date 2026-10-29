@@ -43,14 +43,16 @@ export default async function Home() {
     <div className="home-cinema flex min-h-screen w-full flex-1 flex-col">
       <SiteHeader />
       <HomeStage>
-        <div className="max-w-2xl">
-          <h1 className="home-cinema__serif home-cinema__rise text-[clamp(1.9rem,4.4vw,3.6rem)] font-bold leading-[1.22] tracking-tight text-[#fff8eb]">
+        <div>
+          <h1 className="home-cinema__serif home-cinema__rise text-[clamp(1.9rem,4.4vw,3.6rem)] font-bold sm:text-[clamp(1.6rem,2.9vw,2.9rem)] leading-[1.22] tracking-tight text-[#fff8eb]">
             勝敗の裏側にある、
             <br />
-            フロントオフィスの意思決定を読む。
+            フロントオフィスの
+            <br />
+            意思決定を読む。
           </h1>
-          <div className="home-cinema__rise home-cinema__rise--late mt-5 h-px w-20 bg-[#e1bb71]" />
-          <p className="home-cinema__rise home-cinema__rise--later mt-5 max-w-xl text-[14px] leading-7 text-[#f5efe1]/90 sm:text-[15px] sm:leading-8">
+          <div className="home-cinema__rise home-cinema__rise--late mt-5 h-px w-20 bg-[#e1bb71] sm:ml-auto" />
+          <p className="home-cinema__rise home-cinema__rise--later mt-5 max-w-xl text-[14px] sm:ml-auto sm:max-w-[26rem] leading-7 text-[#f5efe1]/90 sm:text-[15px] sm:leading-8">
             契約、トレード、ロスター構築を、ニュースだけで終わらせない。NBAをGMの視点から深掘りするデータベース。
           </p>
         </div>

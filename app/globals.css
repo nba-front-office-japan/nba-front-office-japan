@@ -695,19 +695,12 @@ body:has(.home-cinema) {
 }
 
 /* 映像の枠。上のリングボードは切らずに上端から見せる。
-   スマホは横幅いっぱいの正方形で全体表示。PCは全幅で高さを幅の82%にし、手前の観客席の下側だけ切る
-   (画面からはみ出す分はスクロールで続きが見える) */
+   スマホもPCも横幅いっぱいの正方形で全体表示(画面からはみ出す分はスクロールで続きが見える) */
 .home-cinema__screen {
   position: relative;
   width: 100%;
   aspect-ratio: 1 / 1;
   overflow: hidden;
-}
-
-@media (min-width: 640px) {
-  .home-cinema__screen {
-    aspect-ratio: 100 / 82;
-  }
 }
 
 .home-cinema__video {
@@ -728,22 +721,47 @@ body:has(.home-cinema) {
     linear-gradient(0deg, rgba(11, 12, 13, 0.7) 0%, rgba(11, 12, 13, 0) 10%);
 }
 
-/* 映像が終わった後のコピー。スマホは映像の下に続けて出し、PCは最初の画面内に入る映像の上部左側(リングボードの下)に重ねる */
+/* 映像が終わった後のコピー。スマホは映像の下に続けて出す。
+   PCは映像の範囲に重ね、右寄せの文字ブロックがスクロール中も画面の右上に付いてくる(sticky)。映像の下端を過ぎると一緒に流れて消える */
 .home-cinema__copy {
   position: relative;
-  padding: 1.5rem 0 0.5rem;
+  padding: 1.5rem 1rem 0.5rem;
 }
 
 @media (min-width: 640px) {
   .home-cinema__copy {
     position: absolute;
-    inset: 20vw 0 auto;
-    padding: 0;
+    inset: 0;
+    padding: 17vw 3vw 2rem 0;
     pointer-events: none;
+  }
+
+  .home-cinema__copy-inner {
+    position: sticky;
+    top: 1.75rem;
+    width: min(40vw, 34rem);
+    margin-left: auto;
+    text-align: right;
+    isolation: isolate;
+  }
+
+  /* 文字の背後だけの柔らかい陰影(右上から) */
+  .home-cinema__copy-inner::before {
+    content: "";
+    position: absolute;
+    inset: -3rem -3vw -3rem -5rem;
+    z-index: -1;
+    background: radial-gradient(ellipse at 75% 40%, rgba(10, 10, 11, 0.6) 0%, rgba(10, 10, 11, 0.35) 45%, rgba(10, 10, 11, 0) 72%);
+    opacity: 0;
+    transition: opacity 1.8s ease;
+  }
+
+  .home-cinema__stage.is-ended .home-cinema__copy-inner::before {
+    opacity: 1;
   }
 }
 
-/* 終わった場面を少しずつ暗くし、PCでは見出しの背後(上部左側)だけ柔らかく陰影を足す */
+/* 終わった場面を少しずつ暗くする(見出しの背後の陰影は .home-cinema__copy-inner::before) */
 .home-cinema__dim {
   position: absolute;
   inset: 0;
@@ -751,14 +769,6 @@ body:has(.home-cinema) {
   opacity: 0;
   pointer-events: none;
   transition: opacity 1.8s ease;
-}
-
-@media (min-width: 640px) {
-  .home-cinema__dim {
-    background:
-      radial-gradient(ellipse 50% 32% at 24% 34%, rgba(10, 10, 11, 0.62) 0%, rgba(10, 10, 11, 0.38) 45%, rgba(10, 10, 11, 0) 100%),
-      rgba(10, 10, 11, 0.2);
-  }
 }
 
 /* 文字は opacity・わずかに下から上へ・ぼかし解除で、ゆっくり浮かび上がらせる。金線とリード文は少し遅れて続く */
@@ -795,6 +805,11 @@ body:has(.home-cinema) {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .home-cinema__stage .home-cinema__copy-inner::before {
+    opacity: 1;
+    transition: none;
+  }
+
   .home-cinema__stage .home-cinema__dim,
   .home-cinema__stage .home-cinema__rise {
     opacity: 1;
