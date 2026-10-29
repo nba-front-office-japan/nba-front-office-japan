@@ -695,12 +695,19 @@ body:has(.home-cinema) {
 }
 
 /* 映像の枠。上のリングボードは切らずに上端から見せる。
-   スマホは横幅いっぱいの正方形で全体表示。PCは全幅の正方形のまま(画面からはみ出す分はスクロールで続きが見える) */
+   スマホは横幅いっぱいの正方形で全体表示。PCは全幅で高さを幅の82%にし、手前の観客席の下側だけ切る
+   (画面からはみ出す分はスクロールで続きが見える) */
 .home-cinema__screen {
   position: relative;
   width: 100%;
   aspect-ratio: 1 / 1;
   overflow: hidden;
+}
+
+@media (min-width: 640px) {
+  .home-cinema__screen {
+    aspect-ratio: 100 / 82;
+  }
 }
 
 .home-cinema__video {
