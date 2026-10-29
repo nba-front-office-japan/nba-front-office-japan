@@ -170,6 +170,7 @@ export default async function PlayerDetailPage({
         player={player}
         currentTeam={currentTeam}
         currentTeamPending={base.currentRosterTeamId === null}
+        showRosterProfile={selectedView === "profile"}
         actions={
           <div className="mb-4 flex flex-wrap gap-2">
             {VIEW_OPTIONS.map((opt) => (
@@ -189,7 +190,7 @@ export default async function PlayerDetailPage({
           </div>
         }
       />
-      {current && currentDerived && (
+      {selectedView === "profile" && current && currentDerived && (
         <section aria-labelledby="player-current-season" className="mt-6 border border-line bg-surface p-5 sm:p-6">
           <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">This Season</p>
           <h2 id="player-current-season" className="text-lg font-semibold">

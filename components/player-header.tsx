@@ -16,12 +16,15 @@ export function PlayerHeader({
   currentTeam,
   currentTeamPending,
   actions,
+  showRosterProfile = true,
 }: {
   player: Player;
   currentTeam: Team | null;
   currentTeamPending: boolean;
   /** Profile / Stats の切替をロスター情報の直前に置くための領域 */
   actions?: ReactNode;
+  /** Stats表示では基本情報を重ねず、シーズン別成績に集中させる */
+  showRosterProfile?: boolean;
 }) {
   const displayName = player.full_name_ja ?? player.full_name;
   const showEnglishSubtitle = Boolean(player.full_name_ja);
@@ -55,7 +58,7 @@ export function PlayerHeader({
       </p>
 
       {actions}
-      <div className="border border-line bg-surface p-6">
+      {showRosterProfile && <div className="border border-line bg-surface p-6">
         <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
           Roster Profile
         </p>
@@ -95,7 +98,7 @@ export function PlayerHeader({
             <dd className="font-semibold">{player.pre_draft_team ?? "-"}</dd>
           </div>
         </dl>
-      </div>
+      </div>}
     </div>
   );
 }
