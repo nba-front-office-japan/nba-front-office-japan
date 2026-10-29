@@ -4,7 +4,8 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { getLatestSeason } from "@/lib/supabase/current-season";
 import { fetchPublishedArticles } from "@/lib/news/public-articles";
-import { PageShell } from "@/components/page-shell";
+import { SiteHeader } from "@/components/site-header";
+import { HomeStage } from "@/components/home-stage";
 import { announcementExcerpt, fetchPublishedAnnouncements, formatAnnouncementDate } from "@/lib/announcements";
 
 // トップページに出すお知らせの件数(公開中のものを新しい順に)
@@ -35,6 +36,8 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
+// トップページ。NBAの歴史ページ(/history)と同じ、暗いグレー・金・明朝系の見出しでまとめる(app/globals.css の .home-cinema)。
+// 上部は開場演出の映像を中央の横長ステージとして見せ、その上にコピーを薄く重ねる(components/home-stage.tsx)。
 export default async function Home() {
   const supabase = createServerSupabaseClient();
 
@@ -49,158 +52,143 @@ export default async function Home() {
   const featured = articles[0] ?? null;
 
   return (
-    <PageShell>
-      <div className="grid grid-cols-1 gap-4.5 gap-y-5 lg:grid-cols-[1.55fr_1fr]">
-        <div className="relative min-h-[280px] overflow-hidden bg-navy p-6 text-white sm:p-8">
-          <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-[#84b0ff]">
-            {latestSeason ?? "2026"} Season Database
-          </p>
-          <h1 className="max-w-[500px] text-[28px] font-semibold leading-tight tracking-tight sm:text-[36px]">
-            勝敗の裏側にある、フロントオフィスの意思決定を読む。
-          </h1>
-          <p className="mt-3 max-w-[510px] text-sm leading-7 text-slate-300">
-            契約、トレード、ロスター構築を、ニュースだけで終わらせない。NBAをGMの視点から深掘りするデータベース。
-          </p>
-          <Link
-            href="/stats"
-            className="selection-button selection-gold mt-5 inline-block bg-gold px-4 py-3 text-sm font-extrabold text-[#182238]"
-          >
-            {HOME_COPY.statsCta}
-          </Link>
-          <div className="mt-6 border-l-4 border-gold pl-4">
-            <p className="text-xs text-slate-400">DATA UPDATE</p>
-            <b className="mt-1.5 block text-lg">
-              {latestSeason ?? "最新"}シーズンのロスターと基本スタッツを収録
-            </b>
-            <p className="mt-1.5 text-[13px] text-[#b9c6d8]">
-              {playerCount ?? "-"}選手のロスター、得点、リバウンド、アシスト、シュート指標を検索できます。
+    <div className="home-cinema flex min-h-screen w-full flex-1 flex-col">
+      <SiteHeader />
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-20 pt-6 sm:px-7 sm:pt-10">
+        <HomeStage>
+          <div className="max-w-2xl px-5 pb-16 pt-24 sm:px-10 sm:pb-12 lg:px-12 lg:pb-14">
+            <p className="home-cinema__label">{latestSeason ?? "2026"} Season Database</p>
+            <h1 className="home-cinema__serif mt-4 text-[clamp(1.9rem,4.4vw,3.6rem)] font-bold leading-[1.22] tracking-tight text-[#fff8eb]">
+              勝敗の裏側にある、
+              <br />
+              フロントオフィスの意思決定を読む。
+            </h1>
+            <div className="mt-5 h-px w-20 bg-[#e1bb71]" />
+            <p className="mt-5 max-w-xl text-[14px] leading-7 text-[#f5efe1]/90 sm:text-[15px] sm:leading-8">
+              契約、トレード、ロスター構築を、ニュースだけで終わらせない。NBAをGMの視点から深掘りするデータベース。
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link href="/stats" className="home-cinema__cta home-cinema__cta--gold">
+                {HOME_COPY.statsCta}
+              </Link>
+              <Link href="/news" className="home-cinema__cta">
+                NEWSを読む →
+              </Link>
+            </div>
+            <p className="mt-5 text-[12px] leading-6 text-[#eee3d0]/80">
+              DATA UPDATE ― {latestSeason ?? "最新"}シーズンのロスターと基本スタッツを収録（{playerCount ?? "-"}選手）
             </p>
           </div>
-        </div>
+        </HomeStage>
 
-        <div className="border border-line bg-surface p-6">
-          <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
-            {HOME_COPY.featuredKicker}
-          </p>
-          <h2 className="mb-4 text-xl font-semibold">{HOME_COPY.featuredTitle}</h2>
-          {featured ? (
-            <>
-              <h3 className="text-base font-bold">
-                <Link href={`/news/${featured.id}`} className="selection-button selection-blue block rounded-lg px-2 py-1.5 hover:underline">
-                  {featured.headlineJa}
-                </Link>
-              </h3>
-              {featured.dekJa && (
-                <p className="mt-1.5 text-xs leading-6 text-muted">{featured.dekJa}</p>
-              )}
-              <Link href="/news" className="mt-3 inline-block text-sm font-extrabold text-blue">
-                News一覧を見る →
-              </Link>
-            </>
-          ) : (
-            <>
-              <p className="text-sm text-muted">まだ公開されている記事がありません。</p>
-              <Link href="/teams" className="mt-3 inline-block text-sm font-extrabold text-blue">
-                チームDBを見る →
-              </Link>
-            </>
-          )}
-          <div className="mt-6 border-t border-line pt-4">
-            <span className="mr-1.5 inline-block bg-[#eaf1ff] px-1.5 py-1 text-[11px] font-extrabold text-[#2457b7]">
-              DATA
-            </span>
-            <h3 className="mt-2 text-base font-bold">
-              {latestSeason ?? "最新"}シーズンの基本スタッツを更新
-            </h3>
-            <p className="mt-1.5 text-xs text-muted">Player database · 最新</p>
-          </div>
-        </div>
-      </div>
-
-      {/* 試合結果＆ボックススコア(/games)への入口。ネタバレ防止のため、ホームには試合の勝敗・点数・チーム名を一切表示しない */}
-      <Link href="/games" className="selection-button selection-blue mt-5 flex flex-wrap items-center justify-between gap-3 border border-line bg-surface px-6 py-4">
-        <div>
-          <p className="text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">Games</p>
-          <p className="text-sm text-muted">試合結果は、ネタバレ防止のため「試合結果＆ボックススコア」のページでだけ表示します。</p>
-        </div>
-        <span className="bg-navy px-4 py-2.5 text-sm font-extrabold text-white">試合結果＆ボックススコアへ →</span>
-      </Link>
-
-      <div className="mt-5 grid grid-cols-1 gap-4.5 lg:grid-cols-[1.55fr_1fr]">
-        {/* お知らせ(管理画面で公開したものを新しい順に最大3件)。0件のときは「現在お知らせはありません」と表示する */}
-        <section aria-labelledby="home-announcements" className="border border-line bg-surface p-6">
-          <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
-            <div>
-              <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">Notice</p>
-              <h2 id="home-announcements" className="text-xl font-semibold">
-                お知らせ
-              </h2>
-            </div>
-            {announcements.length > 0 && (
-              <Link href="/announcements" className="text-sm font-extrabold text-blue">
-                お知らせ一覧 →
-              </Link>
-            )}
-          </div>
-          {announcements.length === 0 ? (
-            <p className="border-l-[3px] border-line bg-background px-3.5 py-3 text-sm text-muted">現在、お知らせはありません。</p>
-          ) : (
-            <ul className="divide-y divide-line">
-              {announcements.map((a) => (
-                <li key={a.id} className="py-3 first:pt-0 last:pb-0">
-                  <p className="text-xs tabular-nums text-muted">{formatAnnouncementDate(a.posted_on)}</p>
-                  <h3 className="mt-0.5 break-words text-[15px] font-bold">
-                    <Link href={`/announcements/${a.id}`} className="hover:underline">
-                      {a.title}
-                    </Link>
-                  </h3>
-                  <p className="mt-1 break-words text-xs leading-6 text-muted">{announcementExcerpt(a.body)}</p>
-                  <Link href={`/announcements/${a.id}`} className="mt-1 inline-block text-xs font-extrabold text-blue">
-                    詳しく見る →
+        <div className="mt-10 grid grid-cols-1 gap-x-10 gap-y-10 lg:grid-cols-2">
+          <section aria-labelledby="home-featured" className="home-cinema__panel">
+            <p className="home-cinema__label">{HOME_COPY.featuredKicker}</p>
+            <h2 id="home-featured" className="home-cinema__serif mt-2 text-2xl font-bold text-[#fff8eb]">
+              {HOME_COPY.featuredTitle}
+            </h2>
+            {featured ? (
+              <>
+                <h3 className="mt-4 text-[17px] font-bold leading-7">
+                  <Link href={`/news/${featured.id}`} className="home-cinema__link">
+                    {featured.headlineJa}
                   </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+                </h3>
+                {featured.dekJa && <p className="mt-2 text-[13px] leading-7 text-[#eee3d0]/80">{featured.dekJa}</p>}
+                <Link href="/news" className="home-cinema__more mt-4">
+                  News一覧を見る →
+                </Link>
+              </>
+            ) : (
+              <>
+                <p className="mt-4 text-sm text-[#eee3d0]/80">まだ公開されている記事がありません。</p>
+                <Link href="/teams" className="home-cinema__more mt-4">
+                  チームDBを見る →
+                </Link>
+              </>
+            )}
+          </section>
 
-        <div className="border border-line bg-surface p-6">
-          <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
-            {HOME_COPY.statsKicker}
-          </p>
-          <h2 className="mb-4 text-xl font-semibold">人気検索</h2>
-          <div className="flex flex-wrap gap-2">
+          {/* お知らせ(管理画面で公開したものを新しい順に最大3件)。0件のときは「現在お知らせはありません」と表示する */}
+          <section aria-labelledby="home-announcements" className="home-cinema__panel">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <div>
+                <p className="home-cinema__label">Notice</p>
+                <h2 id="home-announcements" className="home-cinema__serif mt-2 text-2xl font-bold text-[#fff8eb]">
+                  お知らせ
+                </h2>
+              </div>
+              {announcements.length > 0 && (
+                <Link href="/announcements" className="home-cinema__more">
+                  お知らせ一覧 →
+                </Link>
+              )}
+            </div>
+            {announcements.length === 0 ? (
+              <p className="mt-4 text-sm text-[#eee3d0]/80">現在、お知らせはありません。</p>
+            ) : (
+              <ul className="mt-4 divide-y divide-[#e1bb71]/25">
+                {announcements.map((a) => (
+                  <li key={a.id} className="py-3 first:pt-0 last:pb-0">
+                    <p className="text-xs tabular-nums text-[#e1bb71]">{formatAnnouncementDate(a.posted_on)}</p>
+                    <h3 className="mt-0.5 break-words text-[15px] font-bold">
+                      <Link href={`/announcements/${a.id}`} className="home-cinema__link">
+                        {a.title}
+                      </Link>
+                    </h3>
+                    <p className="mt-1 break-words text-xs leading-6 text-[#eee3d0]/75">{announcementExcerpt(a.body)}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
+
+        {/* 試合結果＆ボックススコア(/games)への入口。ネタバレ防止のため、ホームには試合の勝敗・点数・チーム名を一切表示しない */}
+        <Link href="/games" className="home-cinema__strip mt-10">
+          <div>
+            <p className="home-cinema__label">Games</p>
+            <p className="mt-1 text-sm text-[#eee3d0]/85">試合結果は、ネタバレ防止のため「試合結果＆ボックススコア」のページでだけ表示します。</p>
+          </div>
+          <span className="home-cinema__cta home-cinema__cta--gold">試合結果＆ボックススコアへ →</span>
+        </Link>
+
+        <section aria-labelledby="home-picks" className="home-cinema__panel mt-10">
+          <p className="home-cinema__label">{HOME_COPY.statsKicker}</p>
+          <h2 id="home-picks" className="home-cinema__serif mt-2 text-2xl font-bold text-[#fff8eb]">
+            人気検索
+          </h2>
+          <div className="mt-4 flex flex-wrap gap-2">
             {STATS_PICKS.map((pick) => (
-              <Link
-                key={pick.sort}
-                href={`/stats?sort=${pick.sort}`}
-                className="selection-button selection-blue border border-line bg-surface px-3 py-2 text-[13px] font-bold"
-              >
+              <Link key={pick.sort} href={`/stats?sort=${pick.sort}`} className="home-cinema__chip">
                 {pick.label}
               </Link>
             ))}
           </div>
-        </div>
-      </div>
+        </section>
 
-      {/* GUIDE「はじめに」への短い導入。文は元の文書「はじめに」から抜粋し、全文はGUIDEに載せる */}
-      <section className="mt-5 border-l-4 border-gold bg-surface p-6 sm:p-8">
-        <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">Introduction</p>
-        <h2 className="mb-4 text-xl font-semibold tracking-tight text-balance [word-break:auto-phrase] sm:text-2xl">
-          NBAは、試合だけ見ていては半分しか分からない。
-        </h2>
-        <div className="max-w-3xl space-y-3 text-sm leading-7 text-muted sm:text-[15px] sm:leading-8">
-          <p>世界約4.5億人以上がプレーするバスケットボール。その最高峰、NBAの標準契約枠はわずか約450人。</p>
-          <p>
-            しかしNBAの本当の面白さは、コートの中だけではありません。なぜ大富豪のオーナーでも、好きなだけスター選手を集められないのか。なぜドラフト1巡目指名権一つが、スター選手とのトレードを左右するのか。
-          </p>
-          <p>サラリーキャップ。MAX契約。ドラフト。トレード。オーナー。放映権。そして戦力均衡。</p>
-          <p>NBA Front Office Japanでは、「誰が勝ったか」だけではなく、「なぜ、そうなったのか」まで掘り下げます。</p>
-        </div>
-        <Link href="/guide/introduction" className="selection-button selection-blue mt-5 inline-block bg-navy px-4 py-3 text-sm font-extrabold text-white">
-          GUIDEで読む →
-        </Link>
-      </section>
-    </PageShell>
+        {/* GUIDE「はじめに」への短い導入。文は元の文書「はじめに」から抜粋し、全文はGUIDEに載せる */}
+        <section aria-labelledby="home-intro" className="home-cinema__intro mt-12">
+          <p className="home-cinema__label">Introduction</p>
+          <h2
+            id="home-intro"
+            className="home-cinema__serif mt-3 text-[clamp(1.5rem,3vw,2.4rem)] font-bold leading-snug tracking-tight text-[#fff8eb] text-balance [word-break:auto-phrase]"
+          >
+            NBAは、試合だけ見ていては半分しか分からない。
+          </h2>
+          <div className="home-cinema__prose mt-5 max-w-3xl space-y-3">
+            <p>世界約4.5億人以上がプレーするバスケットボール。その最高峰、NBAの標準契約枠はわずか約450人。</p>
+            <p>
+              しかしNBAの本当の面白さは、コートの中だけではありません。なぜ大富豪のオーナーでも、好きなだけスター選手を集められないのか。なぜドラフト1巡目指名権一つが、スター選手とのトレードを左右するのか。
+            </p>
+            <p>サラリーキャップ。MAX契約。ドラフト。トレード。オーナー。放映権。そして戦力均衡。</p>
+            <p>NBA Front Office Japanでは、「誰が勝ったか」だけではなく、「なぜ、そうなったのか」まで掘り下げます。</p>
+          </div>
+          <Link href="/guide/introduction" className="home-cinema__cta mt-6">
+            GUIDEで読む →
+          </Link>
+        </section>
+      </main>
+    </div>
   );
 }

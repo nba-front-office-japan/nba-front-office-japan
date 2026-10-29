@@ -660,3 +660,194 @@ body:has(.history-story) {
   .history-paint-motion .history-paint-motion__frame { animation: none !important; opacity: 0; }
   .history-paint-motion .history-paint-motion__frame--4 { opacity: 1; }
 }
+
+/* トップページ：NBAの歴史ページ(.history-story)と同じ暗いグレー・金・明朝系の見出し。
+   上部は開場演出の映像を中央の横長ステージとして見せ、コピーは箱を置かず薄い陰影の上に重ねる(components/home-stage.tsx) */
+body:has(.home-cinema) {
+  background: #4a4b4e;
+}
+
+.home-cinema {
+  background:
+    radial-gradient(ellipse 72% 23% at 50% 0%, rgba(223, 180, 103, 0.15), transparent 72%),
+    linear-gradient(90deg, #4a4b4e 0%, #3e3f42 50%, #4a4b4e 100%);
+  color: #f5efe1;
+}
+
+.home-cinema__serif {
+  font-family: Georgia, "Times New Roman", "Yu Mincho", "YuMincho", "Hiragino Mincho ProN", "Noto Serif JP", serif;
+}
+
+.home-cinema__label {
+  margin: 0;
+  color: #e1bb71;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+/* 横長ステージ。スマホは高さを確保し、PCは 16:9 の横長にする */
+.home-cinema__stage {
+  min-height: 36rem;
+  border: 1px solid rgba(205, 166, 87, 0.45);
+  border-radius: 1rem;
+  background: #0b0c0d;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.42), 0 0 28px rgba(225, 187, 113, 0.09);
+}
+
+@media (min-width: 1024px) {
+  .home-cinema__stage {
+    min-height: 0;
+    aspect-ratio: 16 / 9;
+  }
+}
+
+/* コピーを読みやすくする陰影(左側と下側だけ。映像の中央はそのまま見せる) */
+.home-cinema__veil {
+  background:
+    linear-gradient(0deg, rgba(10, 10, 11, 0.82) 0%, rgba(10, 10, 11, 0.45) 38%, rgba(10, 10, 11, 0) 62%),
+    linear-gradient(90deg, rgba(10, 10, 11, 0.55) 0%, rgba(10, 10, 11, 0.18) 45%, rgba(10, 10, 11, 0) 70%);
+}
+
+@media (min-width: 1024px) {
+  .home-cinema__veil {
+    background:
+      linear-gradient(0deg, rgba(10, 10, 11, 0.7) 0%, rgba(10, 10, 11, 0.2) 40%, rgba(10, 10, 11, 0) 60%),
+      linear-gradient(90deg, rgba(10, 10, 11, 0.62) 0%, rgba(10, 10, 11, 0.28) 38%, rgba(10, 10, 11, 0) 62%);
+  }
+}
+
+.home-cinema__stage h1,
+.home-cinema__stage p {
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.55);
+}
+
+.home-cinema__control {
+  min-height: 2.25rem;
+  min-width: 2.25rem;
+  padding: 0 0.75rem;
+  border: 1px solid rgba(225, 187, 113, 0.55);
+  border-radius: 999px;
+  background: rgba(11, 12, 13, 0.35);
+  color: #fff8eb;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  backdrop-filter: blur(4px);
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.home-cinema__control:hover {
+  border-color: #e1bb71;
+  background: rgba(11, 12, 13, 0.6);
+}
+
+.home-cinema__control:focus-visible,
+.home-cinema__cta:focus-visible,
+.home-cinema__chip:focus-visible,
+.home-cinema__strip:focus-visible {
+  outline: 2px solid #e1bb71;
+  outline-offset: 3px;
+}
+
+.home-cinema__cta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 1.25rem;
+  border: 1px solid rgba(255, 248, 235, 0.55);
+  border-radius: 999px;
+  color: #fff8eb;
+  font-size: 0.875rem;
+  font-weight: 800;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.home-cinema__cta:hover {
+  border-color: #e1bb71;
+  color: #e1bb71;
+}
+
+.home-cinema__cta--gold {
+  border-color: #e1bb71;
+  background: #e1bb71;
+  color: #1c1a16;
+}
+
+.home-cinema__cta--gold:hover {
+  background: #f0cf8c;
+  color: #1c1a16;
+}
+
+/* ステージの下の情報。箱ではなく、金の細線で区切る */
+.home-cinema__panel {
+  border-top: 1px solid rgba(225, 187, 113, 0.6);
+  padding-top: 1.25rem;
+}
+
+.home-cinema__link {
+  color: #fff8eb;
+  text-decoration: underline;
+  text-decoration-color: rgba(225, 187, 113, 0.45);
+  text-underline-offset: 4px;
+}
+
+.home-cinema__link:hover {
+  color: #e1bb71;
+}
+
+.home-cinema__more {
+  display: inline-block;
+  color: #e1bb71;
+  font-size: 0.875rem;
+  font-weight: 800;
+}
+
+.home-cinema__more:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.home-cinema__strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 0;
+  border-block: 1px solid rgba(225, 187, 113, 0.6);
+}
+
+.home-cinema__chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.5rem;
+  padding: 0 1rem;
+  border: 1px solid rgba(225, 187, 113, 0.5);
+  border-radius: 999px;
+  color: #f5efe1;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.home-cinema__chip:hover {
+  background: #e1bb71;
+  color: #1c1a16;
+}
+
+.home-cinema__intro {
+  padding: clamp(1.75rem, 4vw, 3rem);
+  border: 1px solid rgba(205, 166, 87, 0.6);
+  border-radius: 1rem;
+  background: linear-gradient(135deg, rgba(13, 14, 15, 0.55), rgba(38, 34, 27, 0.45));
+}
+
+.home-cinema__prose {
+  color: #eee3d0;
+  font-family: Georgia, "Times New Roman", "Yu Mincho", "YuMincho", "Hiragino Mincho ProN", "Noto Serif JP", serif;
+  font-size: clamp(0.98rem, 1.4vw, 1.08rem);
+  line-height: 2;
+}
