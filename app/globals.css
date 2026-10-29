@@ -688,34 +688,67 @@ body:has(.home-cinema) {
   text-transform: uppercase;
 }
 
-/* 横長ステージ。スマホは高さを確保し、PCは 16:9 の横長にする */
+/* 映像のステージ。スマホは横幅いっぱい(main の左右余白を打ち消す)の正方形。
+   sm 以上は高さを画面の高さいっぱい近く(ヘッダーと上余白の分を引く)にし、正方形の映像を中央に置く。左右は暗いグレーで埋める */
 .home-cinema__stage {
-  min-height: 36rem;
-  border: 1px solid rgba(205, 166, 87, 0.45);
-  border-radius: 1rem;
-  background: #0b0c0d;
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.42), 0 0 28px rgba(225, 187, 113, 0.09);
+  position: relative;
+  margin-inline: -1rem;
+  background: radial-gradient(ellipse 60% 70% at 50% 50%, #3e3f42 0%, #2e2f31 70%, #26272a 100%);
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 640px) {
   .home-cinema__stage {
-    min-height: 0;
-    aspect-ratio: 16 / 9;
+    margin-inline: 0;
+    height: min(calc(100vw - 3.5rem), 72rem, calc(100svh - 10.5rem));
+    min-height: 22rem;
+    border: 1px solid rgba(205, 166, 87, 0.45);
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.42), 0 0 28px rgba(225, 187, 113, 0.09);
   }
 }
 
-/* コピーを読みやすくする陰影(左側と下側だけ。映像の中央はそのまま見せる) */
-.home-cinema__veil {
-  background:
-    linear-gradient(0deg, rgba(10, 10, 11, 0.82) 0%, rgba(10, 10, 11, 0.45) 38%, rgba(10, 10, 11, 0) 62%),
-    linear-gradient(90deg, rgba(10, 10, 11, 0.55) 0%, rgba(10, 10, 11, 0.18) 45%, rgba(10, 10, 11, 0) 70%);
+/* 正方形の映像枠。スマホは横幅いっぱい、sm 以上はステージの高さに合わせた正方形を中央に置く */
+.home-cinema__frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: #0b0c0d;
 }
 
-@media (min-width: 1024px) {
-  .home-cinema__veil {
-    background:
-      linear-gradient(0deg, rgba(10, 10, 11, 0.7) 0%, rgba(10, 10, 11, 0.2) 40%, rgba(10, 10, 11, 0) 60%),
-      linear-gradient(90deg, rgba(10, 10, 11, 0.62) 0%, rgba(10, 10, 11, 0.28) 38%, rgba(10, 10, 11, 0) 62%);
+@media (min-width: 640px) {
+  .home-cinema__frame {
+    width: auto;
+    max-width: 100%;
+    height: 100%;
+    margin-inline: auto;
+  }
+}
+
+/* 映像が終わった後に重ねるコピー。下側に薄い陰影を置き、映像の最後のフレームはそのまま見せる */
+.home-cinema__copy {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: linear-gradient(0deg, rgba(10, 10, 11, 0.82) 0%, rgba(10, 10, 11, 0.45) 40%, rgba(10, 10, 11, 0) 68%);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 1.2s ease, visibility 0s linear 1.2s;
+}
+
+.home-cinema__copy.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 1.2s ease, visibility 0s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-cinema__copy {
+    opacity: 1;
+    visibility: visible;
+    transition: none;
   }
 }
 
@@ -745,9 +778,7 @@ body:has(.home-cinema) {
 }
 
 .home-cinema__control:focus-visible,
-.home-cinema__cta:focus-visible,
-.home-cinema__chip:focus-visible,
-.home-cinema__strip:focus-visible {
+.home-cinema__cta:focus-visible {
   outline: 2px solid #e1bb71;
   outline-offset: 3px;
 }
@@ -768,17 +799,6 @@ body:has(.home-cinema) {
 .home-cinema__cta:hover {
   border-color: #e1bb71;
   color: #e1bb71;
-}
-
-.home-cinema__cta--gold {
-  border-color: #e1bb71;
-  background: #e1bb71;
-  color: #1c1a16;
-}
-
-.home-cinema__cta--gold:hover {
-  background: #f0cf8c;
-  color: #1c1a16;
 }
 
 /* ステージの下の情報。箱ではなく、金の細線で区切る */
@@ -808,34 +828,6 @@ body:has(.home-cinema) {
 .home-cinema__more:hover {
   text-decoration: underline;
   text-underline-offset: 4px;
-}
-
-.home-cinema__strip {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1.25rem 0;
-  border-block: 1px solid rgba(225, 187, 113, 0.6);
-}
-
-.home-cinema__chip {
-  display: inline-flex;
-  align-items: center;
-  min-height: 2.5rem;
-  padding: 0 1rem;
-  border: 1px solid rgba(225, 187, 113, 0.5);
-  border-radius: 999px;
-  color: #f5efe1;
-  font-size: 0.8125rem;
-  font-weight: 700;
-  transition: background-color 0.2s, color 0.2s;
-}
-
-.home-cinema__chip:hover {
-  background: #e1bb71;
-  color: #1c1a16;
 }
 
 .home-cinema__intro {
