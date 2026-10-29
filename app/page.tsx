@@ -44,7 +44,7 @@ export default async function Home() {
       <SiteHeader />
       <HomeStage>
         <div className="max-w-2xl">
-          <h1 className="home-cinema__serif home-cinema__rise text-[clamp(1.9rem,4.4vw,3.6rem)] font-bold leading-[1.22] tracking-tight text-[#fff8eb]">
+          <h1 className="home-cinema__serif home-cinema__rise text-[clamp(1.9rem,4.4vw,3.6rem)] font-bold sm:text-[clamp(1.6rem,min(4.4vw,7.5svh),3.6rem)] leading-[1.22] tracking-tight text-[#fff8eb]">
             勝敗の裏側にある、
             <br />
             フロントオフィスの意思決定を読む。

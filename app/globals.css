@@ -722,7 +722,8 @@ body:has(.home-cinema) {
 }
 
 /* 映像が終わった後のコピー。スマホは映像の下に続けて出す。
-   PCは映像の範囲に重ね、左上の文字ブロックがスクロール中も画面の上に付いてくる(sticky)。映像の下端を過ぎると一緒に流れて消える */
+   PCは映像の範囲に重ね、左上の文字ブロックがスクロール中も画面の上に付いてくる(sticky)。ブロックの下端が映像の下端に達すると一緒に流れて消える。
+   最初の位置は、画面の高さが低くてもブロック全体が最初の画面に収まるよう、高さに応じて上寄りにする */
 .home-cinema__copy {
   position: relative;
   padding: 1.5rem 1rem 0.5rem;
@@ -732,13 +733,13 @@ body:has(.home-cinema) {
   .home-cinema__copy {
     position: absolute;
     inset: 0;
-    padding: 20vw 0 2rem;
+    padding: clamp(1.5rem, calc(100svh - 30rem), 20vw) 0 1.5rem;
     pointer-events: none;
   }
 
   .home-cinema__copy-inner {
     position: sticky;
-    top: 1.75rem;
+    top: 1.25rem;
     max-width: 72rem;
     margin-inline: auto;
     padding-inline: 1.75rem;
