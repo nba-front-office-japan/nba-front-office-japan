@@ -967,66 +967,60 @@ body:has(.home-cinema) {
   background-color: var(--np-desk);
 }
 
-/* 紙面の束。いちばん上の紙(face)の下に、少しずらした紙を2枚重ねる */
+/* 紙面。何枚も重なった古い新聞紙の写真(public/games/paper-sheet.webp。縁・重なり・右下のめくれだけを残し、中央は無地にしたもの)を
+   9分割(border-image)で伸ばして、ページの高さに合わせる。四隅はそのままの形、辺と中央だけが伸びる。
+   切り分け位置(元画像 1536×1024 の上110・右250・下200・左100px)を変えるときは、本文の余白(.np-sheet-body)も合わせること。 */
 .np-sheet {
   position: relative;
   isolation: isolate;
 }
 
-.np-sheet-face,
-.np-sheet-under {
+.np-sheet-face {
   position: absolute;
   inset: 0;
   z-index: -1;
-  filter: url(#np-rough);
-  background-color: #eedfba;
-  /* 紙の繊維のざらつき */
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .38  0 0 0 0 .27  0 0 0 0 .12  0 0 0 .22 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  border: 0 solid transparent;
+  border-image-source: url("/games/paper-sheet.webp");
+  border-image-slice: 110 250 200 100 fill;
+  border-image-width: 77px 175px 140px 70px;
+  /* 縦は伸ばすと破れ目が間延びするので、繰り返して長さを合わせる */
+  border-image-repeat: stretch round;
 }
 
-.np-sheet-under {
-  background-color: #dcc08a;
-  box-shadow: inset 0 0 40px rgba(120, 70, 15, 0.55), 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-.np-sheet-under-1 { transform: translate(10px, -10px) rotate(0.5deg); }
-.np-sheet-under-2 { transform: translate(19px, 3px) rotate(-0.4deg); background-color: #d5b67c; }
-
-.np-sheet-face {
-  /* 使い込んだ紙の黄ばみ: 中央は明るく、縁ほど茶色く焼ける。右上にコーヒーのしみ、中央に二つ折りの折り目 */
-  background-image:
-    linear-gradient(90deg, transparent calc(50% - 10px), rgba(110, 75, 25, 0.13) calc(50% - 1px), rgba(255, 250, 235, 0.45) calc(50% + 1px), transparent calc(50% + 9px)),
-    radial-gradient(circle at 93% 22%, transparent 34px, rgba(140, 90, 30, 0.16) 36px, rgba(140, 90, 30, 0.05) 41px, transparent 44px),
-    radial-gradient(ellipse 80% 65% at 50% 45%, rgba(255, 249, 232, 0.75), rgba(255, 249, 232, 0) 80%),
-    radial-gradient(ellipse at 100% 100%, rgba(150, 95, 30, 0.28), transparent 40%),
-    radial-gradient(ellipse at 0% 0%, rgba(150, 95, 30, 0.18), transparent 35%),
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .38  0 0 0 0 .27  0 0 0 0 .12  0 0 0 .22 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"),
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='900' height='900'><filter id='m'><feTurbulence type='fractalNoise' baseFrequency='.008' numOctaves='3' seed='4'/><feColorMatrix values='0 0 0 0 .5  0 0 0 0 .33  0 0 0 0 .1  0 0 0 .5 -.1'/></filter><rect width='100%' height='100%' filter='url(%23m)'/></svg>");
-  box-shadow:
-    inset 0 0 70px rgba(125, 72, 18, 0.5),
-    inset 0 0 16px rgba(110, 60, 12, 0.55),
-    0 2px 5px rgba(0, 0, 0, 0.22),
-    0 12px 28px rgba(60, 40, 10, 0.18);
-  /* 右下の角はめくれている(np-sheet-curl)ので切り落とす */
-  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 46px), calc(100% - 46px) 100%, 0 100%);
-}
-
-/* 右下のめくれた角(紙の裏側) */
-.np-sheet-curl {
+/* 中央が少し明るい、日焼けした紙のむら */
+.np-sheet-face::before {
+  content: "";
   position: absolute;
-  right: 0;
-  bottom: 0;
-  z-index: 0;
-  width: 46px;
-  height: 46px;
-  background: linear-gradient(315deg, transparent 50%, #c49a58 50%, #ecd7a8 68%, #f6e8c6 82%, #d9b97f 100%);
-  filter: drop-shadow(-3px -2px 3px rgba(70, 40, 5, 0.3));
+  inset: 60px 150px 110px 60px;
+  background: radial-gradient(ellipse 75% 60% at 50% 40%, rgba(255, 246, 225, 0.45), transparent 75%);
 }
 
-/* スマホは表示を軽くするため、下の紙のギザギザを省き、ずれも小さくする */
+/* 二つ折りの折り目 */
+.np-sheet-face::after {
+  content: "";
+  position: absolute;
+  top: 40px;
+  bottom: 40px;
+  left: calc(50% - 6px);
+  width: 12px;
+  background: linear-gradient(90deg, transparent, rgba(120, 80, 30, 0.1) 45%, rgba(255, 248, 230, 0.35) 55%, transparent);
+}
+
+.np-sheet-body {
+  padding: 92px 72px 112px 84px;
+}
+
 @media (max-width: 639px) {
-  .np-sheet-under { filter: none; }
-  .np-sheet-under-1 { transform: translate(5px, -5px) rotate(0.5deg); }
-  .np-sheet-under-2 { transform: translate(9px, -2px) rotate(-0.3deg); }
+  .np-sheet-face {
+    border-image-source: url("/games/paper-sheet-sm.webp");
+    border-image-slice: 55 125 100 50 fill;
+    border-image-width: 35px 80px 64px 32px;
+  }
+  .np-sheet-face::after { top: 24px; bottom: 24px; }
+  .np-sheet-face::before { inset: 28px 70px 50px 28px; }
+  .np-sheet-body {
+    padding: 40px 28px 66px 26px;
+  }
 }
 
 /* 紙の上の表は横スクロールで文字が重なって見えないよう、固定列だけ不透明にする */
