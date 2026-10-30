@@ -45,7 +45,7 @@ export async function generateMetadata({ params, searchParams }: PageProps<"/pla
   if (!base) return {};
 
   const current = await fetchPlayerCurrentSeasonStats(playerId, ROSTER_SEASON);
-  const title = playerPageTitle(base.player, view, current);
+  const title = playerPageTitle(base, view, current);
   const description = playerPageDescription(base, current);
   const canonical = view === "stats" ? `/players/${playerId}?view=stats` : `/players/${playerId}`;
   return {

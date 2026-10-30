@@ -19,12 +19,28 @@ const CATEGORY_LABEL = Object.fromEntries(
 // generateMetadata とページ本体で共通の取得(1回のリクエストにつきDBへの問い合わせは1回)
 const fetchArticle = cache((articleId: string) => fetchPublishedArticleById(createAdminSupabaseClient(), articleId));
 
+/** 本文(Markdown)の冒頭約110文字。見出し・リンク・画像などの記号を除いた文章にする */
+function bodyExcerpt(markdown: string): string | undefined {
+  const text = markdown
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/https?:\/\/\S+/g, "")
+    .replace(/^\s*(#{1,6}|>|[-*+]|\d+\.)\s+/gm, "")
+    .replace(/[*_`~|]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!text) return undefined;
+  return text.length > 110 ? `${text.slice(0, 110)}…` : text;
+}
+
 export async function generateMetadata({ params }: PageProps<"/news/[articleId]">): Promise<Metadata> {
   const { articleId } = await params;
   const article = await fetchArticle(articleId);
   if (!article) return {};
-  const title = `${article.headlineJa} | NBA Front Office Japan`;
-  const description = article.dekJa ?? undefined;
+  // サイト名はGoogleが別に表示するため付けない(長い見出しが途中で切れないようにする)
+  const title = article.headlineJa;
+  // リード文(dek)が無い記事は、本文の冒頭を説明文にする(説明文が無いと検索結果に関係の薄い文が出てしまう)
+  const description = article.dekJa ?? bodyExcerpt(article.bodyMarkdown);
   const canonical = `/news/${articleId}`;
   return {
     title,
