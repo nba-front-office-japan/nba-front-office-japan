@@ -3,42 +3,49 @@
 import { useEffect, useSyncExternalStore } from "react";
 
 // 試合結果ページ(新聞紙風)だけの、紙面をめくる効果音。
-// 音源ファイルは使わず、Web Audio でその場で作る(ノイズを帯域フィルタに通し、高い音から低い音へ流す「シャッ」という音)。
+// 音源は public/games/sounds/page-turn-1〜3.mp3(各約5KB・0.6秒。出典とライセンスは同じフォルダの LICENSE.txt)。
+// 毎回ちがう音(3種類)を順に鳴らし、同じ音が続かないようにする。
 // 紙面(.np-sheet)の中のリンク・ボタンを押したときだけ鳴らす(サイトのヘッダーや他のページでは鳴らない)。
 // ブラウザの自動再生の制限に掛からないよう、クリックの処理の中で鳴らす。オン/オフはこのブラウザに保存する。
 
 const STORAGE_KEY = "foj-games-flip-sound";
+const SOURCES = ["/games/sounds/page-turn-1.mp3", "/games/sounds/page-turn-2.mp3", "/games/sounds/page-turn-3.mp3"];
+const VOLUME = 0.45;
 
 let ctx: AudioContext | null = null;
+let raw: Promise<ArrayBuffer[]> | null = null;
+let decoded: Promise<AudioBuffer[]> | null = null;
+let last = -1;
+
+/** 音源ファイルを先に読み込んでおく(再生の準備だけ。音は出さない) */
+function prefetch() {
+  raw ??= Promise.all(SOURCES.map((src) => fetch(src).then((res) => res.arrayBuffer())));
+  return raw;
+}
 
 function playFlip() {
   try {
     ctx ??= new AudioContext();
-    if (ctx.state === "suspended") void ctx.resume();
-    const now = ctx.currentTime;
-    const duration = 0.38;
-    const buffer = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * duration), ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < data.length; i++) {
-      // 紙のこすれ: ノイズに細かなパチパチ(まれに大きな粒)を混ぜる
-      const crackle = Math.random() < 0.004 ? (Math.random() * 2 - 1) * 3 : 0;
-      data[i] = Math.random() * 2 - 1 + crackle;
-    }
-    const source = ctx.createBufferSource();
-    source.buffer = buffer;
-    const band = ctx.createBiquadFilter();
-    band.type = "bandpass";
-    band.Q.value = 0.9;
-    band.frequency.setValueAtTime(4200, now);
-    band.frequency.exponentialRampToValueAtTime(900, now + duration);
-    const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.16, now + 0.05);
-    gain.gain.exponentialRampToValueAtTime(0.06, now + 0.2);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-    source.connect(band).connect(gain).connect(ctx.destination);
-    source.start(now);
-    source.stop(now + duration);
+    const audio = ctx;
+    if (audio.state === "suspended") void audio.resume();
+    // decodeAudioData は渡したデータを使い切るので、複製してから渡す
+    decoded ??= prefetch().then((buffers) => Promise.all(buffers.map((b) => audio.decodeAudioData(b.slice(0)))));
+    void decoded
+      .then((buffers) => {
+        let i = Math.floor(Math.random() * buffers.length);
+        if (i === last) i = (i + 1) % buffers.length;
+        last = i;
+        const source = audio.createBufferSource();
+        source.buffer = buffers[i];
+        source.playbackRate.value = 0.96 + Math.random() * 0.08;
+        const gain = audio.createGain();
+        gain.gain.value = VOLUME;
+        source.connect(gain).connect(audio.destination);
+        source.start();
+      })
+      .catch(() => {
+        decoded = null;
+      });
   } catch {
     // 音が出せない環境では何もしない
   }
@@ -77,6 +84,9 @@ export function PageFlipSound() {
 
   useEffect(() => {
     if (!enabled) return;
+    void prefetch().catch(() => {
+      raw = null;
+    });
     function onClick(event: MouseEvent) {
       const target = event.target as Element | null;
       const control = target?.closest("a, button");
