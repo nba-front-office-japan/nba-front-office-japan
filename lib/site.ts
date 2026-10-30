@@ -10,9 +10,9 @@ export const OPERATOR_NAME = "NBA Front Office Japan 編集部";
 
 // 公式SNSアカウント。URLが空のものはフッター等に表示しない。
 export const SOCIAL_LINKS: { label: string; url: string }[] = [
-  { label: "X", url: "" },
-  { label: "Threads", url: "" },
+  { label: "X", url: "https://x.com/NBAFrontOfficej" },
+  { label: "Threads", url: "https://www.threads.com/@nbafrontofficejapan" },
 ].filter((s) => s.url);
 
-// お問い合わせ先(Googleフォーム等のURL)。空のあいだはお問い合わせページに「準備中」と表示する。
-export const CONTACT_FORM_URL = "";
+// お問い合わせ先のメールアドレス(サイト専用のアドレス)
+export const CONTACT_EMAIL = "nba.front.office.japan@gmail.com";
