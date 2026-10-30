@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageShell } from "@/components/page-shell";
 import { GameDetailView } from "@/components/games/game-detail-view";
+import { NewspaperMasthead } from "@/components/games/newspaper-masthead";
+import { NEWSPAPER_FONT_CLASS } from "@/components/games/newspaper-fonts";
 import { formatJstDateLabel, isValidDateString } from "@/lib/games/date";
 
 // タイトル・説明文にも試合結果やチーム名を含めない(リンクの共有や検索結果でネタバレしないため)
@@ -20,7 +22,7 @@ export default async function GameDetailPage({ params, searchParams }: PageProps
   const backLabel = date ? `${formatJstDateLabel(date)}の試合一覧に戻る` : "試合結果＆ボックススコアに戻る";
 
   return (
-    <PageShell>
+    <PageShell newspaper={NEWSPAPER_FONT_CLASS}>
       <nav aria-label="パンくずリスト" className="mb-4 text-xs text-muted">
         <Link href={backHref} className="font-semibold text-blue hover:underline">
           試合結果＆ボックススコア
@@ -28,8 +30,12 @@ export default async function GameDetailPage({ params, searchParams }: PageProps
         <span aria-hidden className="mx-1.5">›</span>
         <span aria-current="page">試合詳細</span>
       </nav>
-      <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">Box score</p>
-      <h1 className="mb-5 text-[28px] font-semibold tracking-tight sm:text-[36px]">試合詳細</h1>
+      <NewspaperMasthead
+        kicker="The Box Score"
+        title="試合詳細"
+        edition="日本時間・ネタバレ防止版"
+        dateline={<>NBA Front Office Japan{date ? `　｜　${formatJstDateLabel(date)}の試合` : ""}</>}
+      />
 
       <GameDetailView gameId={gameId} />
 

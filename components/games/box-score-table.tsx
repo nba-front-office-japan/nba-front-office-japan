@@ -1,5 +1,6 @@
 import { formatMinutes, type BoxScoreRow, type GameTeamLine } from "@/lib/games/types";
-import { PlayerName, TeamName } from "./names";
+import { PlayerName } from "./names";
+import { BoxScoreHeading, boxTableFrame } from "./box-score-heading";
 
 // 1チーム分のボックススコア。列: 選手・MIN・PTS・REB・AST・STL・BLK・FGM/FGA・3PM/3PA・FTM/FTA・+/-
 // スマホでは表だけを横スクロールにし(選手名の列は固定)、ページ全体は横にはみ出さない。
@@ -13,14 +14,11 @@ function plusMinus(v: number | null): string {
 export function BoxScoreTable({ side, team, rows }: { side: "アウェー" | "ホーム"; team: GameTeamLine; rows: BoxScoreRow[] }) {
   return (
     <section>
-      <h3 className="mb-2 text-base font-bold">
-        <span className="mb-0.5 block text-xs font-bold text-muted">{side}</span>
-        <TeamName team={team} />
-      </h3>
+      <BoxScoreHeading side={side} team={team} />
       {rows.length === 0 ? (
-        <p className="border border-line bg-surface px-4 py-3 text-sm text-muted">ボックススコアは準備中です。</p>
+        <p className="border-2 border-t-0 border-line bg-surface px-4 py-3 text-sm text-muted">ボックススコアは準備中です。</p>
       ) : (
-        <div className="overflow-x-auto border border-line bg-surface">
+        <div className={boxTableFrame(side)}>
           <table className="w-full min-w-[720px] border-collapse text-sm">
             <thead>
               <tr className="border-b-2 border-foreground text-[11px] font-extrabold text-muted">

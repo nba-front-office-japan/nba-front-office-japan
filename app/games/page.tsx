@@ -3,6 +3,8 @@ import Link from "next/link";
 import { PageShell } from "@/components/page-shell";
 import { GamesCenter } from "@/components/games/games-center";
 import { GameCalendar } from "@/components/games/game-calendar";
+import { NewspaperMasthead } from "@/components/games/newspaper-masthead";
+import { NEWSPAPER_FONT_CLASS } from "@/components/games/newspaper-fonts";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { fetchAdjacentGameDates, fetchGameCountsForMonth } from "@/lib/games/data";
 import {
@@ -59,33 +61,39 @@ export default async function GamesPage({ searchParams }: PageProps<"/games">) {
   ];
 
   return (
-    <PageShell>
-      <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">Games</p>
-      <h1 className="mb-3 text-[28px] font-semibold tracking-tight sm:text-[36px]">試合結果＆ボックススコア</h1>
-      <p className="mb-6 text-sm leading-7 text-muted">
+    <PageShell newspaper={NEWSPAPER_FONT_CLASS}>
+      <NewspaperMasthead
+        kicker="The Box Score"
+        title="試合結果＆ボックススコア"
+        edition="日本時間・ネタバレ防止版"
+        dateline={<>NBA Front Office Japan　｜　{formatJstDateLong(selected)}{relative ? `（${relative}）` : ""}</>}
+      />
+      <p className="np-serif mb-6 text-sm leading-7 text-muted">
         ネタバレ防止のため、全試合の結果を表示する「一覧でみる」と、見たい試合だけ開く「個別にみる」を選べます。日付は日本時間です。カレンダーから日付を選ぶと、プレシーズンを含む過去の試合も見られます。
       </p>
 
-      <nav aria-label="試合日" className="mb-4 grid grid-cols-3 lg:mb-6 border border-line bg-surface">
+      <nav aria-label="試合日" className="mb-4 grid grid-cols-3 gap-2 lg:mb-6">
         {navItems.map((t) => (
           <Link
             key={t.key}
             href={t.href}
             aria-current={t.current ? "page" : undefined}
-            className={`selection-button selection-blue border-b-[3px] px-2 py-3 text-center transition-all duration-200 ${t.current ? "border-gold bg-[#fff6e0] dark:bg-white/[.06]" : "border-transparent hover:bg-background"}`}
+            className={`selection-button selection-blue border-2 px-2 py-2.5 text-center ${
+              t.current ? "np-ink-red border-[var(--np-red)]" : t.key === "today" ? "border-[var(--np-ink)] bg-surface" : "np-ink-navy border-[var(--np-navy)]"
+            }`}
           >
-            <span className="block text-sm font-extrabold">{t.label}</span>
-            <span className="block text-xs text-muted">{formatJstDateLabel(t.date)}</span>
+            <span className="np-serif block text-sm font-extrabold">{t.label}</span>
+            <span className={`block text-xs ${t.current || t.key !== "today" ? "text-white/80" : "text-muted"}`}>{formatJstDateLabel(t.date)}</span>
           </Link>
         ))}
       </nav>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="order-2 min-w-0 lg:order-1">
-          <h2 className="mb-3 flex flex-wrap items-baseline gap-x-2 text-lg font-bold">
-            <span>{formatJstDateLong(selected)}の試合</span>
+          <h2 className="mb-3 flex flex-wrap items-baseline gap-x-2 border-b-2 border-[var(--np-ink)] pb-1.5 text-lg font-bold">
+            <span className="np-serif text-xl">{formatJstDateLong(selected)}の試合</span>
             {relative && <span className="text-xs font-bold text-muted">（{relative}）</span>}
-            {gameCount !== null && gameCount > 0 && <span className="text-xs font-bold text-blue">{gameCount}試合</span>}
+            {gameCount !== null && gameCount > 0 && <span className="np-numeral text-sm font-bold text-[var(--np-red)]">{gameCount}試合</span>}
           </h2>
 
           <GamesCenter key={`${selected}:${initialView ?? "choose"}`} date={selected} dayLabel={dayLabel} today={today} gameCount={gameCount} dayStatus={dayStatus} adjacent={adjacent} initialView={initialView} />

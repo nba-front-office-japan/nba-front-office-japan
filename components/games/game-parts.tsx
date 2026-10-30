@@ -52,32 +52,31 @@ export function SpoilerGate({
   toneClass?: string;
 }) {
   return (
-    <div className={`border px-5 py-10 text-center sm:py-14 ${toneClass ?? "border-line bg-surface"}`}>
-      <p className={`mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] ${toneClass ? "" : "text-blue"}`}>Spoiler free</p>
-      <p className="mb-2 text-lg font-bold">{message}</p>
+    <div className={`border-[3px] border-double px-5 py-10 text-center sm:py-14 ${toneClass ?? "border-foreground bg-surface"}`}>
+      <p className="np-blackletter mb-1 text-3xl leading-none text-[var(--np-red,var(--blue))] sm:text-4xl">Spoiler Free</p>
+      <p className="mb-1 text-[10px] font-extrabold uppercase tracking-[3px] text-muted">Extra edition</p>
+      <p className="np-serif mx-auto mb-2 mt-3 max-w-xl border-y border-foreground py-2 text-lg font-bold sm:text-xl">{message}</p>
       {children && <div className="mb-5 mt-4">{children}</div>}
-      <p className={`mb-5 text-xs leading-6 ${toneClass ? "opacity-85" : "text-muted"}`}>ネタバレ防止のため、試合の勝敗・点数は、選んだ試合だけ表示できます。</p>
+      <p className="np-serif mb-5 text-xs leading-6 text-muted">ネタバレ防止のため、試合の勝敗・点数は、選んだ試合だけ表示できます。</p>
       {onChooseIndividual ? (
         <div className="mx-auto grid max-w-xl gap-3 text-left sm:grid-cols-2">
           <button
             type="button"
             onClick={onReveal}
             disabled={loading}
-            className={`selection-button selection-gold rounded-lg border border-current/30 bg-surface/75 px-5 py-4 text-left text-foreground transition-all duration-200 hover:-translate-y-1 hover:scale-[1.04] hover:border-gold hover:bg-gold hover:text-[#182238] hover:shadow-lg active:translate-y-1 active:scale-[0.92] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold disabled:opacity-60 ${
-              toneClass ? "dark:border-gold/60" : ""
-            }`}
+            className="selection-button selection-blue np-ink-navy border-2 border-[var(--np-navy,var(--navy))] px-5 py-4 text-left transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground disabled:opacity-60"
           >
-            <span className="block text-sm font-extrabold">一覧でみる</span>
+            <span className="np-serif block text-base font-extrabold">一覧でみる</span>
             <span className="mt-1 block text-xs font-medium opacity-85">全試合の結果を表示</span>
           </button>
           <button
             type="button"
             onClick={onChooseIndividual}
             disabled={loading}
-            className="selection-button selection-blue rounded-lg border border-current/30 bg-surface/75 px-5 py-4 text-left text-foreground transition-all duration-200 hover:-translate-y-1 hover:scale-[1.04] hover:border-blue hover:bg-blue hover:text-white hover:shadow-lg active:translate-y-1 active:scale-[0.92] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue disabled:opacity-60"
+            className="selection-button selection-gold np-ink-red border-2 border-[var(--np-red,#a8262b)] px-5 py-4 text-left transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground disabled:opacity-60"
           >
-            <span className="block text-sm font-extrabold">個別にみる</span>
-            <span className="mt-1 block text-xs font-medium opacity-70">開きたい試合だけ結果を表示</span>
+            <span className="np-serif block text-base font-extrabold">個別にみる</span>
+            <span className="mt-1 block text-xs font-medium opacity-85">開きたい試合だけ結果を表示</span>
           </button>
         </div>
       ) : (
@@ -85,9 +84,7 @@ export function SpoilerGate({
           type="button"
           onClick={onReveal}
           disabled={loading}
-          className={`selection-button selection-gold rounded-lg px-5 py-3 text-sm font-extrabold disabled:opacity-60 ${
-            toneClass ? "bg-navy text-white hover:bg-[#22304d] dark:bg-gold dark:text-[#182238]" : "bg-gold text-[#182238]"
-          }`}
+          className="selection-button selection-blue np-ink-navy np-serif border-2 border-[var(--np-navy,var(--navy))] px-6 py-3 text-sm font-extrabold disabled:opacity-60"
         >
           {loading ? "読み込み中…" : "結果を表示する"}
         </button>

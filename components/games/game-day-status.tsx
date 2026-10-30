@@ -5,17 +5,17 @@ import { gameDayLevel, type GameDayLevel, type GameDayStatus } from "@/lib/games
 
 export const LEVEL_DOT_CLASS: Record<GameDayLevel, string> = {
   complete: "bg-[#218c68]",
-  partial: "bg-gold",
+  partial: "bg-[#e0a72e]",
   none: "bg-[#9aa3b2]",
   scheduled: "bg-blue",
 };
 
-// 結果を隠している枠(SpoilerGate)全体の配色。状態ごとに淡い背景色を枠全体に使い、文字は濃い色にする
+// 結果を隠している枠(SpoilerGate)の配色。新聞紙風の紙面に合わせて背景は紙の色のまま、枠線の色を状態ごとに変える
 export const LEVEL_GATE_CLASS: Record<GameDayLevel, string> = {
-  complete: "border-[#218c68] bg-[#e3f4ec] text-[#0f5a40] dark:bg-[#123b2e] dark:text-[#bdf0da]",
-  partial: "border-[#e0a72e] bg-[#fff1d6] text-[#5f3c00] dark:bg-[#3a2f12] dark:text-[#ffe2a8]",
-  none: "border-[#b7bfcc] bg-[#eef0f3] text-[#2f3744] dark:bg-[#262b33] dark:text-[#d8dde6]",
-  scheduled: "border-blue bg-[#e6efff] text-[#1d4598] dark:bg-[#16264a] dark:text-[#c7dafd]",
+  complete: "border-[#218c68] bg-surface text-foreground",
+  partial: "border-[#c98f1c] bg-surface text-foreground",
+  none: "border-[#8d8473] bg-surface text-foreground",
+  scheduled: "border-[var(--np-navy,var(--blue))] bg-surface text-foreground",
 };
 
 export const LEVEL_LABEL: Record<GameDayLevel, string> = {

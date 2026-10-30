@@ -64,7 +64,12 @@ export function GameCalendar({
   const gameDays = counts ? Object.values(counts).filter((n) => n > 0).length : null;
 
   return (
-    <section aria-label="試合カレンダー" className="border border-line bg-surface p-3 sm:p-4">
+    <section aria-label="試合カレンダー" className="border-2 border-foreground bg-surface">
+      <p className="np-ink-navy flex items-baseline justify-between px-3 py-2 sm:px-4">
+        <span className="np-blackletter text-xl leading-none">Calendar</span>
+        <span className="text-[11px] font-bold opacity-85">試合カレンダー</span>
+      </p>
+      <div className="p-3 sm:p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
         <button
           type="button"
@@ -75,7 +80,7 @@ export function GameCalendar({
           ‹
         </button>
         <div className="text-center">
-          <p className="text-base font-extrabold tabular-nums">{formatMonthLabel(month)}</p>
+          <p className="np-serif text-lg font-extrabold tabular-nums">{formatMonthLabel(month)}</p>
           <p className="text-[11px] text-muted" aria-live="polite">
             {failed === month && !counts ? "試合数を取得できませんでした" : gameDays === null ? "読み込み中…" : gameDays > 0 ? `試合のある日：${gameDays}日` : "この月の試合は登録されていません"}
           </p>
@@ -92,7 +97,7 @@ export function GameCalendar({
 
       <div className="grid grid-cols-7 text-center text-[11px] font-extrabold text-muted">
         {WEEKDAYS.map((w, i) => (
-          <div key={w} className={`py-1 ${i === 0 ? "text-[#cf4a51]" : i === 6 ? "text-blue" : ""}`}>
+          <div key={w} className={`py-1 ${i === 0 ? "text-[#a8262b]" : i === 6 ? "text-blue" : ""}`}>
             {w}
           </div>
         ))}
@@ -114,7 +119,7 @@ export function GameCalendar({
               aria-label={`${Number(date.slice(5, 7))}月${day}日${isToday ? "（今日）" : ""}${n > 0 ? `・${n}試合` : "・試合なし"}${status ? `・${gameDayStatusText(status)}` : ""}`}
               title={status ? `${LEVEL_LABEL[gameDayLevel(status)]}：${gameDayStatusText(status)}` : undefined}
               className={`flex min-h-12 flex-col items-center justify-center gap-0.5 px-0.5 py-1 text-sm tabular-nums transition-colors ${
-                isSelected ? "bg-navy text-white" : n > 0 ? "bg-surface font-bold hover:bg-[#eaf1ff] dark:hover:bg-white/[.06]" : "bg-surface text-muted hover:bg-background"
+                isSelected ? "bg-navy text-white" : n > 0 ? "bg-surface font-bold hover:bg-[#fbf5e6]" : "bg-surface text-muted hover:bg-background"
               } ${isToday && !isSelected ? "outline outline-2 -outline-offset-2 outline-gold" : ""}`}
             >
               <span className="inline-flex items-center gap-1">
@@ -122,7 +127,7 @@ export function GameCalendar({
                 {level && <span aria-hidden className={`inline-block h-2 w-2 rounded-full ${LEVEL_DOT_CLASS[level]} ${isSelected ? "ring-1 ring-white" : ""}`} />}
               </span>
               {n > 0 ? (
-                <span className={`whitespace-nowrap text-[10px] leading-none ${isSelected ? "text-gold" : "text-blue"}`}>{n}試合</span>
+                <span className={`whitespace-nowrap text-[10px] leading-none ${isSelected ? "text-white/85" : "text-blue"}`}>{n}試合</span>
               ) : (
                 <span className="text-[10px] leading-none opacity-0" aria-hidden>
                   -
@@ -135,6 +140,7 @@ export function GameCalendar({
       <div className="mt-2 space-y-1">
         <GameDayStatusLegend />
         <p className="text-[11px] text-muted">日付は日本時間。数字はその日の試合数、色印はデータの入力状況です（勝敗・点数は表示しません）。枠付きの日付が今日です。</p>
+      </div>
       </div>
     </section>
   );

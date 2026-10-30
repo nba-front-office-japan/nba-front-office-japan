@@ -1,5 +1,5 @@
 import type { GameTeamLine, PreseasonBoxRow, PreseasonBoxTotals } from "@/lib/games/types";
-import { TeamName } from "./names";
+import { BoxScoreHeading, boxTableFrame } from "./box-score-heading";
 
 // プレシーズンの個人成績(1チーム分)。管理画面で取り込んだ Excel の内容をそのまま表示する。
 // 列: ポジション｜選手名｜分｜点｜FG｜3P｜FT｜リバウンド｜アシスト｜スティール｜ブロック｜TO｜反則
@@ -40,14 +40,11 @@ export function PreseasonBoxScoreTable({
 }) {
   return (
     <section>
-      <h3 className="mb-2 text-base font-bold">
-        <span className="mb-0.5 block text-xs font-bold text-muted">{side}</span>
-        <TeamName team={team} />
-      </h3>
+      <BoxScoreHeading side={side} team={team} />
       {rows.length === 0 ? (
-        <p className="border border-line bg-surface px-4 py-3 text-sm text-muted">個人成績は準備中です。</p>
+        <p className="border-2 border-t-0 border-line bg-surface px-4 py-3 text-sm text-muted">個人成績は準備中です。</p>
       ) : (
-        <div className="overflow-x-auto border border-line bg-surface">
+        <div className={boxTableFrame(side)}>
           <table className="w-full min-w-[820px] border-collapse text-sm">
             <thead>
               <tr className="border-b-2 border-foreground text-[11px] font-extrabold text-muted">

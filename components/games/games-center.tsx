@@ -8,7 +8,7 @@ import { NotReadyNotice, SpoilerGate, StatusBadge, TipoffTime } from "./game-par
 import { GameDayStatusInfo, LEVEL_GATE_CLASS } from "./game-day-status";
 import { gameDayLevel, type GameDayStatus } from "@/lib/games/types";
 import { ScoreTable } from "./score-table";
-import { TeamName } from "./names";
+import { Scoreboard } from "./scoreboard";
 import { formatJstDateLabel, gamesDateHref } from "@/lib/games/date";
 import { getCached, isDateRevealed, markDateRevealed, markGameRevealed, setCached, subscribeNoop, unknownOnServer } from "./reveal-store";
 
@@ -131,14 +131,17 @@ export function GamesCenter({
   return (
     <ul className="grid grid-cols-1 gap-3">
       {result.games.map((game) => (
-        <li key={game.id} className="min-w-0 overflow-hidden rounded-xl border border-line bg-surface">
+        <li key={game.id} className="min-w-0 overflow-hidden border-2 border-foreground bg-surface">
           <Link href={`/games/${game.id}?date=${date}`} onClick={() => markGameRevealed(game.id)} className="selection-button selection-game-card block p-4 transition-all duration-200">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2">
               <StatusBadge game={game} />
               <TipoffTime game={game} />
             </div>
-            <ScoreTable game={game} />
-            <p className="mt-3 text-right text-xs font-extrabold text-blue">試合詳細 →</p>
+            <Scoreboard game={game} />
+            <div className="mt-4">
+              <ScoreTable game={game} />
+            </div>
+            <p className="np-serif mt-3 text-right text-sm font-extrabold text-[var(--np-red)]">試合詳細・ボックススコア →</p>
           </Link>
         </li>
       ))}
@@ -152,8 +155,8 @@ function IndividualGamesList({ games, date, onShowAll }: { games: GameSummary[];
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-bold text-muted">対戦カードから、見たい試合だけ試合詳細を開けます。</p>
-        <button type="button" onClick={onShowAll} className="selection-button selection-gold rounded-lg border border-line bg-surface px-3 py-2 text-xs font-extrabold text-blue hover:border-blue hover:bg-background">
+        <p className="np-serif text-sm font-bold text-muted">対戦カードから、見たい試合だけ試合詳細を開けます。</p>
+        <button type="button" onClick={onShowAll} className="selection-button selection-gold np-ink-navy border-2 border-[var(--np-navy)] px-3 py-2 text-xs font-extrabold">
           全試合の結果を表示
         </button>
       </div>
@@ -166,14 +169,12 @@ function IndividualGamesList({ games, date, onShowAll }: { games: GameSummary[];
 
 function IndividualGameCard({ game, date }: { game: GameSummary; date: string }) {
   return (
-    <li className="overflow-hidden rounded-xl border border-line bg-surface">
+    <li className="overflow-hidden border-2 border-foreground bg-surface">
       <Link href={`/games/${game.id}?date=${date}&view=individual`} onClick={() => markGameRevealed(game.id)} className="selection-button selection-game-card block p-4 transition-all duration-200">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><StatusBadge game={game} /><TipoffTime game={game} /></div>
-        <div className="space-y-2.5">
-          <TeamName team={game.away} />
-          <TeamName team={game.home} />
-        </div>
-        <p className="mt-4 text-right text-sm font-extrabold text-blue">試合詳細を見る →</p>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2"><StatusBadge game={game} /><TipoffTime game={game} /></div>
+        {/* 得点・勝敗は描画しない */}
+        <Scoreboard game={game} hideScore />
+        <p className="np-serif mt-4 text-right text-sm font-extrabold text-[var(--np-red)]">試合詳細を見る →</p>
       </Link>
     </li>
   );

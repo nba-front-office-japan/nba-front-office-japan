@@ -6,6 +6,7 @@ import { GameBoxScores } from "./game-box-scores";
 import { NotReadyNotice, SpoilerGate, StatusBadge, TipoffTime } from "./game-parts";
 import { getCached, isGameRevealed, markGameRevealed, setCached, subscribeNoop, unknownOnServer } from "./reveal-store";
 import { ScoreTable } from "./score-table";
+import { Scoreboard } from "./scoreboard";
 
 type State =
   | { kind: "ready"; detail: GameDetail }
@@ -82,12 +83,15 @@ export function GameDetailView({ gameId }: { gameId: string }) {
   const { game } = state.detail;
   return (
     <div className="space-y-5">
-      <section className="border border-line bg-surface p-5">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+      <section className="border-2 border-foreground bg-surface p-4 sm:p-6">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2">
           <StatusBadge game={game} />
           <TipoffTime game={game} />
         </div>
-        <ScoreTable game={game} />
+        <Scoreboard game={game} />
+        <div className="mt-5">
+          <ScoreTable game={game} />
+        </div>
       </section>
       <GameBoxScores detail={state.detail} />
     </div>
