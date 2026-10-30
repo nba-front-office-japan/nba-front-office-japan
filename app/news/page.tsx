@@ -1,36 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import { fetchPublishedArticles } from "@/lib/news/public-articles";
-import {
-  CATEGORY_OPTIONS,
-  COLUMN_BADGE_CLASS,
-  isRumorOrUnverified,
-  isSingleSource,
-  SINGLE_SOURCE_BADGE_CLASS,
-} from "@/lib/news/constants";
+import { fetchPublishedArticles, type PublicArticleSummary } from "@/lib/news/public-articles";
+import { CATEGORY_OPTIONS, isRumorOrUnverified, isSingleSource } from "@/lib/news/constants";
 import { PageShell } from "@/components/page-shell";
+import styles from "./news.module.css";
 
 export const dynamic = "force-dynamic";
 
-const CATEGORY_LABEL = Object.fromEntries(
-  CATEGORY_OPTIONS.map((o) => [o.value, o.label]),
-);
-
-function formatDate(iso: string | null): string {
-  if (!iso) return "-";
-  return new Date(iso).toLocaleDateString("ja-JP", {
-    timeZone: "Asia/Tokyo",
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
+const CATEGORY_LABEL = Object.fromEntries(CATEGORY_OPTIONS.map((o) => [o.value, o.label]));
 
 // 検索語の上限(長すぎる入力は切り詰める)
 const MAX_QUERY_LENGTH = 100;
 
-// NEWS の記事一覧。右側(スマホでは上)の検索欄から ?q= で、NEWS の公開記事のタイトル・本文を部分一致で絞り込む。
+// NEWS の記事一覧。検索欄から ?q= で公開記事のタイトル・本文を部分一致で絞り込み、?category= でカテゴリを絞り込む。
 // 検索の対象は NEWS の記事だけ(選手・チーム・ガイドなどほかのページは対象にしない)。空欄のときは通常の一覧。
 export const metadata: Metadata = {
   title: "NBAニュース・トレード速報 | NBA Front Office Japan",
@@ -38,147 +21,124 @@ export const metadata: Metadata = {
   alternates: { canonical: "/news" },
 };
 
+function getSingle(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function formatDate(value: string | null) {
+  if (!value) return "DATE UNKNOWN";
+  return new Date(value).toLocaleDateString("ja-JP", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+}
+
+function newsHref(query: string, category?: string) {
+  const params = new URLSearchParams();
+  if (query) params.set("q", query);
+  if (category) params.set("category", category);
+  const suffix = params.toString();
+  return suffix ? `/news?${suffix}` : "/news";
+}
+
+// 記事の区分・カテゴリ・確度の表示。未確定情報と単独ソースは、どのデザインの枠でも必ず見えるようにする
+function articleLabels(article: PublicArticleSummary): string {
+  const labels = [CATEGORY_LABEL[article.category] ?? article.category];
+  // 自作の解説・コラム記事だけに出す(通常記事には区分ラベルを出さない)
+  if (article.articleKind === "column") labels.unshift("COLUMN");
+  if (isRumorOrUnverified(article.verificationStatus)) labels.push("未確定情報");
+  else if (isSingleSource(article.verificationStatus)) labels.push("単独ソース");
+  return labels.join(" ／ ");
+}
+
 export default async function NewsPage({ searchParams }: PageProps<"/news">) {
-  const { q } = await searchParams;
-  const query = (Array.isArray(q) ? q[0] : (q ?? ""))
-    .trim()
-    .slice(0, MAX_QUERY_LENGTH);
+  const params = await searchParams;
+  const query = (getSingle(params.q) ?? "").trim().slice(0, MAX_QUERY_LENGTH);
+  const requestedCategory = getSingle(params.category);
+  const category = CATEGORY_OPTIONS.some((item) => item.value === requestedCategory) ? requestedCategory : undefined;
   const supabase = createAdminSupabaseClient();
-  const articles = await fetchPublishedArticles(supabase, { query });
+  const allArticles = await fetchPublishedArticles(supabase);
+  const articles = query ? await fetchPublishedArticles(supabase, { query }) : allArticles;
+  // 公開記事が一件でもあるカテゴリだけをタブに出す。空の分類を並べない。
+  const activeCategories = CATEGORY_OPTIONS.filter((item) => allArticles.some((article) => article.category === item.value));
+  const filteredArticles = category ? articles.filter((article) => article.category === category) : articles;
+  const [leadArticle, ...remainingArticles] = filteredArticles;
 
   return (
     <PageShell>
-      <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
-        Latest Intelligence
-      </p>
-      {/* 見出しの右横(スマホでは見出しの下に横幅いっぱい)に検索欄 */}
-      <div className="mb-2 flex flex-col gap-3 md:flex-row md:items-end md:justify-between md:gap-6">
-        <h1 className="text-[36px] font-semibold tracking-tight">News</h1>
-        <form role="search" action="/news" method="get" className="w-full md:w-[380px] md:shrink-0">
-          <label htmlFor="news-search" className="sr-only">
-            NEWS の記事を検索
-          </label>
-          <div className="flex gap-2">
-            <input
-              id="news-search"
-              type="search"
-              name="q"
-              defaultValue={query}
-              maxLength={MAX_QUERY_LENGTH}
-              placeholder="NEWS を検索（タイトル・本文）"
-              className="min-h-10 w-full min-w-0 rounded-lg border border-line bg-surface px-3 text-sm"
-            />
-            <button
-              type="submit"
-              className="min-h-10 shrink-0 rounded-lg bg-blue px-4 text-sm font-bold text-white transition-colors hover:bg-[#184fcf]"
-            >
-              検索
-            </button>
-          </div>
-        </form>
-      </div>
-      <p className="mb-7 text-sm text-muted">
-        契約とチーム編成への影響まで解説する分析記事。
-      </p>
+      <div className={styles.page}>
+        <header className={styles.masthead}>
+          <div><p className={styles.kicker}>NBA FRONT OFFICE JAPAN</p><h1>THE<br />BREAK</h1></div>
+          <p className={styles.issue}>NEWS THAT MOVES<br />THE LEAGUE.</p>
+        </header>
 
-      <div className="min-w-0">
+        <section className={styles.controlBar} aria-label="NEWSの絞り込み">
+          <form action="/news" method="get" className={styles.searchForm} role="search">
+            {category && <input type="hidden" name="category" value={category} />}
+            <label htmlFor="news-search">SEARCH THE BREAK</label>
+            <div><input id="news-search" name="q" type="search" defaultValue={query} maxLength={MAX_QUERY_LENGTH} placeholder="記事タイトル・本文を検索" /><button type="submit">SEARCH →</button></div>
+          </form>
+          <nav className={styles.categoryNav} aria-label="記事カテゴリ">
+            <Link className={!category ? styles.categoryActive : undefined} href={newsHref(query)}>ALL</Link>
+            {activeCategories.map((item) => (
+              <Link key={item.value} className={category === item.value ? styles.categoryActive : undefined} href={newsHref(query, item.value)}>
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+        </section>
+
         {query && (
-          <p
-            className="mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm"
-            aria-live="polite"
-          >
-            <span>
-              「<b className="break-all">{query}</b>」の検索結果：
-              <b>{articles.length}件</b>
-            </span>
-            <Link
-              href="/news"
-              className="text-xs font-bold text-blue underline underline-offset-2 hover:no-underline"
-            >
-              解除
-            </Link>
+          <p className={styles.resultNote} aria-live="polite">
+            「{query}」の検索結果：<b>{filteredArticles.length}件</b>
+            <Link href={newsHref("", category)}>検索を解除</Link>
           </p>
         )}
-        {articles.length === 0 ? (
-          query ? (
-            <div className="rounded-xl border border-line bg-surface p-6 text-sm">
-              <p className="font-bold">
-                「<span className="break-all">{query}</span>
-                」に一致する記事はありません。
-              </p>
-              <p className="mt-2 text-muted">
-                別のキーワードで検索するか、検索語を解除してください。
-              </p>
-              <Link
-                href="/news"
-                className="mt-3 inline-block font-bold text-blue underline underline-offset-2 hover:no-underline"
-              >
-                すべての記事を表示 →
-              </Link>
-            </div>
-          ) : (
-            <p className="rounded-xl border border-line bg-surface p-6 text-sm text-muted">
-              まだ公開されている記事がありません。
-            </p>
-          )
+
+        {leadArticle ? (
+          <>
+            <section className={styles.layout}>
+              <article className={styles.leadArticle}>
+                <div className={styles.tape}>FEATURED STORY</div>
+                <p className={styles.meta}>{articleLabels(leadArticle)} ／ {formatDate(leadArticle.publishedAt)}</p>
+                <h2><Link href={`/news/${leadArticle.id}`}>{leadArticle.headlineJa}</Link></h2>
+                {leadArticle.dekJa && <p className={styles.leadDek}>{leadArticle.dekJa}</p>}
+                <Link className={styles.readButton} href={`/news/${leadArticle.id}`}>READ THE STORY <span>→</span></Link>
+              </article>
+              <aside className={styles.sideRail}>
+                <p>JUST IN</p>
+                {remainingArticles.slice(0, 3).map((article) => (
+                  <article key={article.id} className={styles.railStory}>
+                    <p>{articleLabels(article)}</p>
+                    <h3><Link href={`/news/${article.id}`}>{article.headlineJa}</Link></h3>
+                    <Link href={`/news/${article.id}`}>READ →</Link>
+                  </article>
+                ))}
+              </aside>
+            </section>
+            {remainingArticles.length > 3 && (
+              <section className={styles.storyGrid} aria-label="NEWS記事一覧">
+                {remainingArticles.slice(3).map((article, index) => (
+                  <article key={article.id} className={styles.storyCard}>
+                    <div className={styles.cardTop}><span>STORY {String(index + 4).padStart(2, "0")}</span><span>{articleLabels(article)}</span></div>
+                    <h2><Link href={`/news/${article.id}`}>{article.headlineJa}</Link></h2>
+                    {article.dekJa && <p>{article.dekJa}</p>}
+                    <footer><time>{formatDate(article.publishedAt)}</time><Link href={`/news/${article.id}`}>OPEN ↗</Link></footer>
+                  </article>
+                ))}
+              </section>
+            )}
+          </>
         ) : (
-          <div className="space-y-3">
-            {articles.map((article) => {
-              const lowConfidence = isRumorOrUnverified(
-                article.verificationStatus,
-              );
-              return (
-                <article
-                  key={article.id}
-                  className="selection-button selection-blue group rounded-xl border border-line bg-surface p-6 transition-all duration-200 hover:-translate-y-1 hover:scale-[1.025] hover:border-blue hover:bg-blue hover:text-white hover:shadow-lg focus-within:-translate-y-1 focus-within:scale-[1.025] focus-within:border-blue focus-within:bg-blue focus-within:text-white focus-within:shadow-lg active:translate-y-1 active:scale-[0.93]"
-                >
-                  <div className="mb-2 flex flex-wrap gap-2">
-                    {/* 自作の解説・コラム記事だけに出す(通常記事には区分ラベルを出さない) */}
-                    {article.articleKind === "column" && (
-                      <span className={COLUMN_BADGE_CLASS}>COLUMN</span>
-                    )}
-                    <span className="inline-block bg-[#fff0d9] px-1.5 py-1 text-[11px] font-extrabold text-[#ac6811]">
-                      {CATEGORY_LABEL[article.category] ?? article.category}
-                    </span>
-                    {lowConfidence && (
-                      <span className="inline-block bg-[#fde8e8] px-1.5 py-1 text-[11px] font-extrabold text-[#b0392f] dark:bg-red-950 dark:text-red-300">
-                        未確定情報
-                      </span>
-                    )}
-                    {!lowConfidence &&
-                      isSingleSource(article.verificationStatus) && (
-                        <span
-                          className={`inline-block ${SINGLE_SOURCE_BADGE_CLASS}`}
-                        >
-                          単独ソース
-                        </span>
-                      )}
-                  </div>
-                  <h2 className="mb-2 text-xl font-semibold">
-                    <Link
-                      href={`/news/${article.id}`}
-                      className="selection-blue-text transition-colors group-hover:text-white focus-visible:text-white focus-visible:outline-none focus-visible:underline"
-                    >
-                      {article.headlineJa}
-                    </Link>
-                  </h2>
-                  {article.dekJa && (
-                    <p className="selection-blue-muted mb-3 text-sm text-muted transition-colors group-hover:text-white/85">{article.dekJa}</p>
-                  )}
-                  <p className="selection-blue-muted mb-3 text-xs text-muted transition-colors group-hover:text-white/80">
-                    {formatDate(article.publishedAt)}
-                  </p>
-                  <Link
-                    href={`/news/${article.id}`}
-                    className="selection-blue-action text-sm font-extrabold text-blue transition-all group-hover:translate-x-0.5 group-hover:text-gold"
-                  >
-                    続きを読む →
-                  </Link>
-                </article>
-              );
-            })}
-          </div>
+          <section className={styles.emptyState}>
+            <p>NO STORIES FOUND</p>
+            <h2>{query || category ? "条件に一致する公開記事がありません。" : "まだ公開されている記事がありません。"}</h2>
+            {(query || category) && <Link href="/news">すべての記事を表示 →</Link>}
+          </section>
         )}
+        <footer className={styles.zineFooter}>AN INDEPENDENT BASKETBALL MAGAZINE ／ ALL NEWS SEARCHABLE</footer>
       </div>
     </PageShell>
   );
