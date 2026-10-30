@@ -26,7 +26,7 @@ export function PageShell({
         </div>
       ) : newspaper !== undefined ? (
         <div className={`newspaper flex flex-1 flex-col ${newspaper}`}>
-          <div className="w-full flex-1 overflow-x-clip py-2 sm:py-3">
+          <div className="w-full flex-1 overflow-clip pb-2 sm:pb-3">
             <div className="np-sheet">
               <div aria-hidden className="np-sheet-face" />
               <main className="np-sheet-body relative w-full">{children}</main>

@@ -978,7 +978,7 @@ body:has(.home-cinema) {
 .np-sheet-face {
   position: absolute;
   /* 紙の画像の外側の透明な部分(左右)を画面の外へ出し、紙の縁を画面の端に沿わせる */
-  inset: 0 -12px 0 -18px;
+  inset: -6px -12px 0 -18px;
   z-index: -1;
   border: 0 solid transparent;
   border-image-source: url("/games/paper-sheet.webp");
@@ -1008,7 +1008,7 @@ body:has(.home-cinema) {
 }
 
 .np-sheet-body {
-  padding: 42px 26px 60px 24px;
+  padding: 30px 26px 60px 24px;
 }
 
 @media (max-width: 639px) {
@@ -1016,12 +1016,12 @@ body:has(.home-cinema) {
     border-image-source: url("/games/paper-sheet-sm.webp");
     border-image-slice: 55 125 100 50 fill;
     border-image-width: 30px 60px 56px 24px;
-    inset: 0 -7px 0 -12px;
+    inset: -4px -7px 0 -12px;
   }
   .np-sheet-face::after { top: 24px; bottom: 24px; }
   .np-sheet-face::before { inset: 24px 50px 44px 20px; }
   .np-sheet-body {
-    padding: 26px 15px 50px 13px;
+    padding: 18px 15px 50px 13px;
   }
 }
 
