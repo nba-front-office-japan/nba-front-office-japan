@@ -1,3 +1,10 @@
+// /draft で最初に表示する年。過去の年は /draft/2025 のように年ごとのページで見せる
+export const DEFAULT_DRAFT_YEAR = 2026;
+
+export function draftYearHref(year: number): string {
+  return year === DEFAULT_DRAFT_YEAR ? "/draft" : `/draft/${year}`;
+}
+
 interface DraftFields {
   draft_status?: string | null;
   draft_year: number | null;

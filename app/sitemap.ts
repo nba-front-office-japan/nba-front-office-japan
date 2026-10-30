@@ -6,6 +6,7 @@ import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import { fetchPublishedArticles } from "@/lib/news/public-articles";
 import { salaryTeams } from "@/lib/salary/data";
 import { teamSlug } from "@/lib/salary/types";
+import { PAST_DRAFT_YEARS } from "@/lib/draft/draft-history";
 import { fetchFinishedGamesForSitemap } from "@/lib/games/data";
 
 // 新しいニュース記事を1時間以内にsitemapへ反映する
@@ -35,6 +36,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
   for (const t of salaryTeams()) {
     entries.push({ url: `${SITE_URL}/salary/teams/${teamSlug(t.abbr)}` });
+  }
+  for (const year of PAST_DRAFT_YEARS) {
+    entries.push({ url: `${SITE_URL}/draft/${year}` });
   }
   // DBの取得に失敗しても固定ページだけのsitemapは返す
   try {

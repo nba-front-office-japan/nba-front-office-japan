@@ -3,10 +3,12 @@
 // height_cm / weight_kg が未取得の選手、birthday(元データに存在しない)は null のまま保持しない。
 
 export interface DraftPick {
-  round: 1 | 2;
+  // 1985年以前は7〜10巡目まである
+  round: number;
   pickInRound: number;
   overallPick: number;
-  playerNameJa: string;
+  // 過去年で日本語表記を確認できていない選手は null(英語名で表示する)
+  playerNameJa: string | null;
   playerNameEn: string;
   // 既存30チームマスターの英語表記。トレード対象ピックは "TeamA -> TeamB" 形式(指名先・トレード情報)。
   teamDisplay: string;
@@ -19,6 +21,8 @@ export interface DraftPick {
   nationality: string | null;
   // 例: "2026 Rnd 1 Pick 5"。順位・巡目の根拠として保持。
   draftStatus: string;
+  // 指名の無効など、指名先の欄に添える補足
+  note?: string | null;
 }
 
 export const DRAFT_2026_PICKS: DraftPick[] = [
