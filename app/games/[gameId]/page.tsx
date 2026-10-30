@@ -23,7 +23,7 @@ export default async function GameDetailPage({ params, searchParams }: PageProps
 
   return (
     <PageShell newspaper={NEWSPAPER_FONT_CLASS}>
-      <nav aria-label="パンくずリスト" className="mb-4 text-xs text-muted">
+      <nav aria-label="パンくずリスト" className="mb-2 text-xs text-muted">
         <Link href={backHref} className="font-semibold text-blue hover:underline">
           試合結果＆ボックススコア
         </Link>
@@ -39,7 +39,7 @@ export default async function GameDetailPage({ params, searchParams }: PageProps
 
       <GameDetailView gameId={gameId} />
 
-      <Link href={backHref} className="mt-8 inline-block text-sm font-extrabold text-blue">
+      <Link href={backHref} className="mt-5 inline-block text-sm font-extrabold text-blue">
         ← {backLabel}
       </Link>
     </PageShell>

@@ -82,7 +82,7 @@ export function GameDetailView({ gameId }: { gameId: string }) {
 
   const { game } = state.detail;
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <section className="border-2 border-foreground bg-surface p-4 sm:p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2">
           <StatusBadge game={game} />

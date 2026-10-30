@@ -982,7 +982,7 @@ body:has(.home-cinema) {
   border: 0 solid transparent;
   border-image-source: url("/games/paper-sheet.webp");
   border-image-slice: 110 250 200 100 fill;
-  border-image-width: 77px 175px 140px 70px;
+  border-image-width: 50px 100px 90px 40px;
   /* 縦は伸ばすと破れ目が間延びするので、繰り返して長さを合わせる */
   border-image-repeat: stretch round;
 }
@@ -991,7 +991,7 @@ body:has(.home-cinema) {
 .np-sheet-face::before {
   content: "";
   position: absolute;
-  inset: 60px 150px 110px 60px;
+  inset: 40px 100px 80px 40px;
   background: radial-gradient(ellipse 75% 60% at 50% 40%, rgba(255, 246, 225, 0.45), transparent 75%);
 }
 
@@ -999,27 +999,27 @@ body:has(.home-cinema) {
 .np-sheet-face::after {
   content: "";
   position: absolute;
-  top: 40px;
-  bottom: 40px;
+  top: 30px;
+  bottom: 30px;
   left: calc(50% - 6px);
   width: 12px;
   background: linear-gradient(90deg, transparent, rgba(120, 80, 30, 0.1) 45%, rgba(255, 248, 230, 0.35) 55%, transparent);
 }
 
 .np-sheet-body {
-  padding: 92px 72px 112px 84px;
+  padding: 42px 40px 60px 40px;
 }
 
 @media (max-width: 639px) {
   .np-sheet-face {
     border-image-source: url("/games/paper-sheet-sm.webp");
     border-image-slice: 55 125 100 50 fill;
-    border-image-width: 35px 80px 64px 32px;
+    border-image-width: 30px 60px 56px 24px;
   }
   .np-sheet-face::after { top: 24px; bottom: 24px; }
-  .np-sheet-face::before { inset: 28px 70px 50px 28px; }
+  .np-sheet-face::before { inset: 24px 50px 44px 20px; }
   .np-sheet-body {
-    padding: 40px 28px 66px 26px;
+    padding: 26px 20px 50px 21px;
   }
 }
 

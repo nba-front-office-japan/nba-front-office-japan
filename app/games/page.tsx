@@ -68,17 +68,17 @@ export default async function GamesPage({ searchParams }: PageProps<"/games">) {
         edition="日本時間・ネタバレ防止版"
         dateline={<>NBA Front Office Japan　｜　{formatJstDateLong(selected)}{relative ? `（${relative}）` : ""}</>}
       />
-      <p className="np-serif mb-6 text-sm leading-7 text-muted">
+      <p className="np-serif mb-3 text-[13px] leading-6 text-muted">
         ネタバレ防止のため、全試合の結果を表示する「一覧でみる」と、見たい試合だけ開く「個別にみる」を選べます。日付は日本時間です。カレンダーから日付を選ぶと、プレシーズンを含む過去の試合も見られます。
       </p>
 
-      <nav aria-label="試合日" className="mb-4 grid grid-cols-3 gap-2 lg:mb-6">
+      <nav aria-label="試合日" className="mb-3 grid grid-cols-3 gap-2">
         {navItems.map((t) => (
           <Link
             key={t.key}
             href={t.href}
             aria-current={t.current ? "page" : undefined}
-            className={`selection-button selection-blue border-2 px-2 py-2.5 text-center ${
+            className={`selection-button selection-blue border-2 px-2 py-1.5 text-center ${
               t.current ? "np-ink-red border-[var(--np-red)]" : t.key === "today" ? "border-[var(--np-ink)] bg-surface" : "np-ink-navy border-[var(--np-navy)]"
             }`}
           >
@@ -88,7 +88,7 @@ export default async function GamesPage({ searchParams }: PageProps<"/games">) {
         ))}
       </nav>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="order-2 min-w-0 lg:order-1">
           <h2 className="mb-3 flex flex-wrap items-baseline gap-x-2 border-b-2 border-[var(--np-ink)] pb-1.5 text-lg font-bold">
             <span className="np-serif text-xl">{formatJstDateLong(selected)}の試合</span>

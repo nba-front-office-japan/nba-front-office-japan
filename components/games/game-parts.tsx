@@ -52,7 +52,7 @@ export function SpoilerGate({
   toneClass?: string;
 }) {
   return (
-    <div className={`border-[3px] border-double px-5 py-10 text-center sm:py-14 ${toneClass ?? "border-foreground bg-surface"}`}>
+    <div className={`border-[3px] border-double px-5 py-6 text-center sm:py-8 ${toneClass ?? "border-foreground bg-surface"}`}>
       <p className="np-blackletter mb-1 text-3xl leading-none text-[var(--np-red,var(--blue))] sm:text-4xl">Spoiler Free</p>
       <p className="mb-1 text-[10px] font-extrabold uppercase tracking-[3px] text-muted">Extra edition</p>
       <p className="np-serif mx-auto mb-2 mt-3 max-w-xl border-y border-foreground py-2 text-lg font-bold sm:text-xl">{message}</p>
