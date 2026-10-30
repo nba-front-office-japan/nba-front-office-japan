@@ -18,6 +18,7 @@ const STATIC_PATHS = [
   "/salary", "/salary/players", "/salary/teams",
   "/rankings", "/rankings/owner-net-worth", "/rankings/team-valuations",
   "/premium",
+  "/about", "/contact", "/privacy", "/terms",
   "/guide", "/guide/introduction", "/guide/glossary", "/guide/salary-cap",
   "/guide/luxury-tax", "/guide/aprons", "/guide/salary-matching",
   "/guide/salary-cap-circumvention", "/guide/bird-rights", "/guide/mle",

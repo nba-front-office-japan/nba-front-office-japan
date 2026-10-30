@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SiteAnalytics } from "@/components/site-analytics";
+import { SiteFooter } from "@/components/site-footer";
 import { SITE_URL } from "@/lib/site";
 
 const geistSans = Geist({
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         {children}
+        <SiteFooter />
         <SiteAnalytics />
       </body>
     </html>
