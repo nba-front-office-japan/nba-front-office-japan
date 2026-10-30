@@ -622,3 +622,16 @@ export async function fetchAdjacentGameDates(supabase: Client, date: string): Pr
   ].filter((d): d is string => d !== null && d > date);
   return { prev: prevs.length ? prevs.sort()[prevs.length - 1] : null, next: nexts.length ? nexts.sort()[0] : null };
 }
+
+// ==========================================================================
+// サイトマップ(終了した試合の詳細ページ)
+// ==========================================================================
+
+/** 終了した試合(日程 games)のIDと試合開始日時。毎日の自動取り込み(/api/cron/games-sync)で増えた試合もそのまま入る */
+export async function fetchFinishedGamesForSitemap(supabase: Client): Promise<{ id: string; tipoffAt: string | null }[]> {
+  const { data, error } = await fetchAllRows<{ id: string; tipoff_at: string | null }>((from, to) =>
+    supabase.from("games").select("id, tipoff_at").eq("status", "final").order("tipoff_at", { ascending: false }).order("id").range(from, to)
+  );
+  if (error) return [];
+  return data.map((g) => ({ id: g.id, tipoffAt: g.tipoff_at }));
+}

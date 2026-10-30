@@ -29,13 +29,20 @@ async function fetchDetail(gameId: string): Promise<State> {
 // 試合の詳細(スコアと両チームのボックススコア)。
 // 一覧で結果を表示してからカードを押した試合は、非表示画面を挟まずにそのまま表示する。
 // 詳細ページを直接開いた場合(共有されたリンクなど)は結果を隠し、「結果を表示する」を押したときだけ取得する。
-export function GameDetailView({ gameId }: { gameId: string }) {
+// initialDetail(サーバーで取得済みの試合)があれば、隠している間もボックススコアをHTMLに含める(画面には出さない・
+// data-nosnippet で検索結果の説明文にも使わせない)。検索エンジンが試合ページの中身を読めるようにするため。
+export function GameDetailView({ gameId, initialDetail }: { gameId: string; initialDetail?: GameDetail | null }) {
   // このタブで結果を表示済みの試合か(サーバー側・最初の描画では分からないため null)
   const revealedBefore = useSyncExternalStore(subscribeNoop, () => isGameRevealed(gameId), unknownOnServer);
   const [clicked, setClicked] = useState(false);
   // 一度取得した結果は、このタブのページ間移動の間だけ保持する
   const [loaded, setLoaded] = useState<State | null>(() => getCached<State>(`detail:${gameId}`) ?? null);
   const show = clicked || revealedBefore === true;
+  const hiddenForCrawlers = initialDetail ? (
+    <div hidden data-nosnippet>
+      <GameBoxScores detail={initialDetail} />
+    </div>
+  ) : null;
 
   useEffect(() => {
     if (!show || loaded) return;
@@ -57,8 +64,20 @@ export function GameDetailView({ gameId }: { gameId: string }) {
 
   if (!show) {
     // まだ判定できない間(ページを開いた直後の一瞬)は、非表示画面も結果も出さない
-    if (revealedBefore === null) return <p className="border border-line bg-surface px-5 py-10 text-center text-sm text-muted">読み込み中…</p>;
-    return <SpoilerGate message="この試合の結果は非表示です" onReveal={reveal} loading={false} />;
+    if (revealedBefore === null) {
+      return (
+        <>
+          <p className="border border-line bg-surface px-5 py-10 text-center text-sm text-muted">読み込み中…</p>
+          {hiddenForCrawlers}
+        </>
+      );
+    }
+    return (
+      <>
+        <SpoilerGate message="この試合の結果は非表示です" onReveal={reveal} loading={false} />
+        {hiddenForCrawlers}
+      </>
+    );
   }
   if (!loaded) {
     return clicked ? (

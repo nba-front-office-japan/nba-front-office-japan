@@ -4,7 +4,7 @@ import "server-only";
 import { cache } from "react";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { ROSTER_SEASON, seasonLabel } from "@/lib/seasons";
-import { teamNameJa } from "@/lib/team-names-ja";
+import { teamNameJa, teamShortNameJa } from "@/lib/team-names-ja";
 import { formatDraftInfo } from "@/lib/draft-format";
 import { featuredPlayerFor } from "@/lib/featured-players";
 import type { Database } from "@/lib/supabase/types";
@@ -68,11 +68,7 @@ function draftText(player: PlayerRow): string | null {
 
 /** 検索結果のタイトル用のチームの短い呼び名(例: サンダー)。所属がなければ null */
 function teamShortLabel(team: TeamRow | null): string | null {
-  if (!team) return null;
-  if (team.abbreviation === "LAC") return "クリッパーズ";
-  if (team.abbreviation === "PHI") return "76ers";
-  const full = teamNameJa(team.abbreviation);
-  return full ? full.slice(full.lastIndexOf("・") + 1) : team.name;
+  return team ? teamShortNameJa(team.abbreviation, team.name) : null;
 }
 
 /** タイトル用の今季成績(例: 今季5.6点・4.2リバウンド)。得点と、リバウンド・アシストの多い方 */

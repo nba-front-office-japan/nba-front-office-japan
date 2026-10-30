@@ -6,6 +6,7 @@ import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import { fetchPublishedArticles } from "@/lib/news/public-articles";
 import { salaryTeams } from "@/lib/salary/data";
 import { teamSlug } from "@/lib/salary/types";
+import { fetchFinishedGamesForSitemap } from "@/lib/games/data";
 
 // 新しいニュース記事を1時間以内にsitemapへ反映する
 export const revalidate = 3600;
@@ -51,6 +52,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       for (const player of players) {
         entries.push({ url: `${SITE_URL}/players/${player.id}` });
       }
+    }
+  } catch {}
+  // 終了した試合の詳細ページ(ボックススコア)。毎日の試合データの自動取り込みで増えた試合も、ここで自動的に追加される
+  try {
+    const games = await fetchFinishedGamesForSitemap(createServerSupabaseClient());
+    for (const game of games) {
+      entries.push({ url: `${SITE_URL}/games/${game.id}`, lastModified: game.tipoffAt ?? undefined });
     }
   } catch {}
   try {
