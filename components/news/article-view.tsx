@@ -25,6 +25,7 @@ export function formatArticleDate(iso: string | null): string {
 
 export function NewsArticleView({
   articleKind,
+  breaking = false,
   categoryLabel,
   lowConfidence,
   singleSource,
@@ -38,6 +39,8 @@ export function NewsArticleView({
   onInternalLinkClick,
 }: {
   articleKind: ArticleKind;
+  /** 記事形式が Breaking(重大ニュース)のとき true。先頭に赤い「BREAKING」印を出す */
+  breaking?: boolean;
   /** カテゴリのラベル(分からない場合は null で、ラベルを出さない) */
   categoryLabel: string | null;
   lowConfidence: boolean;
@@ -56,6 +59,9 @@ export function NewsArticleView({
   return (
     <article className={ARTICLE_FRAME_CLASS}>
       <div className="mb-3 flex flex-wrap gap-2">
+        {breaking && (
+          <span className="inline-block bg-[#d71920] px-1.5 py-1 text-[11px] font-extrabold tracking-[0.6px] text-white">BREAKING</span>
+        )}
         {/* 自作の解説・コラム記事だけに出す(通常記事には区分ラベルを出さない) */}
         {articleKind === "column" && <span className={COLUMN_BADGE_CLASS}>COLUMN</span>}
         {categoryLabel && (

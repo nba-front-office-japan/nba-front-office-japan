@@ -3,8 +3,10 @@ import type {
   ArticleKind,
   ArticleType,
   NewsEventCategory,
+  NewsTopic,
   VerificationStatus,
 } from "@/lib/supabase/types";
+import { resolveNewsTopic } from "@/lib/news/constants";
 
 type SupabaseAdmin = ReturnType<typeof createAdminSupabaseClient>;
 
@@ -22,6 +24,8 @@ export interface PublicArticleSummary {
   articleType: ArticleType;
   articleKind: ArticleKind;
   category: NewsEventCategory;
+  /** NEWS 一覧のタブ(公開カテゴリ)。どのタブにも入らない記事は null(ALL にだけ出る) */
+  topic: NewsTopic | null;
   /** 独自コラム(イベントなし)は確認状況の対象外のため null(未確定情報などのラベルを出さない) */
   verificationStatus: VerificationStatus | null;
   publishedAt: string | null;
@@ -57,7 +61,7 @@ export async function fetchPublishedArticles(
 ): Promise<PublicArticleSummary[]> {
   const { data: rows } = await supabase
     .from("article_drafts")
-    .select("id, headline_ja, dek_ja, article_type, article_kind, published_at, event_id, category")
+    .select("id, headline_ja, dek_ja, article_type, article_kind, published_at, event_id, category, topic")
     .eq("status", "published")
     .order("published_at", { ascending: false });
 
@@ -100,6 +104,7 @@ export async function fetchPublishedArticles(
         articleType: d.article_type,
         articleKind: d.article_kind,
         category: d.category ?? "other",
+        topic: resolveNewsTopic(d.topic, d.category ?? "other", d.article_kind),
         verificationStatus: null,
         publishedAt: d.published_at,
       };
@@ -112,6 +117,7 @@ export async function fetchPublishedArticles(
       articleType: d.article_type,
       articleKind: d.article_kind,
       category: event?.category ?? "other",
+      topic: resolveNewsTopic(d.topic, event?.category ?? "other", d.article_kind),
       verificationStatus: event?.verification_status ?? "unverified",
       publishedAt: d.published_at,
     };
@@ -142,6 +148,7 @@ export async function fetchPublishedArticleById(
       bodyMarkdown: draft.body_markdown,
       relatedMediaUrls: draft.related_media_urls ?? [],
       category: draft.category ?? "other",
+      topic: resolveNewsTopic(draft.topic, draft.category ?? "other", draft.article_kind),
       verificationStatus: null,
       publishedAt: draft.published_at,
       sources: [],
@@ -191,6 +198,7 @@ export async function fetchPublishedArticleById(
     bodyMarkdown: draft.body_markdown,
     relatedMediaUrls: draft.related_media_urls ?? [],
     category: event?.category ?? "other",
+    topic: resolveNewsTopic(draft.topic, event?.category ?? "other", draft.article_kind),
     verificationStatus: event?.verification_status ?? "unverified",
     publishedAt: draft.published_at,
     sources,

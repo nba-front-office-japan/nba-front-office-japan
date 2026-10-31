@@ -3,6 +3,7 @@ import type {
   ArticleType,
   ArticleDraftStatus,
   NewsEventCategory,
+  NewsTopic,
   VerificationStatus,
 } from "@/lib/supabase/types";
 
@@ -18,6 +19,52 @@ export const CATEGORY_OPTIONS: { value: NewsEventCategory; label: string }[] = [
   { value: "analysis", label: "Analysis" },
   { value: "other", label: "Other" },
 ];
+
+// NEWS 一覧のタブ(公開カテゴリ)。並び順がそのままタブの順番になる
+export const NEWS_TOPIC_OPTIONS: { value: NewsTopic; label: string }[] = [
+  { value: "contract", label: "契約・移籍" },
+  { value: "injury", label: "怪我" },
+  { value: "game", label: "試合・記録" },
+  { value: "interview", label: "インタビュー" },
+  { value: "column", label: "コラム" },
+  { value: "league", label: "リーグ情報" },
+  { value: "offcourt", label: "話題・オフコート" },
+  { value: "rumor", label: "うわさ" },
+];
+
+export const NEWS_TOPIC_LABEL: Record<NewsTopic, string> = Object.fromEntries(
+  NEWS_TOPIC_OPTIONS.map((o) => [o.value, o.label])
+) as Record<NewsTopic, string>;
+
+export function isNewsTopic(value: string): value is NewsTopic {
+  return NEWS_TOPIC_OPTIONS.some((o) => o.value === value);
+}
+
+// 公開カテゴリが未設定の記事は、収集時の内部カテゴリ・記事種別から決める(決められないものは null = ALL にだけ出る)
+export function resolveNewsTopic(
+  topic: NewsTopic | null,
+  category: NewsEventCategory,
+  articleKind: ArticleKind
+): NewsTopic | null {
+  if (topic) return topic;
+  switch (category) {
+    case "trade":
+    case "free_agency":
+    case "contract":
+    case "transaction":
+      return "contract";
+    case "injury":
+      return "injury";
+    case "rumor":
+      return "rumor";
+    case "interview":
+      return "interview";
+    case "analysis":
+      return "column";
+    default:
+      return articleKind === "column" ? "column" : null;
+  }
+}
 
 export const VERIFICATION_STATUS_OPTIONS: {
   value: VerificationStatus;

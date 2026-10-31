@@ -4,17 +4,13 @@ import { cache } from "react";
 import { notFound } from "next/navigation";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { fetchPublishedArticleById } from "@/lib/news/public-articles";
-import { CATEGORY_OPTIONS, isRumorOrUnverified, isSingleSource } from "@/lib/news/constants";
+import { NEWS_TOPIC_LABEL, isRumorOrUnverified, isSingleSource } from "@/lib/news/constants";
 import { PageShell } from "@/components/page-shell";
 import { NewsArticleView, formatArticleDate } from "@/components/news/article-view";
 import { trailingRelatedMedia } from "@/lib/news/body-media";
 import { fetchArticlePlayers } from "@/lib/news/player-articles";
 
 export const dynamic = "force-dynamic";
-
-const CATEGORY_LABEL = Object.fromEntries(
-  CATEGORY_OPTIONS.map((o) => [o.value, o.label])
-);
 
 // generateMetadata とページ本体で共通の取得(1回のリクエストにつきDBへの問い合わせは1回)
 const fetchArticle = cache((articleId: string) => fetchPublishedArticleById(createAdminSupabaseClient(), articleId));
@@ -68,7 +64,8 @@ export default async function NewsArticlePage({
     <PageShell>
       <NewsArticleView
         articleKind={article.articleKind}
-        categoryLabel={CATEGORY_LABEL[article.category] ?? article.category}
+        breaking={article.articleType === "breaking"}
+        categoryLabel={article.topic ? NEWS_TOPIC_LABEL[article.topic] : null}
         lowConfidence={lowConfidence}
         singleSource={isSingleSource(article.verificationStatus)}
         headline={article.headlineJa}

@@ -44,6 +44,16 @@ export type NewsEventCategory =
   | "transaction"
   | "analysis"
   | "other";
+// NEWS 一覧のタブに使う公開カテゴリ(article_drafts.topic)。news_events.category(収集時の内部分類)とは別物
+export type NewsTopic =
+  | "contract"
+  | "injury"
+  | "game"
+  | "interview"
+  | "column"
+  | "league"
+  | "offcourt"
+  | "rumor";
 export type VerificationStatus =
   | "official"
   | "confirmed_by_multiple_sources"
@@ -1189,6 +1199,8 @@ export interface Database {
           event_id: string | null;
           /** 独自コラムのカテゴリ。イベントありの記事はイベントのカテゴリを使うため null */
           category: NewsEventCategory | null;
+          /** NEWS 一覧のタブ(公開カテゴリ)。null のときはイベントのカテゴリから自動で決める */
+          topic: NewsTopic | null;
           article_type: ArticleType;
           article_kind: ArticleKind;
           headline_ja: string;
@@ -1210,6 +1222,7 @@ export interface Database {
           id?: string;
           event_id?: string | null;
           category?: NewsEventCategory | null;
+          topic?: NewsTopic | null;
           article_type: ArticleType;
           article_kind?: ArticleKind;
           headline_ja: string;

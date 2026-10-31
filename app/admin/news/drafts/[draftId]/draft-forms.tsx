@@ -3,14 +3,14 @@
 import { useActionState, useState, type MouseEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { updateDraftAction, rejectDraftAction } from "../actions";
-import { ARTICLE_KIND_OPTIONS, ARTICLE_TYPE_OPTIONS, CATEGORY_OPTIONS } from "@/lib/news/constants";
+import { ARTICLE_KIND_OPTIONS, ARTICLE_TYPE_OPTIONS, CATEGORY_OPTIONS, NEWS_TOPIC_LABEL, NEWS_TOPIC_OPTIONS, isNewsTopic, resolveNewsTopic } from "@/lib/news/constants";
 import {
   INITIAL_ACTION_STATE,
   PRIMARY_BUTTON_CLASS,
   GHOST_BUTTON_CLASS,
   StatusMessage,
 } from "@/app/admin/_components/action-ui";
-import type { ArticleKind, Database } from "@/lib/supabase/types";
+import type { ArticleKind, Database, NewsEventCategory } from "@/lib/supabase/types";
 import { BodyEditor } from "./body-editor";
 import { MAX_RELATED_MEDIA, parseRelatedMediaUrl } from "@/lib/news/related-media";
 import { trailingRelatedMedia } from "@/lib/news/body-media";
@@ -23,6 +23,9 @@ type ArticleDraft = Database["public"]["Tables"]["article_drafts"]["Row"];
 type PreviewValues = {
   kind: ArticleKind;
   category: string;
+  /** NEWS 一覧のタブ(公開カテゴリ)。"" は自動(収集時のカテゴリから決める) */
+  topic: string;
+  articleType: string;
   headline: string;
   dek: string;
   body: string;
@@ -35,6 +38,8 @@ function sameValues(a: PreviewValues, b: PreviewValues): boolean {
   return (
     a.kind === b.kind &&
     a.category === b.category &&
+    a.topic === b.topic &&
+    a.articleType === b.articleType &&
     a.headline === b.headline &&
     a.dek === b.dek &&
     a.body === b.body &&
@@ -42,8 +47,6 @@ function sameValues(a: PreviewValues, b: PreviewValues): boolean {
     a.publishedAt === b.publishedAt
   );
 }
-
-const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(CATEGORY_OPTIONS.map((o) => [o.value, o.label]));
 
 
 /** プレビューで公開ページと同じに表示するための、入力欄以外の情報(イベントのカテゴリ・確認状況・原典) */
@@ -79,6 +82,8 @@ export function DraftEditForm({
   const initial: PreviewValues = {
     kind: draft.article_kind,
     category: draft.category ?? "other",
+    topic: draft.topic ?? "",
+    articleType: draft.article_type,
     headline: draft.headline_ja,
     dek: draft.dek_ja ?? "",
     body: draft.body_markdown,
@@ -108,6 +113,12 @@ export function DraftEditForm({
     return m ? [m.url] : [];
   });
   const categoryValue = draft.event_id === null ? values.category : context.eventCategory;
+  // プレビューのカテゴリ表示は、公開ページと同じく NEWS のタブ(公開カテゴリ)を出す
+  const previewTopic = resolveNewsTopic(
+    isNewsTopic(values.topic) ? values.topic : null,
+    (categoryValue ?? "other") as NewsEventCategory,
+    values.kind
+  );
 
   return (
     <div className={ARTICLE_PAGE_FRAME_CLASS}>
@@ -153,10 +164,27 @@ export function DraftEditForm({
             </label>
           )}
           <label className="grid gap-1 text-[11px] font-bold text-muted">
-            記事形式
+            NEWSのタブ（公開カテゴリ）
+            <select
+              name="topic"
+              defaultValue={draft.topic ?? ""}
+              onChange={(e) => set({ topic: e.target.value })}
+              className="max-w-[200px] border border-line bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-60"
+            >
+              <option value="">自動（カテゴリから決める）</option>
+              {NEWS_TOPIC_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-1 text-[11px] font-bold text-muted">
+            記事形式（Breakingは公開ページに赤い「BREAKING」印が付きます）
             <select
               name="articleType"
               defaultValue={draft.article_type}
+              onChange={(e) => set({ articleType: e.target.value })}
               className="max-w-[200px] border border-line bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-60"
             >
               {ARTICLE_TYPE_OPTIONS.map((opt) => (
@@ -295,7 +323,8 @@ export function DraftEditForm({
             </div>
             <NewsArticleView
               articleKind={values.kind}
-              categoryLabel={categoryValue ? (CATEGORY_LABEL[categoryValue] ?? categoryValue) : null}
+              breaking={values.articleType === "breaking"}
+              categoryLabel={previewTopic ? NEWS_TOPIC_LABEL[previewTopic] : null}
               lowConfidence={context.lowConfidence}
               singleSource={context.singleSource}
               headline={values.headline}

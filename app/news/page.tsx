@@ -2,18 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { fetchPublishedArticles, type PublicArticleSummary } from "@/lib/news/public-articles";
-import { CATEGORY_OPTIONS, isRumorOrUnverified, isSingleSource } from "@/lib/news/constants";
+import { NEWS_TOPIC_LABEL, NEWS_TOPIC_OPTIONS, isRumorOrUnverified, isSingleSource } from "@/lib/news/constants";
 import { PageShell } from "@/components/page-shell";
 import styles from "./news.module.css";
 
 export const dynamic = "force-dynamic";
 
-const CATEGORY_LABEL = Object.fromEntries(CATEGORY_OPTIONS.map((o) => [o.value, o.label]));
-
 // 検索語の上限(長すぎる入力は切り詰める)
 const MAX_QUERY_LENGTH = 100;
 
-// NEWS の記事一覧。検索欄から ?q= で公開記事のタイトル・本文を部分一致で絞り込み、?category= でカテゴリを絞り込む。
+// NEWS の記事一覧。検索欄から ?q= で公開記事のタイトル・本文を部分一致で絞り込み、?category= で公開カテゴリ(タブ)を絞り込む。
 // 検索の対象は NEWS の記事だけ(選手・チーム・ガイドなどほかのページは対象にしない)。空欄のときは通常の一覧。
 export const metadata: Metadata = {
   title: "NBAニュース・トレード速報 | NBA Front Office Japan",
@@ -43,27 +41,36 @@ function newsHref(query: string, category?: string) {
   return suffix ? `/news?${suffix}` : "/news";
 }
 
-// 記事の区分・カテゴリ・確度の表示。未確定情報と単独ソースは、どのデザインの枠でも必ず見えるようにする
-function articleLabels(article: PublicArticleSummary): string {
-  const labels = [CATEGORY_LABEL[article.category] ?? article.category];
-  // 自作の解説・コラム記事だけに出す(通常記事には区分ラベルを出さない)
-  if (article.articleKind === "column") labels.unshift("COLUMN");
+// 記事の区分・カテゴリ・確度の表示。未確定情報と単独ソースは、どのデザインの枠でも必ず見えるようにする。
+// 記事形式が Breaking の記事(重大ニュース)には、先頭に赤い「BREAKING」印を付ける
+function articleLabels(article: PublicArticleSummary) {
+  const labels: string[] = [];
+  if (article.topic) labels.push(NEWS_TOPIC_LABEL[article.topic]);
+  // 自作の解説・コラム記事だけに出す(通常記事には区分ラベルを出さない)。コラムのタブの記事は重ねて出さない
+  if (article.articleKind === "column" && article.topic !== "column") labels.unshift("COLUMN");
   if (isRumorOrUnverified(article.verificationStatus)) labels.push("未確定情報");
   else if (isSingleSource(article.verificationStatus)) labels.push("単独ソース");
-  return labels.join(" ／ ");
+  const text = labels.join(" ／ ");
+  if (article.articleType !== "breaking") return text;
+  return (
+    <>
+      <span className={styles.breaking}>BREAKING</span>
+      {text}
+    </>
+  );
 }
 
 export default async function NewsPage({ searchParams }: PageProps<"/news">) {
   const params = await searchParams;
   const query = (getSingle(params.q) ?? "").trim().slice(0, MAX_QUERY_LENGTH);
   const requestedCategory = getSingle(params.category);
-  const category = CATEGORY_OPTIONS.some((item) => item.value === requestedCategory) ? requestedCategory : undefined;
+  const category = NEWS_TOPIC_OPTIONS.some((item) => item.value === requestedCategory) ? requestedCategory : undefined;
   const supabase = createAdminSupabaseClient();
   const allArticles = await fetchPublishedArticles(supabase);
   const articles = query ? await fetchPublishedArticles(supabase, { query }) : allArticles;
   // 公開記事が一件でもあるカテゴリだけをタブに出す。空の分類を並べない。
-  const activeCategories = CATEGORY_OPTIONS.filter((item) => allArticles.some((article) => article.category === item.value));
-  const filteredArticles = category ? articles.filter((article) => article.category === category) : articles;
+  const activeCategories = NEWS_TOPIC_OPTIONS.filter((item) => allArticles.some((article) => article.topic === item.value));
+  const filteredArticles = category ? articles.filter((article) => article.topic === category) : articles;
   const [leadArticle, ...remainingArticles] = filteredArticles;
 
   return (
@@ -102,7 +109,7 @@ export default async function NewsPage({ searchParams }: PageProps<"/news">) {
             <section className={styles.layout}>
               <article className={styles.leadArticle}>
                 <div className={styles.tape}>FEATURED STORY</div>
-                <p className={styles.meta}>{articleLabels(leadArticle)} ／ {formatDate(leadArticle.publishedAt)}</p>
+                <p className={styles.meta}>{articleLabels(leadArticle)}{" ／ "}{formatDate(leadArticle.publishedAt)}</p>
                 <h2><Link href={`/news/${leadArticle.id}`}>{leadArticle.headlineJa}</Link></h2>
                 {leadArticle.dekJa && <p className={styles.leadDek}>{leadArticle.dekJa}</p>}
                 <Link className={styles.readButton} href={`/news/${leadArticle.id}`}>READ THE STORY <span>→</span></Link>

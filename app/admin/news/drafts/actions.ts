@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { ArticleType, NewsEventCategory } from "@/lib/supabase/types";
-import { CATEGORY_OPTIONS, isArticleKind } from "@/lib/news/constants";
+import { CATEGORY_OPTIONS, isArticleKind, isNewsTopic } from "@/lib/news/constants";
 
 function isCategory(value: string): value is NewsEventCategory {
   return CATEGORY_OPTIONS.some((o) => o.value === value);
@@ -130,6 +130,8 @@ export async function updateDraftAction(
   const editorNotes = String(formData.get("editorNotes") ?? "").trim();
   // 独自コラムの編集画面だけがカテゴリを送る(イベントありの記事はイベントのカテゴリを使う)
   const categoryValue = formData.get("category");
+  // NEWS 一覧のタブ(公開カテゴリ)。"" は自動(収集時のカテゴリから決める)
+  const topicValue = String(formData.get("topic") ?? "");
   // 関連メディアURL(X・YouTube・Instagram・TikTok／任意)。検証して正規化した URL だけを保存する
   const media = validateRelatedMediaInputs(formData.getAll("relatedMediaUrl").map(String));
 
@@ -142,6 +144,9 @@ export async function updateDraftAction(
 
   if (categoryValue !== null && !isCategory(String(categoryValue))) {
     return { status: "error", message: "カテゴリを選んでください。" };
+  }
+  if (topicValue !== "" && !isNewsTopic(topicValue)) {
+    return { status: "error", message: "NEWSのタブ（公開カテゴリ）を選んでください。" };
   }
   if ("error" in media) {
     return { status: "error", message: media.error };
@@ -177,6 +182,7 @@ export async function updateDraftAction(
     .from("article_drafts")
     .update({
       ...(categoryValue !== null ? { category: String(categoryValue) as NewsEventCategory } : {}),
+      topic: isNewsTopic(topicValue) ? topicValue : null,
       article_type: articleType,
       article_kind: articleKindValue,
       headline_ja: headlineJa,
