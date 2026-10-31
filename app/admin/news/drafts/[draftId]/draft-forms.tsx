@@ -3,19 +3,20 @@
 import { useActionState, useState, type MouseEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { updateDraftAction, rejectDraftAction } from "../actions";
-import { ARTICLE_KIND_OPTIONS, ARTICLE_TYPE_OPTIONS, CATEGORY_OPTIONS, NEWS_TOPIC_LABEL, NEWS_TOPIC_OPTIONS, isNewsTopic, resolveNewsTopic } from "@/lib/news/constants";
+import { ARTICLE_KIND_OPTIONS, ARTICLE_TYPE_OPTIONS, CATEGORY_OPTIONS, NEWS_TOPIC_LABEL, NEWS_TOPIC_OPTIONS, isNewsTopic } from "@/lib/news/constants";
 import {
   INITIAL_ACTION_STATE,
   PRIMARY_BUTTON_CLASS,
   GHOST_BUTTON_CLASS,
   StatusMessage,
 } from "@/app/admin/_components/action-ui";
-import type { ArticleKind, Database, NewsEventCategory } from "@/lib/supabase/types";
+import type { ArticleKind, Database } from "@/lib/supabase/types";
 import { BodyEditor } from "./body-editor";
 import { MAX_RELATED_MEDIA, parseRelatedMediaUrl } from "@/lib/news/related-media";
 import { trailingRelatedMedia } from "@/lib/news/body-media";
 import { ARTICLE_PAGE_FRAME_CLASS, NewsArticleView, formatArticleDate, type ArticleViewSource } from "@/components/news/article-view";
 import { toJstInputValue, validatePublishedAtInput } from "@/lib/news/jst-datetime";
+import { guessNewsTopic } from "@/lib/news/topic-guess";
 
 type ArticleDraft = Database["public"]["Tables"]["article_drafts"]["Row"];
 
@@ -23,7 +24,7 @@ type ArticleDraft = Database["public"]["Tables"]["article_drafts"]["Row"];
 type PreviewValues = {
   kind: ArticleKind;
   category: string;
-  /** NEWS 一覧のタブ(公開カテゴリ)。"" は自動(収集時のカテゴリから決める) */
+  /** NEWS 一覧のタブ(公開カテゴリ)。未設定の下書きはタイトルから自動で選んだもの */
   topic: string;
   articleType: string;
   headline: string;
@@ -82,7 +83,7 @@ export function DraftEditForm({
   const initial: PreviewValues = {
     kind: draft.article_kind,
     category: draft.category ?? "other",
-    topic: draft.topic ?? "",
+    topic: draft.topic ?? guessNewsTopic(draft.headline_ja),
     articleType: draft.article_type,
     headline: draft.headline_ja,
     dek: draft.dek_ja ?? "",
@@ -112,13 +113,8 @@ export function DraftEditForm({
     const m = u.trim() ? parseRelatedMediaUrl(u) : null;
     return m ? [m.url] : [];
   });
-  const categoryValue = draft.event_id === null ? values.category : context.eventCategory;
   // プレビューのカテゴリ表示は、公開ページと同じく NEWS のタブ(公開カテゴリ)を出す
-  const previewTopic = resolveNewsTopic(
-    isNewsTopic(values.topic) ? values.topic : null,
-    (categoryValue ?? "other") as NewsEventCategory,
-    values.kind
-  );
+  const previewTopic = isNewsTopic(values.topic) ? values.topic : null;
 
   return (
     <div className={ARTICLE_PAGE_FRAME_CLASS}>
@@ -164,14 +160,14 @@ export function DraftEditForm({
             </label>
           )}
           <label className="grid gap-1 text-[11px] font-bold text-muted">
-            NEWSのタブ（公開カテゴリ）
+            NEWSのタブ（{draft.topic ? "公開カテゴリ" : "タイトルから自動で選びました。違うときは選び直してください"}）
             <select
               name="topic"
-              defaultValue={draft.topic ?? ""}
+              defaultValue={initial.topic}
               onChange={(e) => set({ topic: e.target.value })}
+              required
               className="max-w-[200px] border border-line bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-60"
             >
-              <option value="">自動（カテゴリから決める）</option>
               {NEWS_TOPIC_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}

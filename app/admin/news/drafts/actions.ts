@@ -13,6 +13,7 @@ import type { ActionState } from "@/app/admin/_components/action-ui";
 import { validateRelatedMediaInputs } from "@/lib/news/related-media";
 import { bodyMediaProblem } from "@/lib/news/body-media";
 import { validatePublishedAtInput } from "@/lib/news/jst-datetime";
+import { guessNewsTopic } from "@/lib/news/topic-guess";
 
 export async function createDraftAction(
   _prevState: ActionState,
@@ -219,7 +220,7 @@ export async function publishDraftAction(
 
   const { data: draft } = await supabase
     .from("article_drafts")
-    .select("body_markdown, published_at")
+    .select("body_markdown, published_at, headline_ja, topic")
     .eq("id", draftId)
     .single();
 
@@ -227,11 +228,16 @@ export async function publishDraftAction(
     return { status: "error", message: "本文が空のままでは公開できません。" };
   }
 
+  // NEWS のタブを保存せずに公開した場合は、タイトルから自動で決めたタブ(編集画面の初期選択と同じ)を保存する
   // 初めて公開するときは、その時点の日時を投稿日にする。すでに投稿日がある(公開済みの)記事を
   // もう一度「公開する」場合は、投稿日を変えない(修正しただけで最新記事にならないように)
   const { error } = await supabase
     .from("article_drafts")
-    .update({ status: "published", published_at: draft.published_at ?? new Date().toISOString() })
+    .update({
+      status: "published",
+      published_at: draft.published_at ?? new Date().toISOString(),
+      topic: draft.topic ?? guessNewsTopic(draft.headline_ja),
+    })
     .eq("id", draftId);
 
   if (error) {

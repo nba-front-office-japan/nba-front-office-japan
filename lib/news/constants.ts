@@ -1,3 +1,4 @@
+import { guessNewsTopic } from "@/lib/news/topic-guess";
 import type {
   ArticleKind,
   ArticleType,
@@ -40,12 +41,13 @@ export function isNewsTopic(value: string): value is NewsTopic {
   return NEWS_TOPIC_OPTIONS.some((o) => o.value === value);
 }
 
-// 公開カテゴリが未設定の記事は、収集時の内部カテゴリ・記事種別から決める(決められないものは null = ALL にだけ出る)
+// 公開カテゴリが未設定の記事は、収集時の内部カテゴリ・記事種別から決め、決められなければタイトルから推測する
 export function resolveNewsTopic(
   topic: NewsTopic | null,
   category: NewsEventCategory,
-  articleKind: ArticleKind
-): NewsTopic | null {
+  articleKind: ArticleKind,
+  headline: string
+): NewsTopic {
   if (topic) return topic;
   switch (category) {
     case "trade":
@@ -62,7 +64,7 @@ export function resolveNewsTopic(
     case "analysis":
       return "column";
     default:
-      return articleKind === "column" ? "column" : null;
+      return articleKind === "column" ? "column" : guessNewsTopic(headline);
   }
 }
 
