@@ -3,6 +3,7 @@
 // ・試合の判定(レギュラーシーズンだけ・同じ試合の重複は最後に取り込んだ方)は Teams の 2026-27 Stats・選手ページの今季成績と同じ
 // ・シーズン中に移籍した選手は1行(全チームの合計。チーム欄は「2チーム合計」など)
 // ・規定試合数: 所属チーム(最後に出場したチーム)の試合数の70%以上に出場(NBA公式のリーダーと同じ考え方)
+// ・NBA何年目か: 今季のロスターのスナップショットの経験年数(R=0 → 1年目)。スナップショットに無い選手はドラフト年から(今季-ドラフト年+1)
 // ・集計結果は保存しない。全選手分の集計は5分間使い回す(取り込み後、最大5分で一覧に反映される)
 // 絞り込み・並べ替え・100人ずつの切り出しは、集計した行に対してここで行う(1シーズン分で最大600人程度のため)。
 import "server-only";
@@ -25,6 +26,8 @@ const IN_CHUNK = 100;
 export type CurrentSeasonStatsRow = StatsListRow & {
   // 規定試合数に達しているか
   qualified: boolean;
+  // NBA何年目か(1=ルーキー)。分からない選手は null
+  nba_year: number | null;
 };
 
 export type CurrentSeasonStats = {
@@ -109,10 +112,18 @@ async function loadCurrentSeasonStats(season: number): Promise<CurrentSeasonStat
   }
   const playerIds = [...byPlayer.keys()];
 
-  const [players, rosters, teamsRes] = await Promise.all([
+  const { data: snapshot } = await supabase
+    .from("roster_snapshots")
+    .select("id")
+    .eq("season", season)
+    .order("as_of", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const [players, rosters, teamsRes, snapshotPlayers] = await Promise.all([
     Promise.all(
       chunk(playerIds, IN_CHUNK).map(async (ids) => {
-        const { data, error } = await supabase.from("players").select("id, full_name, full_name_ja").in("id", ids);
+        const { data, error } = await supabase.from("players").select("id, full_name, full_name_ja, draft_year").in("id", ids);
         if (error) throw new Error(`選手の取得に失敗しました: ${error.message}`);
         return data ?? [];
       })
@@ -130,7 +141,27 @@ async function loadCurrentSeasonStats(season: number): Promise<CurrentSeasonStat
       })
     ),
     supabase.from("teams").select("id, abbreviation"),
+    snapshot
+      ? fetchAllRows<{ player_id: string; years_of_service: number | null }>((from, to) =>
+          supabase
+            .from("roster_snapshot_players")
+            .select("player_id, years_of_service")
+            .eq("snapshot_id", snapshot.id)
+            .order("id")
+            .range(from, to)
+        )
+      : Promise.resolve({ data: [] as { player_id: string; years_of_service: number | null }[], error: null }),
   ]);
+  const serviceById = new Map(
+    snapshotPlayers.data.filter((r) => r.years_of_service !== null).map((r) => [r.player_id, r.years_of_service as number])
+  );
+  const draftYearById = new Map(players.flat().map((p) => [p.id, p.draft_year]));
+  const nbaYear = (playerId: string): number | null => {
+    const service = serviceById.get(playerId);
+    if (service !== undefined) return service + 1;
+    const draftYear = draftYearById.get(playerId);
+    return draftYear && draftYear <= season ? season - draftYear + 1 : null;
+  };
   const nameById = new Map(players.flat().map((p) => [p.id, p.full_name_ja ?? p.full_name]));
   const rosterRows = rosters.flat();
   const latestRosterSeason = rosterRows.reduce((max, r) => Math.max(max, r.season), 0);
@@ -193,6 +224,7 @@ async function loadCurrentSeasonStats(season: number): Promise<CurrentSeasonStat
       ft_pct: pct(t.freeThrowsMade, t.freeThrowsAttempted),
       ts_pct: tsa > 0 ? (t.points * 100) / tsa : null,
       qualified: g >= Math.ceil((teamGames.get(acc.lastTeam) ?? 0) * QUALIFY_RATIO),
+      nba_year: nbaYear(playerId),
     });
   }
   return { rows, lastGameDate };
@@ -216,6 +248,7 @@ export function currentSeasonStatsPage(
       (!q.position || r.position === q.position) &&
       (!teamId || r.team_ids.includes(teamId)) &&
       (q.minGames === "qualified" ? r.qualified : r.games_played >= q.minGames) &&
+      (q.experience === null || r.nba_year === q.experience) &&
       (!term || r.player_name.toLowerCase().includes(term) || englishMatch.has(r.player_id))
   );
 

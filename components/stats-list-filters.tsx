@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { seasonLabel } from "@/lib/seasons";
-import { STATS_POSITIONS, defaultMinGames, minGamesOptions, normalizeSearchTerm, statsQueryToSearch, type StatsQuery } from "@/lib/stats-list";
+import { STATS_EXPERIENCE_OPTIONS, STATS_POSITIONS, defaultMinGames, experienceLabel, isCurrentStatsSeason, minGamesOptions, normalizeSearchTerm, statsQueryToSearch, type StatsQuery } from "@/lib/stats-list";
 
 // 選手スタッツ一覧の絞り込み。条件を変えると URL を書き換えて1ページ目に戻す(並べ替えはそのまま)。
 // 選手名の検索は Enter または「検索」で確定する(日本語名・英語名の部分一致。ほかの絞り込みと併用できる)。
@@ -95,6 +95,20 @@ export function StatsListFilters({
           ))}
         </select>
       </label>
+
+      {isCurrentStatsSeason(query.season, query.seasonType) && (
+        <label className="grid gap-1.5 text-[11px] font-bold text-muted">
+          EXPERIENCE
+          <select value={query.experience ?? "all"} onChange={(e) => go({ experience: e.target.value === "all" ? null : Number(e.target.value) })} className={selectClass}>
+            <option value="all">All</option>
+            {STATS_EXPERIENCE_OPTIONS.map((y) => (
+              <option key={y} value={y}>
+                {experienceLabel(y)}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
 
       <form
         role="search"

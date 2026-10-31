@@ -52,14 +52,22 @@ export function isCurrentStatsSeason(season: number | null, seasonType: StatsQue
   return season === CURRENT_STATS_SEASON && seasonType === "regular_season";
 }
 
-/** 最低試合数の既定値。今季は試合数が少なく1試合だけの選手が上位に来るため、規定試合数にする */
+/** 最低試合数の既定値。どのシーズンも All(全選手)。規定試合数は絞り込みで選べる */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function defaultMinGames(season: number | null, seasonType: StatsQuery["seasonType"]): StatsMinGames {
-  return isCurrentStatsSeason(season, seasonType) ? "qualified" : 0;
+  return 0;
+}
+
+/** NBA何年目かの絞り込み(1=ルーキー〜4=4年目)。今季のレギュラーシーズンだけ選べる */
+export const STATS_EXPERIENCE_OPTIONS = [1, 2, 3, 4] as const;
+
+export function experienceLabel(year: number): string {
+  return year === 1 ? "ルーキー" : `${year}年目`;
 }
 
 /** 絞り込みで選べる最低試合数 */
 export function minGamesOptions(season: number | null, seasonType: StatsQuery["seasonType"]): StatsMinGames[] {
-  return isCurrentStatsSeason(season, seasonType) ? ["qualified", 0] : STATS_MIN_GAMES;
+  return isCurrentStatsSeason(season, seasonType) ? [0, "qualified"] : STATS_MIN_GAMES;
 }
 
 export type StatsQuery = {
@@ -70,6 +78,8 @@ export type StatsQuery = {
   /** チーム略称(例: BOS)。null はすべてのチーム */
   team: string | null;
   minGames: StatsMinGames;
+  /** NBA何年目か(1=ルーキー)。null はすべて。今季のレギュラーシーズンだけ有効 */
+  experience: number | null;
   /** 選手名の検索語(日本語名・英語名の部分一致)。null は検索なし */
   q: string | null;
   sort: StatsSortKey;
@@ -99,12 +109,16 @@ export function parseStatsQuery(params: Params, latestSeason: number | null): St
   // URL の値(規定試合数は "q")がそのシーズンで選べなければ既定値にする
   const minGamesValue: StatsMinGames | null = minGamesParam === "q" ? "qualified" : /^\d+$/.test(minGamesParam ?? "") ? Number(minGamesParam) : null;
   const options = minGamesOptions(season, seasonType);
+  const expParam = Number(one(params, "exp"));
+  const experience =
+    isCurrentStatsSeason(season, seasonType) && (STATS_EXPERIENCE_OPTIONS as readonly number[]).includes(expParam) ? expParam : null;
   return {
     seasonType,
     season,
     position: position && STATS_POSITIONS.includes(position) ? position : null,
     team: team && /^[A-Z]{2,3}$/.test(team) ? team : null,
     minGames: minGamesValue !== null && options.includes(minGamesValue) ? minGamesValue : defaultMinGames(season, seasonType),
+    experience,
     q,
     sort,
     // 名前・チーム・ポジションの既定は昇順、数値の列の既定は降順
@@ -123,6 +137,7 @@ export function statsQueryToSearch(q: StatsQuery, latestSeason: number | null, o
   if (v.position) sp.set("pos", v.position);
   if (v.team) sp.set("team", v.team);
   if (v.minGames !== defaultMinGames(v.season, v.seasonType)) sp.set("minGames", v.minGames === "qualified" ? "q" : String(v.minGames));
+  if (v.experience !== null && isCurrentStatsSeason(v.season, v.seasonType)) sp.set("exp", String(v.experience));
   if (v.q) sp.set("q", v.q);
   if (v.sort !== "ppg") sp.set("sort", v.sort);
   const defaultDir = ["playerName", "teamLabel", "position"].includes(v.sort) ? "asc" : "desc";
