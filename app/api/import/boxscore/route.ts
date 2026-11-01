@@ -63,6 +63,7 @@ export async function POST(request: Request) {
         importedGames: result.importedGames,
         incompleteGames: result.incompleteGames,
         skippedGameIds: result.skippedGameIds,
+        unmatchedPlayers: result.unmatchedPlayerDetails,
       },
       { status: failed ? 422 : 200 },
     );

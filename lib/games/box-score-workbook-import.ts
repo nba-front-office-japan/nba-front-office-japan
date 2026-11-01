@@ -26,6 +26,8 @@ export type BoxScoreImportResult = {
   incompleteGames: { id: string; label: string; note: string }[];
   importedPlayers: number;
   unmatchedPlayers: string[];
+  // 照合できなかった選手の試合ごとの内訳(自動取り込みAPIの応答用)
+  unmatchedPlayerDetails: { gameId: string; date: string; team: string; playerName: string }[];
   schema: string | null;
   coverage: string[];
   sourceErrors: SourceError[];
@@ -118,11 +120,16 @@ export async function importBoxScoreWorkbook(
 
   const matchPlayer = await buildPlayerMatcher(supabase);
   const unmatched = new Set<string>();
+  const unmatchedPlayerDetails: BoxScoreImportResult["unmatchedPlayerDetails"] = [];
+  const dateByGame = new Map(importedGames.map((g) => [g.id, g.date]));
   const players = parsed.players
     .filter((p) => ok.has(p.bref_game_id))
     .map(({ team_abbr, nba_player_id, ...p }) => {
       const playerId = matchPlayer(p.player_name, nba_player_id);
-      if (!playerId) unmatched.add(p.player_name);
+      if (!playerId) {
+        unmatched.add(p.player_name);
+        unmatchedPlayerDetails.push({ gameId: p.bref_game_id, date: dateByGame.get(p.bref_game_id)!, team: team_abbr, playerName: p.player_name });
+      }
       return { ...p, team_id: teamIdByAbbr.get(team_abbr)!, player_id: playerId };
     });
   const totals = parsed.totals
@@ -166,6 +173,7 @@ export async function importBoxScoreWorkbook(
     importedPlayers: players.length,
     totalsToSave: totals.length,
     unmatchedPlayers: [...unmatched],
+    unmatchedPlayerDetails,
     schema: parsed.schema,
     coverage: parsed.coverage,
     sourceErrors: parsed.sourceErrors,
