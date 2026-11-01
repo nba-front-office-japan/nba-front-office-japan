@@ -33,8 +33,9 @@ function LoadingNotice() {
 
 // 試合一覧。開いた直後は結果を一切表示せず(HTMLにも含めない)、
 // 「結果を表示する」を押したときだけ /api/games から取得して表示する。
-// 押した日付はこのタブの中で記録し(reveal-store.ts)、詳細から戻ったときなどは結果を表示したままにする。
-// 別の日付や、初めて開く人には非表示のまま。日付を切り替えると、このコンポーネントは作り直される(key=日付)。
+// 表示の種類は URL で持つ(一覧 view=all / 個別 view=individual / 指定なしは選択画面)。ブラウザの戻るで1つ前の画面へ戻れるようにするため。
+// 押した日付はこのタブの中で記録し(reveal-store.ts)、view=all でも記録がなければ選択画面を出す(共有されたリンクでネタバレしないため)。
+// 日付か表示の種類を切り替えると、このコンポーネントは作り直される(key=日付:表示の種類)。
 // gameCount が 0 の日(カレンダーで試合がない日)は、結果を隠す必要がないため、ボタンを出さずに「試合なし」と表示する。
 export function GamesCenter({
   date,
@@ -52,14 +53,14 @@ export function GamesCenter({
   // その日のデータの入力状況(試合数だけ。対戦カード・得点は含まない)
   dayStatus?: GameDayStatus | null;
   adjacent: { prev: string | null; next: string | null };
-  initialView: "individual" | null;
+  initialView: "all" | "individual" | null;
 }) {
   const router = useRouter();
   // このタブで結果を表示済みの日付か(サーバー側・最初の描画では分からないため null)
   const revealedBefore = useSyncExternalStore(subscribeNoop, () => isDateRevealed(date), unknownOnServer);
-  const [selectedView, setSelectedView] = useState<"all" | "individual" | null>(initialView);
+  const [selectedView, setSelectedView] = useState<"all" | "individual" | null>(initialView === "individual" ? "individual" : null);
   // 一度取得した結果は、このタブのページ間移動の間だけ保持する(戻ったときにすぐ表示する)
-  const view = revealedBefore === true ? "all" : selectedView;
+  const view = selectedView ?? (initialView === "all" && revealedBefore === true ? "all" : null);
   const cacheKey = view === "individual" ? `matchups:${date}` : `list:${date}`;
   const [result, setResult] = useState<Result | null>(() => getCached<Result>(initialView === "individual" ? `matchups:${date}` : `list:${date}`) ?? null);
   const show = view !== null;
@@ -68,8 +69,8 @@ export function GamesCenter({
     if (!view || result) return;
     let cancelled = false;
     void fetchGames(date, view).then((next) => {
-      if (cancelled) return;
       if (next.kind !== "error") setCached(cacheKey, next);
+      if (cancelled) return;
       setResult(next);
     });
     return () => {
@@ -82,6 +83,8 @@ export function GamesCenter({
     // 個別表示から「一覧でみる」へ戻す際は、得点を伏せた対戦カードのキャッシュを使い回さない。
     setResult(getCached<Result>(`list:${date}`) ?? null);
     setSelectedView("all");
+    // 履歴に一覧の画面を積む。これにより戻るボタン1回で、選択画面(個別表示からなら対戦カード一覧)へ戻れる。
+    if (initialView !== "all") router.push(`/games?date=${date}&view=all`, { scroll: false });
   }
 
   function chooseIndividual() {
@@ -132,7 +135,7 @@ export function GamesCenter({
     <ul className="grid grid-cols-1 gap-3">
       {result.games.map((game) => (
         <li key={game.id} className="min-w-0 overflow-hidden border-2 border-foreground bg-surface">
-          <Link href={`/games/${game.id}?date=${date}`} onClick={() => markGameRevealed(game.id)} className="selection-button selection-game-card block p-4 transition-all duration-200">
+          <Link href={`/games/${game.id}?date=${date}&view=all`} onClick={() => markGameRevealed(game.id)} className="selection-button selection-game-card block p-4 transition-all duration-200">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2">
               <StatusBadge game={game} />
               <TipoffTime game={game} />

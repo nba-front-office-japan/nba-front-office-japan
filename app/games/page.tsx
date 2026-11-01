@@ -51,8 +51,8 @@ export default async function GamesPage({ searchParams }: PageProps<"/games">) {
 
   const dayLabel = formatJstDateLabel(selected);
   const relative = selected === today ? "今日" : selected === addDays(today, -1) ? "昨日" : selected === addDays(today, 1) ? "明日" : null;
-  // 個別表示の試合詳細から戻るときだけ、対戦カード一覧を復元する。
-  const initialView = viewParam === "individual" ? "individual" : null;
+  // 一覧・個別の表示は URL で持つ(戻るボタンや試合詳細から、その表示へ戻れるようにする)。指定なしは選択画面。
+  const initialView = viewParam === "all" || viewParam === "individual" ? viewParam : null;
 
   const navItems = [
     { key: "prev", label: "← 前日", date: prevDate, href: gamesDateHref(prevDate, today), current: false },

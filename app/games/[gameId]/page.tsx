@@ -62,8 +62,8 @@ export default async function GameDetailPage({ params, searchParams }: PageProps
   const { date: dateParam, view: viewParam } = await searchParams;
   const detail = await loadGameDetail(gameId);
   const date = typeof dateParam === "string" && isValidDateString(dateParam) ? dateParam : (detail?.game.jstDate ?? null);
-  const individualView = viewParam === "individual";
-  const backHref = date ? `/games?date=${date}${individualView ? "&view=individual" : ""}` : "/games";
+  const backView = viewParam === "all" || viewParam === "individual" ? `&view=${viewParam}` : "";
+  const backHref = date ? `/games?date=${date}${backView}` : "/games";
   const backLabel = date ? `${formatJstDateLabel(date)}の試合一覧に戻る` : "試合結果＆ボックススコアに戻る";
   const matchup = detail ? `${shortName(detail.game.away)} vs ${shortName(detail.game.home)}` : null;
 
