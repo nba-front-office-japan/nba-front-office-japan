@@ -5,9 +5,10 @@ import { STATS_PAGE_SIZE, statsQueryToSearch, type StatsListRow, type StatsPage,
 
 // 選手スタッツ一覧の表(100人分)とページ切り替え。並べ替えは見出しのリンクで URL を変えて、DBで並べ替え直す。
 // 列: 順位・選手名・チーム・POS・G・MP・PTS・ORB・DRB・TRB・AST・STL・BLK・FG%・3P%・FT%・TS%・TOV・PF
-// 数字の列で並べ替えているときは、その列の見出しと数字をサイトの赤(資料デザインの --blue)にする
+// 数字の列で並べ替えているときは、その列の見出しと数字を濃い赤の太字にする(この一覧の並べ替え中の列だけの色)
 
 const TEXT_SORT_KEYS: StatsSortKey[] = ["playerName", "teamLabel", "position"];
+const SORTED_COLUMN_CLASS = "font-extrabold text-[#b00020]";
 
 const COLUMNS: { key: StatsSortKey; label: string; render: (r: StatsListRow) => ReactNode; className?: string }[] = [
   {
@@ -121,7 +122,7 @@ export function StatsListTable({ query, latestSeason, result }: { query: StatsQu
               </th>
               {COLUMNS.map((col) => (
                 <th key={col.key} scope="col" aria-sort={query.sort === col.key ? (query.dir === "asc" ? "ascending" : "descending") : undefined} className="whitespace-nowrap p-0 text-left text-[11px] font-bold text-muted">
-                  <Link href={sortHref(col.key)} scroll={false} className={`block px-1.5 py-2.5 ${highlighted(col.key) ? "text-blue" : `hover:text-foreground ${query.sort === col.key ? "text-foreground" : ""}`}`}>
+                  <Link href={sortHref(col.key)} scroll={false} className={`block px-1.5 py-2.5 ${highlighted(col.key) ? SORTED_COLUMN_CLASS : `hover:text-foreground ${query.sort === col.key ? "text-foreground" : ""}`}`}>
                     {col.label}
                     {query.sort === col.key ? (query.dir === "asc" ? " ▲" : " ▼") : ""}
                   </Link>
@@ -141,7 +142,7 @@ export function StatsListTable({ query, latestSeason, result }: { query: StatsQu
                 <tr key={r.id} className="border-b border-line/60 hover:bg-[#f6f9ff] dark:hover:bg-white/[.03]">
                   <td className="whitespace-nowrap px-1.5 py-3 text-right font-semibold tabular-nums text-muted">{from + i + 1}</td>
                   {COLUMNS.map((col) => (
-                    <td key={col.key} className={`whitespace-nowrap px-1.5 py-3 font-semibold ${col.className ?? ""} ${highlighted(col.key) ? "text-blue" : ""}`}>
+                    <td key={col.key} className={`whitespace-nowrap px-1.5 py-3 ${highlighted(col.key) ? SORTED_COLUMN_CLASS : "font-semibold"} ${col.className ?? ""}`}>
                       {col.render(r)}
                     </td>
                   ))}
