@@ -18,6 +18,9 @@ export type GameTeamLine = {
   overtimes: number[];
 };
 
+/** 結果を隠す画面に出す対戦カード。チーム名だけを持つ(得点・勝敗・開始時刻は持たない) */
+export type GameMatchup = { away: string; home: string };
+
 export type GameSummary = {
   id: string;
   jstDate: string | null;

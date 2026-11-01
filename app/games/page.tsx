@@ -6,7 +6,7 @@ import { GameCalendar } from "@/components/games/game-calendar";
 import { NewspaperMasthead } from "@/components/games/newspaper-masthead";
 import { NEWSPAPER_FONT_CLASS } from "@/components/games/newspaper-fonts";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { fetchAdjacentGameDates, fetchGameCountsForMonth } from "@/lib/games/data";
+import { fetchAdjacentGameDates, fetchGameCountsForMonth, fetchMatchupsForJstDate } from "@/lib/games/data";
 import {
   GAME_DAY_TABS,
   addDays,
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
 // 日付は日本時間。?date=YYYY-MM-DD でその日の試合を表示する(指定なしは今日)。
 // 「前日」「翌日」は表示中の日付から1日ずつ前後へ移動する。月間カレンダーから日付を選ぶこともできる。
 // 公開済みの ?day=yesterday / tomorrow は、今日から前後1日の日付として扱う。
-// このページのHTMLには試合結果を含めない(カレンダーは日付ごとの試合数だけ)。結果は GamesCenter がボタン操作後に /api/games から取得する。
+// このページのHTMLには試合結果を含めない(カレンダーは日付ごとの試合数だけ、対戦カードはチーム名だけ)。結果は GamesCenter がボタン操作後に /api/games から取得する。
 export default async function GamesPage({ searchParams }: PageProps<"/games">) {
   const { date: dateParam, day, view: viewParam } = await searchParams;
   const today = todayJst();
@@ -48,6 +48,8 @@ export default async function GamesPage({ searchParams }: PageProps<"/games">) {
   // その日のデータの入力状況(結果・ボックススコアが保存済みの試合数。対戦カード・得点は含まない)
   const dayStatus = calendar?.statuses[selected] ?? null;
   const adjacent = gameCount === 0 ? await fetchAdjacentGameDates(supabase, selected).catch(() => ({ prev: null, next: null })) : { prev: null, next: null };
+  // 結果を隠している画面に出す対戦カード(チーム名だけ)。取得に失敗しても、対戦カードなしでページは表示する
+  const matchups = gameCount === 0 ? [] : await fetchMatchupsForJstDate(supabase, selected).catch(() => []);
 
   const dayLabel = formatJstDateLabel(selected);
   const relative = selected === today ? "今日" : selected === addDays(today, -1) ? "昨日" : selected === addDays(today, 1) ? "明日" : null;
@@ -96,7 +98,7 @@ export default async function GamesPage({ searchParams }: PageProps<"/games">) {
             {gameCount !== null && gameCount > 0 && <span className="np-numeral text-sm font-bold text-[var(--np-red)]">{gameCount}試合</span>}
           </h2>
 
-          <GamesCenter key={`${selected}:${initialView ?? "choose"}`} date={selected} dayLabel={dayLabel} today={today} gameCount={gameCount} dayStatus={dayStatus} adjacent={adjacent} initialView={initialView} />
+          <GamesCenter key={`${selected}:${initialView ?? "choose"}`} date={selected} dayLabel={dayLabel} today={today} gameCount={gameCount} dayStatus={dayStatus} matchups={matchups} adjacent={adjacent} initialView={initialView} />
         </div>
 
         <div className="order-1 lg:order-2">

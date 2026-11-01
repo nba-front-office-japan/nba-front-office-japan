@@ -6,7 +6,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
-import { teamNameJa } from "@/lib/team-names-ja";
+import { teamNameJa, teamShortNameJa } from "@/lib/team-names-ja";
 import { addDays, jstDateOf, jstDayRangeUtc } from "./date";
 import type {
   BoxScoreRow,
@@ -16,6 +16,7 @@ import type {
   GameCalendarResponse,
   GameDayStatus,
   GameDetailResponse,
+  GameMatchup,
   GameSummary,
   GameTeamLine,
   GamesResponse,
@@ -125,6 +126,16 @@ export async function fetchGamesForJstDate(supabase: Client, date: string): Prom
       ...preseason.map((g) => ({ ...preseasonSummary(g, teams), hasBoxScore: true })),
     ],
   };
+}
+
+/** 日本時間のその日の対戦カード(開始時刻順)。結果を隠す画面に出すため、チーム名だけを返す(得点・勝敗・開始時刻は返さない) */
+export async function fetchMatchupsForJstDate(supabase: Client, date: string): Promise<GameMatchup[]> {
+  const result = await fetchGamesForJstDate(supabase, date);
+  if (result.status !== "ok") return [];
+  return result.games.map((g) => ({
+    away: teamShortNameJa(g.away.abbreviation, g.away.name),
+    home: teamShortNameJa(g.home.abbreviation, g.home.name),
+  }));
 }
 
 /** CSV で個人成績を登録済みの試合 */

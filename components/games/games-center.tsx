@@ -3,9 +3,10 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { GameSummary, GamesResponse } from "@/lib/games/types";
+import type { GameMatchup, GameSummary, GamesResponse } from "@/lib/games/types";
 import { NotReadyNotice, SpoilerGate, StatusBadge, TipoffTime } from "./game-parts";
 import { GameDayStatusInfo, LEVEL_GATE_CLASS } from "./game-day-status";
+import { MatchupLines } from "./matchup-lines";
 import { gameDayLevel, type GameDayStatus } from "@/lib/games/types";
 import { ScoreTable } from "./score-table";
 import { Scoreboard } from "./scoreboard";
@@ -43,6 +44,7 @@ export function GamesCenter({
   today,
   gameCount,
   dayStatus,
+  matchups,
   adjacent,
   initialView,
 }: {
@@ -52,6 +54,8 @@ export function GamesCenter({
   gameCount: number | null;
   // その日のデータの入力状況(試合数だけ。対戦カード・得点は含まない)
   dayStatus?: GameDayStatus | null;
+  // その日の対戦カード(チーム名だけ。得点・勝敗・開始時刻は含まない)
+  matchups: GameMatchup[];
   adjacent: { prev: string | null; next: string | null };
   initialView: "all" | "individual" | null;
 }) {
@@ -95,6 +99,14 @@ export function GamesCenter({
 
   // 結果を隠している枠全体の配色(その日の入力状況ごと)
   const gateTone = dayStatus ? LEVEL_GATE_CLASS[gameDayLevel(dayStatus)] : undefined;
+  // 結果を隠している枠の中身(対戦カードと入力状況)
+  const gateInfo =
+    matchups.length > 0 || dayStatus ? (
+      <>
+        {matchups.length > 0 && <MatchupLines matchups={matchups} />}
+        {dayStatus && <GameDayStatusInfo status={dayStatus} />}
+      </>
+    ) : undefined;
 
   if (gameCount === 0) return <NoGamesNotice date={date} today={today} adjacent={adjacent} />;
 
@@ -103,14 +115,14 @@ export function GamesCenter({
     if (revealedBefore === null) return <LoadingNotice />;
     return (
       <SpoilerGate message={`${dayLabel}の試合結果は非表示です`} onReveal={reveal} onChooseIndividual={chooseIndividual} loading={false} toneClass={gateTone}>
-        {dayStatus && <GameDayStatusInfo status={dayStatus} />}
+        {gateInfo}
       </SpoilerGate>
     );
   }
   if (!result) {
     return selectedView ? (
       <SpoilerGate message={`${dayLabel}の試合結果は非表示です`} onReveal={reveal} onChooseIndividual={chooseIndividual} loading toneClass={gateTone}>
-        {dayStatus && <GameDayStatusInfo status={dayStatus} />}
+        {gateInfo}
       </SpoilerGate>
     ) : (
       <LoadingNotice />
