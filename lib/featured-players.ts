@@ -443,7 +443,7 @@ export const FEATURED_PLAYERS: FeaturedPlayer[] = [
 ];
 
 /** 英語名の照合用(アクセント記号を外し、小文字にする。例: Luka Dončić → luka doncic) */
-function normalizeName(name: string): string {
+export function normalizeName(name: string): string {
   return name.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 }
 

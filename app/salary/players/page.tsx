@@ -4,6 +4,7 @@ import { PageShell } from "@/components/page-shell";
 import { ContractLegend, SalaryBreadcrumb, SalarySourceNote } from "@/components/salary/salary-parts";
 import { PlayerSalaryTable } from "@/components/salary/player-salary-table";
 import { SALARY_COUNTS, salaryPlayerRows } from "@/lib/salary/data";
+import { salaryJapaneseNameLookup } from "@/lib/salary/player-names";
 import { SALARY_SEASONS } from "@/lib/salary/types";
 
 export const metadata: Metadata = {
@@ -11,7 +12,13 @@ export const metadata: Metadata = {
   description: "NBA全選手の年俸一覧（2026-27〜2031-32）。選手名・チーム名で検索し、年度ごとに年俸の高い順で確認できます。保証額・契約状況つき。",
 };
 
-export default function PlayerSalaryPage() {
+// 日本語名はDBから読むため、ページを1日ごとに作り直す
+export const revalidate = 86400;
+
+export default async function PlayerSalaryPage() {
+  const japaneseName = await salaryJapaneseNameLookup();
+  const rows = salaryPlayerRows().map((row) => ({ ...row, nameJa: japaneseName(row.name) }));
+
   return (
     <PageShell>
       <BriefSheet
@@ -31,7 +38,7 @@ export default function PlayerSalaryPage() {
         <div className="mb-3">
           <ContractLegend statusCount={SALARY_COUNTS.statuses} />
         </div>
-        <PlayerSalaryTable rows={salaryPlayerRows()} />
+        <PlayerSalaryTable rows={rows} />
         <SalarySourceNote />
       </BriefSheet>
     </PageShell>

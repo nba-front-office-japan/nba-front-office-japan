@@ -24,19 +24,22 @@ const OPTION_CELL: Record<"player" | "team", string> = {
   team: "bg-[#ffe6eb] dark:bg-[#5c1f2d]/70",
 };
 
-const TH = "whitespace-nowrap px-2 py-2.5 text-left text-[11px] font-bold text-muted";
-const TD = "whitespace-nowrap px-2 py-2.5";
 const STICKY = "sticky left-0 z-10 bg-surface";
 
-export type PlayerSalaryRow = SalaryPlayer & { teamName: string };
+export type PlayerSalaryRow = SalaryPlayer & { teamName: string; nameJa?: string | null };
 
 export function PlayerSalaryTable({ rows, showTeam = true, initialSeason = "all" }: { rows: PlayerSalaryRow[]; showTeam?: boolean; initialSeason?: SalarySeason | "all" }) {
   const [season, setSeason] = useState<SalarySeason | "all">(initialSeason);
   const [query, setQuery] = useState("");
+  // 全選手の一覧は列が多いので、右端まで収まるよう文字と余白を詰める(チーム別の表は従来の大きさ)
+  const padding = showTeam ? "px-1.5" : "px-2";
+  const TH = `whitespace-nowrap ${padding} py-2.5 text-left text-[11px] font-bold text-muted`;
+  const TD = `whitespace-nowrap ${padding} py-2.5`;
+  const WRAP_TD = `${padding} py-2.5`;
 
   const { visible, matchedCount } = useMemo(() => {
     const q = normalize(query);
-    const matched = q === "" ? rows : rows.filter((r) => normalize(`${r.name} ${r.team} ${r.teamName}`).includes(q));
+    const matched = q === "" ? rows : rows.filter((r) => normalize(`${r.nameJa ?? ""} ${r.name} ${r.team} ${r.teamName}`).includes(q));
     const idx = season === "all" ? 0 : seasonIndex(season);
     const list = season === "all" ? [...matched] : matched.filter((r) => r.salaries[idx] !== null);
     list.sort((a, b) => (b.salaries[idx] ?? -1) - (a.salaries[idx] ?? -1) || a.name.localeCompare(b.name));
@@ -57,7 +60,7 @@ export function PlayerSalaryTable({ rows, showTeam = true, initialSeason = "all"
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="例: Brunson / Knicks / NYK"
+              placeholder="例: ブランソン / Brunson / Knicks / NYK"
               className="w-full max-w-md border border-line bg-background px-3 py-2 text-sm focus:border-blue focus:outline-none"
             />
           </label>
@@ -80,7 +83,7 @@ export function PlayerSalaryTable({ rows, showTeam = true, initialSeason = "all"
 
       <p className="text-xs text-muted sm:hidden">→ 表は横にスクロールできます</p>
       <div className="overflow-x-auto border border-line bg-surface">
-        <table className="w-full border-collapse text-sm">
+        <table className={`w-full border-collapse ${showTeam ? "text-xs" : "text-sm"}`}>
           <thead>
             <tr className="border-b-2 border-foreground">
               <th scope="col" className={`${TH} ${STICKY}`}>
@@ -125,8 +128,8 @@ export function PlayerSalaryTable({ rows, showTeam = true, initialSeason = "all"
                 const opt = idx >= 0 ? optionFor(r, season as SalarySeason) : null;
                 return (
                   <tr key={`${r.team}-${r.name}`} className="border-b border-line/60 last:border-b-0 hover:bg-[#f6f9ff] dark:hover:bg-white/[.03]">
-                    <th scope="row" className={`${TD} ${STICKY} text-left font-bold`}>
-                      {r.name}
+                    <th scope="row" title={r.nameJa ? r.name : undefined} className={`${showTeam ? `${WRAP_TD} min-w-[7.5rem]` : TD} ${STICKY} text-left font-bold`}>
+                      {r.nameJa ?? r.name}
                     </th>
                     {showTeam && (
                       <td className={TD}>
@@ -155,7 +158,7 @@ export function PlayerSalaryTable({ rows, showTeam = true, initialSeason = "all"
                       </td>
                     )}
                     <td className={`${TD} text-right tabular-nums ${r.guaranteed === null ? "text-muted" : ""}`}>{formatUsd(r.guaranteed)}</td>
-                    <td className={TD}>
+                    <td className={showTeam ? WRAP_TD : TD}>
                       <ContractList player={r} />
                     </td>
                   </tr>
