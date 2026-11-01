@@ -210,6 +210,8 @@ export async function fetchStatsPage(
   const filtered = (select: string, options?: SelectOptions) => {
     let query = selectList(supabase, select, options).eq("season_type", q.seasonType);
     if (q.season !== null) query = query.eq("season", q.season);
+    // レギュラーシーズンの「All」は確定したシーズンだけ(今季は含めない)
+    else if (q.seasonType === "regular_season") query = query.neq("season", CURRENT_STATS_SEASON);
     if (q.position) query = query.eq("position", q.position);
     if (teamId) query = query.contains("team_ids", [teamId]);
     if (typeof q.minGames === "number" && q.minGames > 0) query = query.gte("games_played", q.minGames);

@@ -17,6 +17,8 @@ export type PlayerCurrentSeasonStats = {
   totals: RawStatTotals;
   // 集計した最後の試合日(米国の日付、YYYY-MM-DD)
   lastGameDate: string;
+  // 出場したチーム(移籍していれば複数)
+  teamIds: string[];
 };
 
 /** 選手の今季のレギュラーシーズン累計。出場した試合が無ければ null。generateMetadata とページ本体で共通(1回のリクエストにつき1回) */
@@ -61,13 +63,15 @@ export const fetchPlayerCurrentSeasonStats = cache(
 
     let totals = ZERO;
     let lastGameDate: string | null = null;
+    const teamIds = new Set<string>();
     for (const row of rows as BoxPlayerRow[]) {
       const game = counted.get(row.game_id);
       if (!game) continue;
       totals = addGame(totals, row);
+      teamIds.add(row.team_id);
       if (lastGameDate === null || game.game_date > lastGameDate) lastGameDate = game.game_date;
     }
-    return lastGameDate === null ? null : { season, totals, lastGameDate };
+    return lastGameDate === null ? null : { season, totals, lastGameDate, teamIds: [...teamIds] };
   },
 );
 

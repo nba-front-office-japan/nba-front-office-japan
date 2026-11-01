@@ -83,10 +83,14 @@ export default async function PlayerDetailPage({
     .select("*")
     .eq("player_id", playerId);
 
+  // 今季のレギュラーシーズンは試合データの集計(current)だけを使い、player_stats に同じシーズンの行があっても読まない
+  const pastStats = (stats ?? []).filter(
+    (s) => !(s.season === ROSTER_SEASON && s.season_type === "regular_season")
+  );
+
   const teamIds = [
     ...new Set(
-      (stats ?? [])
-        .map((s) => s.team_id)
+      [...pastStats.map((s) => s.team_id), ...(current?.teamIds ?? [])]
         .filter((id): id is string => id !== null)
     ),
   ];
@@ -100,7 +104,7 @@ export default async function PlayerDetailPage({
     (statTeams ?? []).map((t) => [t.id, t.abbreviation])
   );
 
-  const statRows: PlayerStatRow[] = (stats ?? []).map((s) => ({
+  const statRows: PlayerStatRow[] = pastStats.map((s) => ({
     id: s.id,
     season: s.season,
     teamLabel: s.team_id ? teamAbbrById.get(s.team_id) ?? "-" : "TOT",
@@ -124,6 +128,18 @@ export default async function PlayerDetailPage({
     freeThrowsMade: s.free_throws_made,
     freeThrowsAttempted: s.free_throws_attempted,
   }));
+  // 今季の行は「今季成績」と同じ集計から作る
+  if (current) {
+    const movedTeams = current.teamIds.length > 1;
+    statRows.push({
+      ...current.totals,
+      id: `current-${current.season}`,
+      season: current.season,
+      teamLabel: movedTeams ? "TOT" : teamAbbrById.get(current.teamIds[0]) ?? "-",
+      seasonType: "regular_season",
+      isTotal: movedTeams,
+    });
+  }
 
   // 2025-26 アワード（受賞・選出がある場合のみ表示）。
   const { data: awards } = await supabase
@@ -154,7 +170,7 @@ export default async function PlayerDetailPage({
     selectedView === "profile"
       ? playerDataSummary({
           nameJa: player.full_name_ja ?? player.full_name,
-          stats: stats ?? [],
+          stats: pastStats,
           current,
           salary: salaryRows.length === 1 ? salaryRows[0] : null,
         })
