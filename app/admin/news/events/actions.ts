@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { canonicalizeUrl } from "@/lib/news/canonical-url";
-import { buildDefaultAttribution } from "@/lib/news/attribution";
 import { VERIFIED_FACTS_NOTES_MAX_LENGTH } from "@/lib/news/constants";
+import { buildEventAttribution } from "@/lib/news/editorial";
 import type { NewsEventCategory, VerificationStatus } from "@/lib/supabase/types";
 import type { ActionState } from "@/app/admin/_components/action-ui";
 
@@ -121,35 +121,7 @@ export async function createDraftFromEventAction(
     return { status: "error", message: "イベントが見つかりません。" };
   }
 
-  const { data: eventSources } = await supabase
-    .from("news_event_sources")
-    .select("news_item_id")
-    .eq("event_id", eventId);
-
-  const itemIds = (eventSources ?? []).map((s) => s.news_item_id);
-  const { data: items } =
-    itemIds.length > 0
-      ? await supabase
-          .from("news_items")
-          .select("title, canonical_url, author_name, published_at, source_id")
-          .in("id", itemIds)
-      : { data: [] };
-
-  const sourceIds = [...new Set((items ?? []).map((i) => i.source_id))];
-  const { data: sources } =
-    sourceIds.length > 0
-      ? await supabase.from("news_sources").select("id, name").in("id", sourceIds)
-      : { data: [] };
-  const sourceNameById = new Map((sources ?? []).map((s) => [s.id, s.name]));
-
-  const defaultAttribution = buildDefaultAttribution(
-    (items ?? []).map((item) => ({
-      title: item.title,
-      url: item.canonical_url,
-      mediaName: item.author_name ?? sourceNameById.get(item.source_id) ?? "不明",
-      publishedAt: item.published_at,
-    }))
-  );
+  const defaultAttribution = await buildEventAttribution(supabase, eventId);
 
   const { data: draft, error: draftError } = await supabase
     .from("article_drafts")

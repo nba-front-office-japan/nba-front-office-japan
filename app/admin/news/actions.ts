@@ -6,8 +6,8 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { collectAllActiveRssSources } from "@/lib/news/collect";
 import { canonicalizeUrl } from "@/lib/news/canonical-url";
 import { computeContentHash } from "@/lib/news/hash";
+import { createEventFromItems } from "@/lib/news/editorial";
 import type {
-  EventSourceRelation,
   NewsEventCategory,
   VerificationStatus,
 } from "@/lib/supabase/types";
@@ -99,10 +99,6 @@ export async function registerManualOfficialUrlAction(formData: FormData) {
   revalidatePath("/admin/news");
 }
 
-function generateEventKey(): string {
-  return `evt-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
 export async function createEventFromItemsAction(
   _prevState: ActionState,
   formData: FormData
@@ -123,63 +119,21 @@ export async function createEventFromItemsAction(
     return { status: "error", message: "内部見出し（英語）は必須です。" };
   }
 
-  const supabase = createAdminSupabaseClient();
-
-  // 非掲載にした記事はイベントの材料にしない
-  const { data: hiddenSelected } = await supabase
-    .from("news_items")
-    .select("id")
-    .in("id", itemIds)
-    .eq("status", "ignored");
-  if ((hiddenSelected ?? []).length > 0) {
-    return {
-      status: "error",
-      message: `非掲載の記事が${hiddenSelected!.length}件含まれています。非掲載を解除するか、選択から外してください。`,
-    };
+  const result = await createEventFromItems(createAdminSupabaseClient(), {
+    itemIds,
+    headlineEn,
+    category,
+    verificationStatus,
+    importanceScore,
+    reliabilityScore,
+  });
+  if (!result.ok) {
+    return { status: "error", message: result.message };
   }
-
-  const { data: event, error: eventError } = await supabase
-    .from("news_events")
-    .insert({
-      event_key: generateEventKey(),
-      headline_en: headlineEn,
-      category,
-      verification_status: verificationStatus,
-      reliability_score: reliabilityScore,
-      importance_score: importanceScore,
-    })
-    .select("id")
-    .single();
-
-  if (eventError || !event) {
-    return {
-      status: "error",
-      message: `イベント作成に失敗しました: ${eventError?.message}`,
-    };
-  }
-
-  const eventSourceRows = itemIds.map((newsItemId, index) => ({
-    event_id: event.id,
-    news_item_id: newsItemId,
-    relation: (index === 0 ? "primary" : "confirmation") as EventSourceRelation,
-  }));
-
-  const { error: linkError } = await supabase
-    .from("news_event_sources")
-    .insert(eventSourceRows);
-
-  if (linkError) {
-    return {
-      status: "error",
-      message: `ソースの紐付けに失敗しました: ${linkError.message}`,
-    };
-  }
-
-  await supabase.from("news_items").update({ status: "processed" }).in("id", itemIds);
 
   revalidatePath("/admin/news");
   revalidatePath("/admin/news/events");
-  redirect(`/admin/news/events/${event.id}?created=1`);
+  redirect(`/admin/news/events/${result.eventId}?created=1`);
 }
 
 

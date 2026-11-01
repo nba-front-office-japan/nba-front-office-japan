@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { ARTICLE_DRAFT_STATUS_LABEL, isLowConfidence, isRumorOrUnverified, isSingleSource } from "@/lib/news/constants";
 import { LINK_CLASS } from "@/app/admin/_components/action-ui";
-import { DraftEditForm, RejectButton } from "./draft-forms";
+import { ApproveButton, DraftEditForm, RejectButton } from "./draft-forms";
 import { PublishButton } from "./publish-button";
 
 export const dynamic = "force-dynamic";
@@ -130,6 +130,7 @@ export default async function AdminNewsDraftDetailPage({
         afterForm={
           <section key="publish" className="flex flex-wrap items-center gap-4 border border-line bg-surface p-6">
             <PublishButton draftId={draft.id} />
+            {draft.status === "pending_review" && <ApproveButton draftId={draft.id} />}
             <RejectButton draftId={draft.id} />
           </section>
         }

@@ -2,7 +2,7 @@
 
 import { useActionState, useState, type MouseEvent, type ReactNode } from "react";
 import Link from "next/link";
-import { updateDraftAction, rejectDraftAction } from "../actions";
+import { approveDraftAction, updateDraftAction, rejectDraftAction } from "../actions";
 import { ARTICLE_KIND_OPTIONS, ARTICLE_TYPE_OPTIONS, CATEGORY_OPTIONS, NEWS_TOPIC_LABEL, NEWS_TOPIC_OPTIONS, isNewsTopic } from "@/lib/news/constants";
 import {
   INITIAL_ACTION_STATE,
@@ -340,6 +340,23 @@ export function DraftEditForm({
 
           {afterForm}
     </div>
+  );
+}
+
+export function ApproveButton({ draftId }: { draftId: string }) {
+  const [state, formAction, isPending] = useActionState(
+    approveDraftAction,
+    INITIAL_ACTION_STATE
+  );
+
+  return (
+    <form action={formAction} className="flex flex-wrap items-center gap-3">
+      <input type="hidden" name="draftId" value={draftId} />
+      <button type="submit" disabled={isPending} className={GHOST_BUTTON_CLASS}>
+        {isPending ? "承認中…" : "承認する（入稿APIからの公開を許可）"}
+      </button>
+      {!isPending && <StatusMessage state={state} />}
+    </form>
   );
 }
 
