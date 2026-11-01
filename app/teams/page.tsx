@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { BriefSheet, BriefSide } from "@/components/brief-sheet";
 import { PageShell } from "@/components/page-shell";
 import { TeamDirectory } from "@/components/team-directory";
 import { SeasonSelect } from "@/components/season-select";
@@ -25,25 +26,34 @@ export default async function TeamsPage({ searchParams }: PageProps<"/teams">) {
 
   return (
     <PageShell>
-      <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
-        Team Database · {label} Season
-      </p>
-      <h1 className="mb-2 text-[36px] font-semibold tracking-tight">チーム一覧</h1>
-      <p className="mb-5 text-sm text-muted">
-        {season === ROSTER_SEASON
-          ? `チーム名から${label}のチームページ（${label}ロスター）へ、その下のリンクから Profile・Stats・Team Profile へ直接進めます。`
-          : `チーム名から${label}チーム記録へ、その下のリンクから Profile・Stats・Team Profile へ直接進めます。`}
-      </p>
-      <SeasonSelect season={season} options={seasonOptionLinks("/teams")} />
-      {error ? (
-        <p className="text-sm text-red-600 dark:text-red-400">
-          チームデータの取得に失敗しました: {error.message}
-        </p>
-      ) : (
-        <div className="border border-line bg-surface p-6">
-          <TeamDirectory teams={teams ?? []} season={season} />
-        </div>
-      )}
+      <BriefSheet
+        file="02"
+        mark={["TEAM", "DIRECTORY"]}
+        edition={`${label} SEASON`}
+        report="30 FRANCHISE FILES"
+        kicker={`Team Database · ${label} Season`}
+        title="チーム一覧"
+        lead={
+          season === ROSTER_SEASON
+            ? `チーム名から${label}のチームページ（${label}ロスター）へ、その下のリンクから Profile・Stats・Team Profile へ直接進めます。`
+            : `チーム名から${label}チーム記録へ、その下のリンクから Profile・Stats・Team Profile へ直接進めます。`
+        }
+        side={
+          <BriefSide label="Season file">
+            <SeasonSelect season={season} options={seasonOptionLinks("/teams")} />
+          </BriefSide>
+        }
+      >
+        {error ? (
+          <p className="text-sm text-red-600 dark:text-red-400">
+            チームデータの取得に失敗しました: {error.message}
+          </p>
+        ) : (
+          <div className="border border-line bg-surface p-4 sm:p-6">
+            <TeamDirectory teams={teams ?? []} season={season} />
+          </div>
+        )}
+      </BriefSheet>
     </PageShell>
   );
 }

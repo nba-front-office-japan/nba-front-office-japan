@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
+import { BriefSheet, BriefSide } from "@/components/brief-sheet";
 import { PageShell } from "@/components/page-shell";
 import { ROSTER_SEASON, STATS_SEASON, seasonLabel } from "@/lib/seasons";
 import Link from "next/link";
@@ -52,32 +53,37 @@ export default async function PlayersPage({ searchParams }: PageProps<"/players"
 
   return (
     <PageShell>
-      <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
-        Player Database · {ROSTER_LABEL} Season
-      </p>
-      <h1 className="mb-2 text-[28px] font-semibold leading-tight tracking-tight sm:text-[36px]">
-        選手名鑑 {ROSTER_LABEL}
-      </h1>
-      <p className="mb-3 text-[15px]">
-        全30チームの開幕ロスター。チームを選ぶと、所属選手のプロフィールと成績を見られます。
-      </p>
-      <ul className="mb-8 flex flex-wrap items-center gap-2 text-xs">
-        <li className="bg-surface px-2.5 py-1 font-bold text-muted ring-1 ring-line">
-          ロスター：{ROSTER_LABEL}開幕時点（途中の移籍は反映しません）
-        </li>
-        <li className="bg-surface px-2.5 py-1 font-bold text-muted ring-1 ring-line">成績：{STATS_LABEL}最終</li>
-        <li>
-          <Link href="/players/featured" className="inline-flex min-h-7 items-center px-1 font-bold text-blue hover:underline">
-            人気選手ガイド ›
-          </Link>
-        </li>
-        <li>
-          <Link href="/teams" className="inline-flex min-h-7 items-center px-1 font-bold text-blue hover:underline">
-            今季のロスター・成績は Teams ›
-          </Link>
-        </li>
-      </ul>
-      <PlayerTeamDirectory teams={teamList} />
+      <BriefSheet
+        file="05"
+        mark={["PLAYER", "GUIDE"]}
+        edition={`${ROSTER_LABEL} SEASON`}
+        report="OPENING NIGHT ROSTERS"
+        kicker={`Player Database · ${ROSTER_LABEL} Season`}
+        title={`選手名鑑 ${ROSTER_LABEL}`}
+        lead="全30チームの開幕ロスター。チームを選ぶと、所属選手のプロフィールと成績を見られます。"
+        side={
+          <>
+            <BriefSide label="Roster basis">
+              <p>ロスター：{ROSTER_LABEL}開幕時点（途中の移籍は反映しません）</p>
+              <p>成績：{STATS_LABEL}最終</p>
+            </BriefSide>
+            <BriefSide label="Related files">
+              <p>
+                <Link href="/players/featured" className="inline-flex min-h-7 items-center font-bold text-blue hover:underline">
+                  人気選手ガイド ›
+                </Link>
+              </p>
+              <p>
+                <Link href="/teams" className="inline-flex min-h-7 items-center font-bold text-blue hover:underline">
+                  今季のロスター・成績は Teams ›
+                </Link>
+              </p>
+            </BriefSide>
+          </>
+        }
+      >
+        <PlayerTeamDirectory teams={teamList} />
+      </BriefSheet>
     </PageShell>
   );
 }

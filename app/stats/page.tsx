@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { BriefSheet, BriefSide } from "@/components/brief-sheet";
 import { PageShell } from "@/components/page-shell";
 import { StatsListFilters } from "@/components/stats-list-filters";
 import { StatsListTable } from "@/components/stats-list-table";
@@ -81,24 +82,36 @@ export default async function StatsPage({ searchParams }: PageProps<"/stats">) {
   return (
     <PageShell>
       {/* 現在は選手スタッツの一覧・並べ替え。比較・独自指標などの分析機能を追加したら「Stats Lab」等の表記を検討する */}
-      <h1 className="mb-2 text-[36px] font-semibold tracking-tight">選手スタッツ</h1>
-      <p className="mb-7 text-sm text-muted">収録選手の基本スタッツを、シーズン・チーム・ポジション・出場試合数・選手名で検索する。</p>
-      {data.isCurrent && data.lastGameDate && (
-        <p className="mb-3 text-xs text-muted">
-          {CURRENT_LABEL}レギュラーシーズン：{gameDateLabel(data.lastGameDate)}（現地）の試合まで集計
-          {data.query.minGames === "qualified" && "。規定試合数（所属チームの試合数の70%以上）に達した選手を表示しています"}
-        </p>
-      )}
-      <StatsListFilters query={data.query} latestSeason={data.latestSeason} seasons={data.seasons} teams={data.teams} />
-      <StatsListTable query={data.query} latestSeason={data.latestSeason} result={data.result} />
-      {/* 収録範囲・複数チームの扱いの注意書き(ページ最下部) */}
-      <div className="mt-8 space-y-1 border border-line bg-[#eaf1ff] px-4 py-3 text-xs leading-6 text-[#264c8a] dark:bg-white/[.06]">
-        <p>
-          {CURRENT_LABEL}シーズンの成績は、試合のボックススコアから自動で集計しています（試合の取り込みから数分で反映）。
-          {STATS_LABEL}までは確定したシーズン成績です。SEASON の「All」は{STATS_LABEL}までが対象です。
-        </p>
-        <p>複数チームに所属した選手は、そのシーズンの合計成績です（チーム欄に「2チーム合計」などと表示）。チームで絞り込むと、そのチームに所属した選手の合計成績を表示します。</p>
-      </div>
+      <BriefSheet
+        file="03"
+        mark={["PLAYER", "STATS"]}
+        edition={`${CURRENT_LABEL} SEASON`}
+        report="LEAGUE-WIDE PLAYER DATA"
+        kicker="Player Stats"
+        title="選手スタッツ"
+        lead="収録選手の基本スタッツを、シーズン・チーム・ポジション・出場試合数・選手名で検索する。"
+        side={
+          data.isCurrent && data.lastGameDate ? (
+            <BriefSide label="Data status">
+              <p>
+                {CURRENT_LABEL}レギュラーシーズン：{gameDateLabel(data.lastGameDate)}（現地）の試合まで集計
+                {data.query.minGames === "qualified" && "。規定試合数（所属チームの試合数の70%以上）に達した選手を表示しています"}
+              </p>
+            </BriefSide>
+          ) : undefined
+        }
+      >
+        <StatsListFilters query={data.query} latestSeason={data.latestSeason} seasons={data.seasons} teams={data.teams} />
+        <StatsListTable query={data.query} latestSeason={data.latestSeason} result={data.result} />
+        {/* 収録範囲・複数チームの扱いの注意書き(ページ最下部) */}
+        <div className="mt-8 space-y-1 border border-line bg-surface px-4 py-3 text-xs leading-6 text-muted">
+          <p>
+            {CURRENT_LABEL}シーズンの成績は、試合のボックススコアから自動で集計しています（試合の取り込みから数分で反映）。
+            {STATS_LABEL}までは確定したシーズン成績です。SEASON の「All」は{STATS_LABEL}までが対象です。
+          </p>
+          <p>複数チームに所属した選手は、そのシーズンの合計成績です（チーム欄に「2チーム合計」などと表示）。チームで絞り込むと、そのチームに所属した選手の合計成績を表示します。</p>
+        </div>
+      </BriefSheet>
     </PageShell>
   );
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { BriefSheet, BriefSide } from "@/components/brief-sheet";
 import { PageShell } from "@/components/page-shell";
 import { GUIDE_PAGES } from "@/lib/guide-official";
 
@@ -61,56 +62,65 @@ function ExampleList({ examples }: { examples: string[] }) {
 export default function GuidePage() {
   return (
     <PageShell>
-      <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">Guide</p>
-      <h1 className="mb-3 text-[36px] font-semibold tracking-tight">NBAガイド</h1>
-      <p className="mb-8 text-sm text-muted">
-        NBAの制度・契約・ドラフト・トレード・ビジネスを理解するためのガイドです。各カテゴリーの解説は順次追加します。
-      </p>
-
-      {/* PC: 2列の表 */}
-      <div className="hidden border border-line bg-surface sm:block">
-        <table className="w-full border-collapse text-sm">
-          <thead>
-            <tr className="border-b-2 border-foreground text-left">
-              <th scope="col" className="w-[220px] px-5 py-3 text-[11px] font-extrabold uppercase tracking-[1.3px] text-muted">
-                GUIDE内カテゴリー
-              </th>
-              <th scope="col" className="px-5 py-3 text-[11px] font-extrabold uppercase tracking-[1.3px] text-muted">
-                例
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {GUIDE_CATEGORIES.map((row) => (
-              <tr key={row.category} className="border-b border-line last:border-b-0">
-                <th scope="row" className="px-5 py-4 text-left align-top text-[15px] font-bold">
-                  {row.category}
+      <BriefSheet
+        file="09"
+        mark={["FRONT OFFICE", "GUIDE"]}
+        edition="NBA RULES & BUSINESS"
+        report="REFERENCE LIBRARY"
+        kicker="Guide"
+        title="NBAガイド"
+        lead="NBAの制度・契約・ドラフト・トレード・ビジネスを理解するためのガイドです。各カテゴリーの解説は順次追加します。"
+        side={
+          <BriefSide label="Start here">
+            <ExampleList examples={GUIDE_CATEGORIES[0].examples} />
+          </BriefSide>
+        }
+      >
+        {/* PC: 2列の表 */}
+        <div className="hidden border border-line bg-surface sm:block">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-b-2 border-foreground text-left">
+                <th scope="col" className="w-[220px] px-5 py-3 text-[11px] font-extrabold uppercase tracking-[1.3px] text-muted">
+                  GUIDE内カテゴリー
                 </th>
-                <td className="px-5 py-4 leading-7">
-                  <ExampleList examples={row.examples} />
-                </td>
+                <th scope="col" className="px-5 py-3 text-[11px] font-extrabold uppercase tracking-[1.3px] text-muted">
+                  例
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {GUIDE_CATEGORIES.map((row) => (
+                <tr key={row.category} className="border-b border-line last:border-b-0">
+                  <th scope="row" className="px-5 py-4 text-left align-top text-[15px] font-bold">
+                    {row.category}
+                  </th>
+                  <td className="px-5 py-4 leading-7">
+                    <ExampleList examples={row.examples} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
-      {/* スマホ: カテゴリーごとの縦並び */}
-      <div className="border border-line bg-surface sm:hidden">
-        <p className="border-b-2 border-foreground px-4 py-3 text-[11px] font-extrabold uppercase tracking-[1.3px] text-muted">
-          GUIDE内カテゴリー ／ 例
-        </p>
-        <dl>
-          {GUIDE_CATEGORIES.map((row) => (
-            <div key={row.category} className="border-b border-line px-4 py-4 last:border-b-0">
-              <dt className="mb-1 text-[15px] font-bold">{row.category}</dt>
-              <dd className="text-sm leading-7 text-muted">
-                <ExampleList examples={row.examples} />
-              </dd>
-            </div>
-          ))}
-        </dl>
-      </div>
+        {/* スマホ: カテゴリーごとの縦並び */}
+        <div className="border border-line bg-surface sm:hidden">
+          <p className="border-b-2 border-foreground px-4 py-3 text-[11px] font-extrabold uppercase tracking-[1.3px] text-muted">
+            GUIDE内カテゴリー ／ 例
+          </p>
+          <dl>
+            {GUIDE_CATEGORIES.map((row) => (
+              <div key={row.category} className="border-b border-line px-4 py-4 last:border-b-0">
+                <dt className="mb-1 text-[15px] font-bold">{row.category}</dt>
+                <dd className="text-sm leading-7 text-muted">
+                  <ExampleList examples={row.examples} />
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </BriefSheet>
     </PageShell>
   );
 }

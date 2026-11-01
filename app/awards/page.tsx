@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { BriefSheet, BriefSide } from "@/components/brief-sheet";
 import { PageShell } from "@/components/page-shell";
 import { seasonLabel } from "@/lib/awards/history";
 import { DETAIL_LABEL, SEASON_MAJOR_AWARDS, SEASON_TEAM_AWARDS, type SeasonAwardKey } from "@/lib/awards/season-master";
@@ -109,89 +110,94 @@ export default async function AwardsPage({ searchParams }: PageProps<"/awards">)
 
   return (
     <PageShell>
-      <div className="-mx-4 bg-navy px-4 py-8 text-white sm:-mx-7 sm:px-7 sm:py-[29px]">
-        <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-[#84b0ff]">Awards Database{label ? ` · ${label} Season` : ""}</p>
-        <h1 className="text-[28px] font-semibold tracking-tight sm:text-[36px]">年度別アワード</h1>
-        <p className="mt-1 text-sm text-slate-300">
-          {first}〜{last}のNBAアワードを掲載しています。年度を選ぶと、その年度の受賞者・選出者を表示します。
-        </p>
-      </div>
+      <BriefSheet
+        file="04"
+        mark={["AWARDS", "ARCHIVE"]}
+        edition={label ? `${label} SEASON` : "AWARDS"}
+        report="LEAGUE HONORS RECORD"
+        kicker={`Awards Database${label ? ` · ${label} Season` : ""}`}
+        title="年度別アワード"
+        lead={`${first}〜${last}のNBAアワードを掲載しています。年度を選ぶと、その年度の受賞者・選出者を表示します。`}
+        side={
+          seasons.length > 0 ? (
+            <BriefSide label="Season file">
+              <SeasonSelect key={label} seasons={seasons.map(seasonLabel)} selected={label} />
+              {requestedMissing && <p className="mt-2 text-xs text-muted">指定された年度のデータがないため、最新の {seasonLabel(seasons[0])} を表示しています。</p>}
+            </BriefSide>
+          ) : undefined
+        }
+      >
+        {season === null ? (
+          <p className="border border-line bg-surface px-5 py-8 text-center text-sm text-muted">アワードのデータは準備中です。</p>
+        ) : (
+          <div className="space-y-10">
+            <h2 className="text-2xl font-semibold tracking-tight">{label} シーズン</h2>
 
-      <div className="mt-6 space-y-2">
-        {seasons.length > 0 && <SeasonSelect key={label} seasons={seasons.map(seasonLabel)} selected={label} />}
-        {requestedMissing && seasons.length > 0 && <p className="text-xs text-muted">指定された年度のデータがないため、最新の {seasonLabel(seasons[0])} を表示しています。</p>}
-      </div>
-
-      {season === null ? (
-        <p className="mt-8 border border-line bg-surface px-5 py-8 text-center text-sm text-muted">アワードのデータは準備中です。</p>
-      ) : (
-        <div className="mt-8 space-y-10">
-          <h2 className="text-2xl font-semibold tracking-tight">{label} シーズン</h2>
-
-          <section>
-            <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">Major Awards</p>
-            <h3 className="mb-1 text-xl font-semibold">主要賞</h3>
-            <p className="mb-4 text-xs text-muted">所属は受賞時点のチームです。青い名前の選手は、選手プロフィールへ移動できます。</p>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {majors.map((a) => (
-                <div key={a.key} className="border border-line bg-surface p-5">
-                  <p className="text-sm font-bold">{a.label}</p>
-                  <p className="mb-3 text-[11px] text-muted">{a.note ?? " "}</p>
-                  <ul className="space-y-3">
-                    {a.winners.map((w) => (
-                      <WinnerItem key={w.key} winner={w} showDetail={a.key === "conference_finals_mvp"} />
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {teamAwards.length > 0 && (
             <section>
-              <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">All-NBA / All-Defensive / All-Rookie</p>
-              <h3 className="mb-4 text-xl font-semibold">チーム表彰</h3>
-              <div className="space-y-6">
-                {teamAwards.map((a) => (
-                  <div key={a.key}>
-                    <h4 className="mb-2 text-base font-bold">
-                      {a.label}
-                      <span className="ml-2 text-xs font-normal text-muted">{a.note}</span>
-                    </h4>
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                      {a.teams.map((t) => (
-                        <div key={t.detail} className="border border-line bg-surface p-5">
-                          <p className="mb-3 text-sm font-bold">
-                            {a.label} {DETAIL_LABEL[t.detail]}
-                          </p>
-                          <ul className="space-y-3">
-                            {t.winners.map((w) => (
-                              <WinnerItem key={w.key} winner={w} />
-                            ))}
-                          </ul>
-                        </div>
+              <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">Major Awards</p>
+              <h3 className="mb-1 text-xl font-semibold">主要賞</h3>
+              <p className="mb-4 text-xs text-muted">所属は受賞時点のチームです。赤い名前の選手は、選手プロフィールへ移動できます。</p>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {majors.map((a) => (
+                  <div key={a.key} className="border border-line bg-surface p-5">
+                    <p className="text-sm font-bold">{a.label}</p>
+                    <p className="mb-3 text-[11px] text-muted">{a.note ?? " "}</p>
+                    <ul className="space-y-3">
+                      {a.winners.map((w) => (
+                        <WinnerItem key={w.key} winner={w} showDetail={a.key === "conference_finals_mvp"} />
                       ))}
-                    </div>
+                    </ul>
                   </div>
                 ))}
               </div>
             </section>
-          )}
 
-          {allStars.length > 0 && (
-            <section>
-              <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">All-Star</p>
-              <h3 className="mb-1 text-xl font-semibold">オールスター選出（{allStars.length}人）</h3>
-              <p className="mb-4 text-xs text-muted">ケガによる代替選出を含む、公式に選出された選手です。</p>
-              <ul className="grid grid-cols-1 gap-x-4 gap-y-3 border border-line bg-surface p-5 sm:grid-cols-2 lg:grid-cols-3">
-                {allStars.map((w) => (
-                  <WinnerItem key={w.key} winner={w} />
-                ))}
-              </ul>
-            </section>
-          )}
-        </div>
-      )}
+            {teamAwards.length > 0 && (
+              <section>
+                <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">All-NBA / All-Defensive / All-Rookie</p>
+                <h3 className="mb-4 text-xl font-semibold">チーム表彰</h3>
+                <div className="space-y-6">
+                  {teamAwards.map((a) => (
+                    <div key={a.key}>
+                      <h4 className="mb-2 text-base font-bold">
+                        {a.label}
+                        <span className="ml-2 text-xs font-normal text-muted">{a.note}</span>
+                      </h4>
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {a.teams.map((t) => (
+                          <div key={t.detail} className="border border-line bg-surface p-5">
+                            <p className="mb-3 text-sm font-bold">
+                              {a.label} {DETAIL_LABEL[t.detail]}
+                            </p>
+                            <ul className="space-y-3">
+                              {t.winners.map((w) => (
+                                <WinnerItem key={w.key} winner={w} />
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {allStars.length > 0 && (
+              <section>
+                <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">All-Star</p>
+                <h3 className="mb-1 text-xl font-semibold">オールスター選出（{allStars.length}人）</h3>
+                <p className="mb-4 text-xs text-muted">ケガによる代替選出を含む、公式に選出された選手です。</p>
+                <ul className="grid grid-cols-1 gap-x-4 gap-y-3 border border-line bg-surface p-5 sm:grid-cols-2 lg:grid-cols-3">
+                  {allStars.map((w) => (
+                    <WinnerItem key={w.key} winner={w} />
+                  ))}
+                </ul>
+              </section>
+            )}
+          </div>
+        )}
+      </BriefSheet>
     </PageShell>
   );
 }

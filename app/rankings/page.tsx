@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { BriefSheet, BriefSide } from "@/components/brief-sheet";
 import { PageShell } from "@/components/page-shell";
 import { RANKINGS, rankingHref, type RankingEntry } from "@/lib/rankings";
 import { TeamColorChip } from "@/components/team-color-chip";
@@ -151,10 +152,32 @@ export default async function RankingsPage() {
 
   return (
     <PageShell>
-      <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">Rankings</p>
-      <h1 className="mb-3 text-[36px] font-semibold tracking-tight">ランキング</h1>
-      <p className="mb-8 text-sm text-muted">NBAのチーム・選手に関するランキングをまとめたコーナーです。</p>
-      {cards}
+      <BriefSheet
+        file="08"
+        mark={["RANKING", "FILES"]}
+        edition="FRANCHISE VALUE & OWNERSHIP"
+        report="LEAGUE-WIDE REPORT"
+        kicker="Rankings"
+        title="ランキング"
+        lead="NBAのチーム・選手に関するランキングをまとめたコーナーです。"
+        side={
+          RANKINGS.length > 0 ? (
+            <BriefSide label="Index">
+              <ol className="list-decimal space-y-1 pl-5">
+                {RANKINGS.map((entry) => (
+                  <li key={entry.slug}>
+                    <Link href={rankingHref(entry.slug)} className="font-bold text-blue hover:underline">
+                      {entry.title}
+                    </Link>
+                  </li>
+                ))}
+              </ol>
+            </BriefSide>
+          ) : undefined
+        }
+      >
+        {cards}
+      </BriefSheet>
     </PageShell>
   );
 }
