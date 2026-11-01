@@ -21,7 +21,7 @@ export function PlayerName({ name, nameJa, playerId }: { name: string; nameJa: s
   return (
     <>
       {playerId ? (
-        <Link href={`/players/${playerId}`} className="hover:text-blue hover:underline">
+        <Link href={`/players/${playerId}?view=stats`} className="hover:text-blue hover:underline">
           {label}
         </Link>
       ) : (

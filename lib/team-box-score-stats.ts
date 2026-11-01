@@ -50,8 +50,12 @@ export interface TeamBoxScoreSeasonStats {
 
 type GameKind = "regular" | "other" | "unknown";
 
-// 選手ページの今季成績(lib/player-box-score-stats.ts)でも同じ判定を使う
-export function classifyGame(game: BoxGameRow, season: number, scheduledRegular: Set<string>): GameKind {
+// 選手ページの今季成績(lib/player-box-score-stats.ts)・順位表(lib/standings-data.ts)でも同じ判定を使う
+export function classifyGame(
+  game: Pick<BoxGameRow, "bref_game_id" | "game_date" | "home_team_id" | "away_team_id">,
+  season: number,
+  scheduledRegular: Set<string>
+): GameKind {
   const opener = REGULAR_SEASON_OPENER[season];
   if (!opener || game.game_date < opener || game.game_date >= `${season + 1}-08-01`) return "other";
   const nba = NBA_GAME_ID.exec(game.bref_game_id);

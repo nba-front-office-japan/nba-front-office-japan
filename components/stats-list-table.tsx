@@ -11,7 +11,7 @@ const COLUMNS: { key: StatsSortKey; label: string; render: (r: StatsListRow) => 
     key: "playerName",
     label: "選手名",
     render: (r) => (
-      <Link href={`/players/${r.player_id}`} title={r.player_name} className="block truncate hover:text-blue hover:underline">
+      <Link href={`/players/${r.player_id}?view=stats`} title={r.player_name} className="block truncate hover:text-blue hover:underline">
         {r.player_name}
       </Link>
     ),
