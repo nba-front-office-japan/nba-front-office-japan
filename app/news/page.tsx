@@ -4,6 +4,7 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { fetchPublishedArticles, type PublicArticleSummary } from "@/lib/news/public-articles";
 import { NEWS_TOPIC_LABEL, NEWS_TOPIC_OPTIONS, isRumorOrUnverified, isSingleSource } from "@/lib/news/constants";
 import { PageShell } from "@/components/page-shell";
+import { NewsScrollRestore } from "./news-scroll-restore";
 import styles from "./news.module.css";
 
 export const dynamic = "force-dynamic";
@@ -75,6 +76,7 @@ export default async function NewsPage({ searchParams }: PageProps<"/news">) {
 
   return (
     <PageShell>
+      <NewsScrollRestore key={newsHref(query, category)} />
       <div className={styles.page}>
         <header className={styles.masthead}>
           <div><p className={styles.kicker}>NBA FRONT OFFICE JAPAN</p><h1>THE<br />BREAK</h1></div>
