@@ -206,8 +206,9 @@ main .selection-button:active:not(:disabled) {
 }
 
 /* NBAの歴史ページ：資料を一枚ずつ読む、縦型のドキュメンタリー展示 */
+/* bodyの色はページの外(行き止まりのスクロール時など)にも見える。本文の背景は.history-storyが持つので、フッターと同じ紺にする */
 body:has(.history-story) {
-  background: #4a4b4e;
+  background: var(--navy);
 }
 
 .history-story {
@@ -493,6 +494,26 @@ body:has(.history-story) {
 /* PC幅で引用の2文がそれぞれ1行に収まる大きさ */
 .history-story--three-point .history-story__finale blockquote { font-size: clamp(1.6rem, 3.4vw, 2.75rem); }
 
+/* 歴史シリーズの導線。HEROの暗さを受け継ぐ帯の中に、各回を並べる */
+.history-series { border-bottom: 1px solid rgba(205, 166, 87, 0.3); background: #0b0c0d; }
+.history-series__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 1rem; }
+.history-series__head h2 { margin: 0; color: #e1bb71; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.22em; line-height: 1.4; }
+.history-series__head p { color: #b9c1cc; font-size: 0.82rem; }
+.history-series__list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-top: 1rem; }
+.history-series__card { display: flex; flex-direction: column; height: 100%; padding: 1rem 1.15rem; border: 1px solid rgba(205, 166, 87, 0.3); color: #f4efe5; transition: background-color 0.2s ease, border-color 0.2s ease; }
+a.history-series__card:hover, a.history-series__card:focus-visible { border-color: rgba(225, 187, 113, 0.8); background: rgba(225, 187, 113, 0.07); }
+a.history-series__card:focus-visible { outline: 2px solid #e1bb71; outline-offset: 2px; }
+.history-series__card--current { border-color: rgba(225, 187, 113, 0.8); }
+.history-series__card--upcoming { border-style: dashed; color: #9ba2ac; }
+.history-series__number { color: rgba(225, 187, 113, 0.42); font-family: Georgia, "Times New Roman", serif; font-size: 3rem; font-weight: 700; letter-spacing: -0.04em; line-height: 1; }
+.history-series__copy { display: flex; flex: 1; flex-direction: column; }
+.history-series__period { margin-top: 0.55rem; color: #e1bb71; font-family: Georgia, "Times New Roman", serif; font-size: 0.82rem; }
+.history-series__title { margin-top: 0.3rem; font-family: Georgia, "Times New Roman", "Yu Mincho", serif; font-size: 1.14rem; font-weight: 700; line-height: 1.45; }
+.history-series__card--upcoming .history-series__title { margin-top: 0.55rem; }
+.history-series__description { margin-top: 0.4rem; color: #b9c1cc; font-size: 0.8rem; line-height: 1.6; }
+.history-series__status { margin-top: auto; padding-top: 0.8rem; color: #e1bb71; font-size: 0.66rem; font-weight: 800; letter-spacing: 0.18em; }
+.history-series__card--upcoming .history-series__status { color: #9ba2ac; }
+
 /* 第2回のPC幅は本文55%・画像45%。画像が先の章は列の並びが逆になる */
 .history-story--three-point .history-story__pair { grid-template-columns: minmax(0, 1.22fr) minmax(0, 1fr); }
 .history-story--three-point .history-story__pair--image-first { grid-template-columns: minmax(0, 1fr) minmax(0, 1.22fr); }
@@ -724,6 +745,15 @@ body:has(.history-story) {
   .history-story__hero-image { object-position: center top; }
   .history-story__hero-frame { width: 100%; -webkit-mask-image: none; mask-image: none; }
   .history-story--three-point .history-story__hero-image { object-position: 34% 0; }
+  .history-series__list { grid-template-columns: minmax(0, 1fr); gap: 0.5rem; margin-top: 0.75rem; }
+  .history-series__card { flex-direction: row; gap: 0.75rem; min-height: 7.5rem; padding: 0.65rem 0.9rem; }
+  .history-series__card--upcoming { min-height: 0; }
+  .history-series__number { flex: none; width: 3rem; font-size: 2.3rem; }
+  .history-series__period { margin-top: 0; font-size: 0.78rem; line-height: 1.3; }
+  .history-series__title { margin-top: 0.15rem; font-size: 0.98rem; line-height: 1.35; }
+  .history-series__card--upcoming .history-series__title { margin-top: 0; }
+  .history-series__description { margin-top: 0.2rem; font-size: 0.74rem; line-height: 1.5; }
+  .history-series__status { padding-top: 0.3rem; font-size: 0.6rem; }
   .history-story__archive { padding-inline: 0.75rem; }
   .history-story__archive-box { font-size: 0.68rem; }
   .history-story__archive-box th, .history-story__archive-box td { padding-inline: 0.18rem; }

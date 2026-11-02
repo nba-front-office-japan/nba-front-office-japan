@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
+import { HistorySeries } from "./history-series";
 import { PaintAreaMotion } from "./paint-area-motion";
 
 export function ArchiveImage({ src, alt, caption, className = "" }: { src: string; alt: string; caption: string; className?: string }) {
@@ -30,6 +31,7 @@ export default function HistoryDocumentary() {
           <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(8,9,10,.98)_0%,rgba(8,9,10,.78)_48%,rgba(8,9,10,.38)_100%)]" />
           <div className="mx-auto flex min-h-[540px] w-full max-w-6xl flex-col justify-end px-5 pb-14 pt-20 sm:min-h-[640px] sm:px-10 sm:pb-20"><p className="history-story__label">HISTORY / RULES</p><p className="mt-5 font-serif text-lg text-[#e1bb71] sm:text-2xl">1950s — 1960s</p><h1 className="mt-4 max-w-4xl font-serif text-5xl font-bold leading-[1.05] tracking-tight text-[#fff8eb] sm:text-7xl lg:text-8xl">NBAはなぜ<br />ルールを変え始めたのか</h1><p className="mt-6 max-w-xl text-lg leading-8 text-[#eee3d0] sm:text-xl">24秒、制限区域、チェンバレン対策まで。スターと競技の間で生まれた、NBA最初の大きな改革をたどる。</p><p className="mt-12 text-[11px] font-extrabold tracking-[.28em] text-[#e1bb71]">SCROLL TO EXPLORE ↓</p></div>
         </section>
+        <HistorySeries current="/history" />
 
         <article className="mx-auto max-w-6xl px-5 sm:px-10">
           <ChapterBreak year="1950" eyebrow="THE SLOWEST GAME" title={<>NBA史上最低得点<br /><span>19 — 18</span></>} copy="ショットを打たなくても、勝つことができた。" />

@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
 import { ArchiveImage, ChapterBreak, StoryPair } from "../history-documentary";
+import { HistorySeries } from "../history-series";
 import { ThreePointFirstShot } from "./three-point-first-shot";
 import { ThreePointLineMotion } from "./three-point-line-motion";
 
@@ -76,6 +77,7 @@ export default function ThreePointDocumentary() {
           <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(8,9,10,.98)_0%,rgba(8,9,10,.78)_48%,rgba(8,9,10,.38)_100%)]" />
           <div className="mx-auto flex min-h-[540px] w-full max-w-6xl flex-col justify-end px-5 pb-14 pt-20 sm:min-h-[640px] sm:px-10 sm:pb-20"><p className="history-story__label">HISTORY / RULES</p><p className="mt-5 font-serif text-lg text-[#e1bb71] sm:text-2xl">1960s — 2020s</p><h1 className="mt-4 max-w-4xl font-serif text-5xl font-bold leading-[1.05] tracking-tight text-[#fff8eb] sm:text-7xl lg:text-8xl">3ポイントは<br />NBAをどう変えたのか</h1><p className="mt-6 max-w-xl text-lg leading-8 text-[#eee3d0] sm:text-xl">ABLの実験から、NBAの導入、短縮、そして復元まで。距離がシュートの価値を決めた、もう一つの大きな改革をたどる。</p><p className="mt-12 text-[11px] font-extrabold tracking-[.28em] text-[#e1bb71]">SCROLL TO EXPLORE ↓</p></div>
         </section>
+        <HistorySeries current="/history/three-point" />
 
         <article className="mx-auto max-w-6xl px-5 sm:px-10">
           <ChapterBreak year="1961" eyebrow="THE HOME RUN IDEA" title={<>3ポイントは<br />興行の発明だった</>} copy="最初に線を引いたのは、NBAではなかった。" />
