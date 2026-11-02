@@ -4,15 +4,15 @@ import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
 import { PaintAreaMotion } from "./paint-area-motion";
 
-function ArchiveImage({ src, alt, caption, className = "" }: { src: string; alt: string; caption: string; className?: string }) {
+export function ArchiveImage({ src, alt, caption, className = "" }: { src: string; alt: string; caption: string; className?: string }) {
   return <figure className={`history-story__media ${className}`}><Image src={src} alt={alt} width={1200} height={1200} className="h-auto w-full" /><figcaption>{caption}</figcaption></figure>;
 }
 
-function ChapterBreak({ year, eyebrow, title, copy }: { year: string; eyebrow: string; title: ReactNode; copy?: ReactNode }) {
+export function ChapterBreak({ year, eyebrow, title, copy }: { year: string; eyebrow: string; title: ReactNode; copy?: ReactNode }) {
   return <section className="history-story__chapter"><p className="history-story__year" aria-hidden>{year}</p><div className="history-story__chapter-copy"><p className="history-story__label">{eyebrow}</p><h2>{title}</h2>{copy ? <p className="history-story__chapter-lead">{copy}</p> : null}</div></section>;
 }
 
-function StoryPair({ children, visual, imageFirst = false }: { children: ReactNode; visual: ReactNode; imageFirst?: boolean }) {
+export function StoryPair({ children, visual, imageFirst = false }: { children: ReactNode; visual: ReactNode; imageFirst?: boolean }) {
   return <section className={`history-story__pair ${imageFirst ? "history-story__pair--image-first" : ""}`}><div className="history-story__body">{children}</div><div className="history-story__visual">{visual}</div></section>;
 }
 
@@ -74,7 +74,7 @@ export default function HistoryDocumentary() {
             <p>ダンク禁止は1976-77シーズンまで続いた。アルシンダーは、リングへまっすぐ向かうだけではない得点手段を磨いた。高い打点から放つフックシュートは、相手が手を伸ばしても届きにくかった。</p><p>NBAでカリーム・アブドゥル＝ジャバーが完成させたスカイフックは、力で押し切るためではなく、止めようのない精度と距離で得点するための武器になった。</p><p>ルールは才能を完全に止めるものではない。競技が制約を置くと、偉大な選手はその制約の中で別の答えを見つける。</p>
           </StoryPair>
 
-          <section className="history-story__finale"><p className="history-story__label">THE RULES RESPOND</p><blockquote>「選手がルールに適応するだけではない。<br />ルールもまた、選手に適応してきた。」</blockquote><div className="history-story__finale-body"><p>19対18の試合が示したのは、得点を競うはずの競技が、ルールの空白によって止まりうるという事実だった。24秒はその空白を埋め、NBAのテンポを作った。</p><p>マイカンとチェンバレンは、ビッグマンの価値を証明すると同時に、ペイントの幅、ゴール周辺、フリースローをめぐる問いを残した。カリームのスカイフックは、制約の中で生まれた技術が、いつしか競技の象徴になりうることを示している。</p></div><div className="history-story__next"><p className="history-story__label">NEXT STORY</p><h2>3ポイントは<br />NBAをどう変えたのか</h2><p>距離によってシュートの価値を変えた、次の大きなルール革命へ。</p></div></section>
+          <section className="history-story__finale"><p className="history-story__label">THE RULES RESPOND</p><blockquote>「選手がルールに適応するだけではない。<br />ルールもまた、選手に適応してきた。」</blockquote><div className="history-story__finale-body"><p>19対18の試合が示したのは、得点を競うはずの競技が、ルールの空白によって止まりうるという事実だった。24秒はその空白を埋め、NBAのテンポを作った。</p><p>マイカンとチェンバレンは、ビッグマンの価値を証明すると同時に、ペイントの幅、ゴール周辺、フリースローをめぐる問いを残した。カリームのスカイフックは、制約の中で生まれた技術が、いつしか競技の象徴になりうることを示している。</p></div><div className="history-story__next"><p className="history-story__label">NEXT STORY</p><h2><Link href="/history/three-point" className="underline decoration-[#e1bb71] underline-offset-[.18em] transition-colors hover:text-[#e1bb71]">3ポイントは<br />NBAをどう変えたのか</Link></h2><p>距離によってシュートの価値を変えた、次の大きなルール革命へ。</p></div></section>
         </article>
         <div className="mx-auto mt-12 w-full max-w-6xl px-5 sm:px-10"><Link href="/guide" className="selection-button inline-block rounded-lg px-2 py-1 text-sm font-extrabold text-[#e7bf70] underline underline-offset-4 hover:text-white hover:no-underline">← NBAガイド一覧に戻る</Link></div>
       </main>

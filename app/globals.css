@@ -480,6 +480,63 @@ body:has(.history-story) {
   object-position: center;
 }
 
+/* 第2回だけの折り返し調整。文節で折り、1文字だけの行を作らない。未対応のブラウザでは通常の折り返しのまま */
+.history-story--three-point h1,
+.history-story--three-point h2,
+.history-story--three-point blockquote,
+.history-story--three-point .history-story__chapter-lead,
+.history-story--three-point .history-story__pullquote {
+  text-wrap: balance;
+  word-break: auto-phrase;
+}
+
+/* PC幅で引用の2文がそれぞれ1行に収まる大きさ */
+.history-story--three-point .history-story__finale blockquote { font-size: clamp(1.6rem, 3.4vw, 2.75rem); }
+
+/* 第2回のPC幅は本文55%・画像45%。画像が先の章は列の並びが逆になる */
+.history-story--three-point .history-story__pair { grid-template-columns: minmax(0, 1.22fr) minmax(0, 1fr); }
+.history-story--three-point .history-story__pair--image-first { grid-template-columns: minmax(0, 1fr) minmax(0, 1.22fr); }
+
+/* 第2回の先頭写真。主役が文字に重ならないよう右に寄せ、左端は暗い背景へ溶かす */
+.history-story__hero-frame { width: 72%; -webkit-mask-image: linear-gradient(90deg, transparent, #000 22%); mask-image: linear-gradient(90deg, transparent, #000 22%); }
+.history-story--three-point .history-story__hero-image { object-position: 50% 0; }
+
+/* 写真を元の縦横比のまま見せる(切り抜きで人物が欠けないように) */
+.history-story__visual > .history-story__media--natural { min-height: 0; }
+.history-story__visual > .history-story__media--natural img { height: auto; object-fit: initial; }
+
+/* 1979年の試合記録。生成りの記録紙のように見せる */
+.history-story__archive { padding: 0.9rem 1rem 0.8rem; border: 1px solid rgba(205, 166, 87, 0.6); border-radius: 0.2rem; background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(92, 70, 38, 0.025) 3px 4px), radial-gradient(circle at 50% 40%, #efe5cf, #e2d4b7); box-shadow: 0 0.6rem 1.4rem rgba(0, 0, 0, 0.28); color: #2c2518; font-family: Georgia, "Times New Roman", "Yu Mincho", serif; }
+.history-story__archive-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.1rem 1rem; padding-bottom: 0.4rem; border-bottom: 3px double #5c4a2c; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.14em; }
+.history-story__archive table { width: 100%; border-collapse: collapse; font-variant-numeric: lining-nums tabular-nums; }
+.history-story__archive caption { caption-side: top; text-align: left; }
+.history-story__archive th, .history-story__archive td { border-bottom: 1px solid rgba(92, 74, 44, 0.3); padding: 0.2rem 0.3rem; text-align: right; white-space: nowrap; }
+.history-story__archive th:first-child { padding-left: 0; text-align: left; }
+.history-story__archive td:last-child, .history-story__archive thead th:last-child { padding-right: 0; }
+.history-story__archive thead th { color: #5c4a2c; font-size: 0.64rem; letter-spacing: 0.06em; }
+.history-story__archive-line { margin-top: 0.35rem; font-size: 0.86rem; }
+.history-story__archive-line caption { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.history-story__archive-box { margin-top: 0.75rem; font-size: 0.74rem; }
+.history-story__archive-box caption { padding-bottom: 0.15rem; color: #5c4a2c; font-size: 0.64rem; font-weight: 700; letter-spacing: 0.14em; }
+.history-story__archive-box tbody tr:last-child th, .history-story__archive-box tbody tr:last-child td { border-top: 1px solid #5c4a2c; border-bottom: 0; font-weight: 700; }
+.history-story__archive-box tbody th { font-weight: 400; }
+.history-story__archive-ford th, .history-story__archive-ford td { background: rgba(176, 82, 40, 0.13); font-weight: 700; }
+.history-story__archive tbody .history-story__archive-ford th { padding-left: 0.3rem; box-shadow: inset 2px 0 #a84a22; font-weight: 700; }
+.history-story__archive figcaption { margin-top: 0.6rem; color: #3f3524; font-family: "Noto Sans JP", sans-serif; font-size: 0.74rem; line-height: 1.6; }
+.history-story__archive figcaption small { display: block; margin-top: 0.15rem; color: #6d5e43; font-size: 0.62rem; letter-spacing: 0.04em; }
+
+/* 最後の締め。NEXT STORY の前に置く */
+.history-story__closing { width: min(100%, 47rem); margin: 3.5rem auto 0; color: #f4efe5; font-family: Georgia, "Times New Roman", "Yu Mincho", serif; font-size: clamp(1.1rem, 1.7vw, 1.3rem); font-weight: 600; line-height: 1.95; text-align: left; }
+.history-story__closing p + p { margin-top: 1.2rem; }
+
+/* 画像を置くまでの空枠。本物の画像と同じ大きさを保つ */
+.history-story__image-slot { width: 100%; aspect-ratio: 4 / 3; background: #0b0c0d; }
+.history-story__visual > .history-story__media .history-story__image-slot { height: clamp(25rem, 44vw, 40rem); aspect-ratio: auto; }
+
+/* 画像を置かない章の本文 */
+.history-story__solo { width: min(100%, 47rem); margin: clamp(2.5rem, 6vw, 5rem) auto 0; }
+.history-story__solo .history-story__score-shift { margin-block: 2rem; padding-bottom: 1.4rem; border-bottom: 1px solid rgba(205, 166, 87, 0.55); text-align: center; }
+
 .history-story__visual-stack { display: grid; gap: 1.2rem; }
 .history-story__visual-stack .history-story__media:nth-child(2) { width: min(76%, 25rem); margin-left: auto; }
 
@@ -514,6 +571,10 @@ body:has(.history-story) {
 
 .history-story__data-value small,
 .history-story__data-answer small { font-family: inherit; font-size: 0.28em; letter-spacing: 0.08em; }
+.history-story__data-value--equation { font-size: clamp(1.5rem, 2.7vw, 2.5rem); white-space: nowrap; }
+.history-story__data-caption { margin: 0.5rem 0 1.4rem; color: #eee3d0; font-size: 0.95rem; font-weight: 700; }
+.history-story--three-point .history-story__data-value--equation { margin-block: 0.55rem; }
+.history-story--three-point .history-story__data-panel .history-story__score-shift small { font-family: "Noto Sans JP", sans-serif; font-size: 0.72rem; letter-spacing: 0.08em; line-height: 1.5; }
 .history-story__data-symbol { margin: 0.05rem; color: #e1bb71; font-family: Georgia, "Times New Roman", serif; font-size: 2.4rem; }
 .history-story__data-answer { color: #e07038; font-size: clamp(3.4rem, 7vw, 6.5rem); }
 
@@ -545,6 +606,7 @@ body:has(.history-story) {
   font-family: Georgia, "Times New Roman", serif;
 }
 
+.history-story__stat-ribbon + p { margin-top: 1.2rem; }
 .history-story__stat-ribbon b { color: #e1bb71; font-size: clamp(1.6rem, 3vw, 2.5rem); }
 .history-story__stat-ribbon small { color: #b9c1cc; font-family: "Noto Sans JP", sans-serif; font-size: 0.6rem; letter-spacing: 0.06em; }
 
@@ -626,6 +688,17 @@ body:has(.history-story) {
 .history-story__next h2 { margin-top: 0.6rem; color: #f4efe5; font-family: Georgia, "Times New Roman", "Yu Mincho", serif; font-size: clamp(2rem, 3.5vw, 3.2rem); font-weight: 700; line-height: 1.2; }
 .history-story__next p:last-child { margin-top: 0.8rem; color: #b9c1cc; font-size: 0.9rem; }
 
+/* 第2回の3ポイントライン図。切り替えはJSで行い、図の下のボタンでも選べる */
+.history-line-motion__stage { position: absolute; inset: 0; display: block; padding: 0; border: 0; background: none; cursor: pointer; }
+.history-line-motion__stage:focus-visible { outline: 2px solid #e1bb71; outline-offset: -4px; }
+.history-line-motion__frame { opacity: 0; transition: opacity 0.6s ease; }
+.history-line-motion__frame--active { opacity: 1; }
+.history-line-motion__controls { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.4rem; max-width: 800px; margin: 0.75rem auto 0; }
+.history-line-motion__controls button { min-height: 44px; padding: 0 0.25rem; border: 1px solid rgba(205, 166, 87, 0.35); border-radius: 0.5rem; background: #0b0c0d; color: #b9c1cc; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; white-space: nowrap; cursor: pointer; }
+.history-line-motion__controls button:hover { border-color: #e1bb71; color: #e1bb71; }
+.history-line-motion__controls button:focus-visible { outline: 2px solid #e1bb71; outline-offset: 2px; }
+.history-line-motion__controls button[aria-pressed="true"] { border-color: #e1bb71; background: #e1bb71; color: #0b0c0d; }
+
 /* 初期値は6ft。画面内へ入った一度だけ、16ftで停止する。 */
 .history-paint-motion .history-paint-motion__frame { animation: none; opacity: 0; }
 .history-paint-motion .history-paint-motion__frame--1 { opacity: 1; }
@@ -647,7 +720,13 @@ body:has(.history-story) {
   .history-story__visual { width: 100%; }
   .history-story__visual > .history-story__media { min-height: 0; }
   .history-story__visual > .history-story__media img { height: auto; object-fit: initial; }
+  .history-story__visual > .history-story__media .history-story__image-slot { height: auto; aspect-ratio: 4 / 3; }
   .history-story__hero-image { object-position: center top; }
+  .history-story__hero-frame { width: 100%; -webkit-mask-image: none; mask-image: none; }
+  .history-story--three-point .history-story__hero-image { object-position: 34% 0; }
+  .history-story__archive { padding-inline: 0.75rem; }
+  .history-story__archive-box { font-size: 0.68rem; }
+  .history-story__archive-box th, .history-story__archive-box td { padding-inline: 0.18rem; }
   .history-story__visual-stack .history-story__media:nth-child(2) { width: 80%; }
   .history-story__era-context { grid-template-columns: 1fr; }
   .history-story__era-insight { grid-column: auto; }
@@ -659,6 +738,7 @@ body:has(.history-story) {
 @media (prefers-reduced-motion: reduce) {
   .history-paint-motion .history-paint-motion__frame { animation: none !important; opacity: 0; }
   .history-paint-motion .history-paint-motion__frame--4 { opacity: 1; }
+  .history-line-motion__frame { transition: none; }
 }
 
 /* トップページ：NBAの歴史ページ(.history-story)と同じ暗いグレー・金・明朝系の見出し。
