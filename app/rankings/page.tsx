@@ -8,10 +8,12 @@ import { RANKINGS, rankingHref, type RankingEntry } from "@/lib/rankings";
 import { TeamColorChip } from "@/components/team-color-chip";
 import { fetchLatestValuationEdition, formatJaDate, formatValueOku } from "@/lib/valuations";
 import { buildOwnerNetWorthRows, fetchLatestOwnerNetWorthEdition } from "@/lib/owner-net-worth";
+import { ARENA_PRICES, ARENA_PRICES_SOURCE, breakableTeamName, formatUsdWhole, rankArenaPrices } from "@/lib/arena-prices";
 
 interface RankingPreview {
   // 上位の項目(例: 上位3チーム)
-  top: { rank: number; label: string; value: string; teamAbbr?: string; badge?: string }[];
+  // keepWords: 日本語のチーム名を語の途中で折り返さない(label の「・」の後ろでだけ折り返す)
+  top: { rank: number; label: string; value: string; teamAbbr?: string; badge?: string; keepWords?: boolean }[];
   // 出典と時点(例: 「CNBC（2026年2月13日公開）」)
   source: string | null;
 }
@@ -68,9 +70,26 @@ async function ownerNetWorthPreview(supabase: ServerClient): Promise<RankingPrev
   };
 }
 
+// アリーナ別価格: 最安席の高い順の上位3チームと出典(データはコードに持つのでDBは読まない)
+async function arenaPricesPreview(): Promise<RankingPreview> {
+  return {
+    top: rankArenaPrices(ARENA_PRICES, "cheapestSeatUsd")
+      .slice(0, 3)
+      .map((r) => ({
+        rank: r.rank,
+        label: breakableTeamName(r.teamName),
+        value: formatUsdWhole(r.cheapestSeatUsd),
+        teamAbbr: r.teamAbbr,
+        keepWords: true,
+      })),
+    source: `${ARENA_PRICES_SOURCE.name}（SeatGeek、Bookies.comのデータ。${ARENA_PRICES_SOURCE.asOf}時点）`,
+  };
+}
+
 const PREVIEW_LOADERS: Record<string, (supabase: ServerClient) => Promise<RankingPreview | null>> = {
   "team-valuations": teamValuationsPreview,
   "owner-net-worth": ownerNetWorthPreview,
+  "arena-prices": arenaPricesPreview,
 };
 
 function RankingCard({ entry, preview }: { entry: RankingEntry; preview: RankingPreview | null }) {
@@ -101,7 +120,7 @@ function RankingCard({ entry, preview }: { entry: RankingEntry; preview: Ranking
               <span className="w-5 shrink-0 text-right font-bold">{item.rank}</span>
               {item.teamAbbr && <TeamColorChip abbreviation={item.teamAbbr} />}
               {/* 狭い画面でも名前やラベルを途中で切らず、折り返して表示する */}
-              <span className="min-w-0 flex-1 break-words">
+              <span className={`min-w-0 flex-1 break-words ${item.keepWords ? "[word-break:keep-all]" : ""}`}>
                 {item.label}
                 {item.badge && (
                   <span className="ml-1.5 inline-block border border-gold px-1 align-middle text-[10px] font-bold leading-4 text-muted">
@@ -128,8 +147,8 @@ function RankingCard({ entry, preview }: { entry: RankingEntry; preview: Ranking
 }
 
 export const metadata: Metadata = {
-  title: "NBAランキング（チーム資産価値・オーナー資産） | NBA Front Office Japan",
-  description: "NBAのチーム資産価値ランキングやオーナー資産ランキングなど、チーム・選手に関するランキングをまとめています。",
+  title: "NBAランキング（チーム資産価値・オーナー資産・アリーナ別価格） | NBA Front Office Japan",
+  description: "NBAのチーム資産価値ランキングやオーナー資産ランキング、アリーナ別の観戦価格比較など、チーム・選手に関するランキングをまとめています。",
   alternates: { canonical: "/rankings" },
 };
 

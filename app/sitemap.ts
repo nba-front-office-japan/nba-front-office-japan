@@ -17,7 +17,7 @@ const STATIC_PATHS = [
   "", "/news", "/players", "/players/featured", "/teams", "/stats", "/games", "/awards", "/draft",
   "/history", "/history/three-point",
   "/salary", "/salary/players", "/salary/teams",
-  "/rankings", "/rankings/owner-net-worth", "/rankings/team-valuations",
+  "/rankings", "/rankings/owner-net-worth", "/rankings/team-valuations", "/rankings/arena-prices",
   "/premium",
   "/about", "/contact", "/privacy", "/terms",
   "/guide", "/guide/introduction", "/guide/glossary", "/guide/salary-cap",

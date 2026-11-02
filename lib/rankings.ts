@@ -23,6 +23,12 @@ export const RANKINGS: RankingEntry[] = [
     description: "各チームの代表オーナー1名の推定純資産を比較",
     badge: "推定値",
   },
+  {
+    slug: "arena-prices",
+    title: "アリーナ別 価格比較",
+    description: "全30チームのホームアリーナで、チケットと飲食の価格を比較。最安席や家族4人の観戦費用がわかります。",
+    badge: "目安",
+  },
 ];
 
 export function rankingHref(slug: string): string {
