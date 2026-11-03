@@ -9,6 +9,7 @@ import { PageShell } from "@/components/page-shell";
 import { NewsArticleView, formatArticleDate } from "@/components/news/article-view";
 import { trailingRelatedMedia } from "@/lib/news/body-media";
 import { fetchArticlePlayers } from "@/lib/news/player-articles";
+import { articleShareImage } from "@/lib/news/share-image";
 
 export const dynamic = "force-dynamic";
 
@@ -38,11 +39,14 @@ export async function generateMetadata({ params }: PageProps<"/news/[articleId]"
   // リード文(dek)が無い記事は、本文の冒頭を説明文にする(説明文が無いと検索結果に関係の薄い文が出てしまう)
   const description = article.dekJa ?? bodyExcerpt(article.bodyMarkdown);
   const canonical = `/news/${articleId}`;
+  // シェア用画像はどれを使うかを lib/news/share-image.ts の1か所で決める
+  const image = articleShareImage(article);
   return {
     title,
     description,
     alternates: { canonical },
-    openGraph: { title, description, url: canonical, type: "article" },
+    openGraph: { title, description, url: canonical, type: "article", images: [image] },
+    twitter: { card: "summary_large_image", title, description, images: [image] },
   };
 }
 
