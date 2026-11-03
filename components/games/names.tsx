@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { GameTeamLine } from "@/lib/games/types";
 
-// 試合結果・ボックススコアのチーム名・選手名の表示(カタカナを主に、英語名を補助に出す)。
+// 試合結果・ボックススコアのチーム名・選手名の表示(チーム名はカタカナを主に英語名を補助に、選手名はカタカナのみ)。
 
 /** チーム名: 上段にカタカナの正式名、下段に英語の正式名。カタカナが無いチームは英語名だけ */
 export function TeamName({ team, size = "md" }: { team: GameTeamLine; size?: "sm" | "md" }) {
@@ -15,19 +15,16 @@ export function TeamName({ team, size = "md" }: { team: GameTeamLine; size?: "sm
   );
 }
 
-/** 選手名: カタカナ名があれば主に表示し、英語名を小さく添える。カタカナ名が未登録なら英語名だけ(空欄にしない) */
+/** 選手名: カタカナ名があればカタカナだけを表示する(英語名は行を詰めるため出さず、マウスを重ねたときの補足にだけ使う)。
+ *  カタカナ名が未登録なら英語名だけ(空欄にしない) */
 export function PlayerName({ name, nameJa, playerId }: { name: string; nameJa: string | null; playerId: string | null }) {
   const label = nameJa ?? name;
-  return (
-    <>
-      {playerId ? (
-        <Link href={`/players/${playerId}?view=stats`} className="hover:text-blue hover:underline">
-          {label}
-        </Link>
-      ) : (
-        label
-      )}
-      {nameJa && <span className="block text-[11px] font-normal leading-tight text-muted">{name}</span>}
-    </>
+  const title = nameJa ? name : undefined;
+  return playerId ? (
+    <Link href={`/players/${playerId}?view=stats`} title={title} className="hover:text-blue hover:underline">
+      {label}
+    </Link>
+  ) : (
+    <span title={title}>{label}</span>
   );
 }

@@ -19,7 +19,8 @@ export type GameTeamLine = {
 };
 
 /** 結果を隠す画面に出す対戦カード。チーム名だけを持つ(得点・勝敗・開始時刻は持たない) */
-export type GameMatchup = { away: string; home: string };
+/** 結果を隠す画面に出す対戦カード。tipoffAt は試合開始日時(UTC)。未定・プレシーズンは null */
+export type GameMatchup = { away: string; home: string; tipoffAt: string | null };
 
 export type GameSummary = {
   id: string;

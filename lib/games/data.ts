@@ -128,13 +128,14 @@ export async function fetchGamesForJstDate(supabase: Client, date: string): Prom
   };
 }
 
-/** 日本時間のその日の対戦カード(開始時刻順)。結果を隠す画面に出すため、チーム名だけを返す(得点・勝敗・開始時刻は返さない) */
+/** 日本時間のその日の対戦カード(開始時刻順)。結果を隠す画面に出すため、チーム名と開始時刻だけを返す(得点・勝敗は返さない) */
 export async function fetchMatchupsForJstDate(supabase: Client, date: string): Promise<GameMatchup[]> {
   const result = await fetchGamesForJstDate(supabase, date);
   if (result.status !== "ok") return [];
   return result.games.map((g) => ({
     away: teamShortNameJa(g.away.abbreviation, g.away.name),
     home: teamShortNameJa(g.home.abbreviation, g.home.name),
+    tipoffAt: g.tipoffAt,
   }));
 }
 

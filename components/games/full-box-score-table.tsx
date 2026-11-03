@@ -33,7 +33,7 @@ function pct(made: number | null, att: number | null): string {
 }
 
 const NAME = "sticky left-0 z-10 min-w-[9.5rem] whitespace-nowrap bg-surface px-3 text-left";
-const CELL = "whitespace-nowrap px-2 py-2 text-right tabular-nums";
+const CELL = "whitespace-nowrap px-2 py-1.5 text-right tabular-nums";
 
 const GROUPS: { role: FullBoxRow["role"]; label: string }[] = [
   { role: "starter", label: "先発" },
@@ -85,11 +85,11 @@ export function FullBoxScoreTable({
                   </tr>
                   {list.map((r, i) => (
                     <tr key={`${r.playerName}-${i}`} className="border-b border-line last:border-b-0">
-                      <th scope="row" className={`${NAME} py-2 font-bold`}>
+                      <th scope="row" className={`${NAME} py-1.5 font-bold`}>
                         <PlayerName name={r.playerName} nameJa={r.playerNameJa} playerId={r.playerId} />
                       </th>
                       {role === "dnp" ? (
-                        <td colSpan={STAT_HEADERS.length} className="px-2 py-2 text-left text-xs text-muted">
+                        <td colSpan={STAT_HEADERS.length} className="px-2 py-1.5 text-left text-xs text-muted">
                           {r.dnpReason ?? "出場なし"}
                         </td>
                       ) : (
