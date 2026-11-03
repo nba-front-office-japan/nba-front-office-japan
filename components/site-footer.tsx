@@ -11,6 +11,7 @@ const CONTENT_LINKS = [
   { href: "/standings", label: "順位表" },
   { href: "/teams", label: "チーム" },
   { href: "/players", label: "選手名鑑" },
+  { href: "/players/featured", label: "人気選手ガイド" },
   { href: "/salary", label: "サラリー" },
   { href: "/guide", label: "NBAガイド" },
 ];

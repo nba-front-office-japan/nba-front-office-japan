@@ -11,6 +11,7 @@ const navItems = [
   { href: "/standings", label: "順位表" },
   { href: "/teams", label: "TEAMS" },
   { href: "/stats", label: "PLAYERS" },
+  { href: "/players/featured", label: "人気選手" },
   { href: "/awards", label: "AWARDS" },
   { href: "/players", label: `選手名鑑 ${seasonLabel(ROSTER_SEASON)}` },
   { href: "/draft", label: "DRAFT" },
@@ -30,6 +31,8 @@ function isPlayerDetailPath(pathname: string): boolean {
 
 function isNavActive(href: string, pathname: string): boolean {
   if (href === "/") return pathname === "/";
+  // 人気選手ガイドは「人気選手」だけを光らせる(選手名鑑・PLAYERSは光らせない)
+  if (pathname.startsWith("/players/featured")) return href === "/players/featured";
   if (isPlayerDetailPath(pathname)) return href === "/stats";
   return pathname.startsWith(href);
 }

@@ -109,6 +109,11 @@ export function FeaturedPlayerProfile({ featured, salary }: { featured: Featured
         </dl>
       </Section>
       <p className="mt-3 text-xs text-muted">※ 解説は{featured.asOf}時点の情報です。</p>
+      <p className="mt-4 text-sm">
+        <Link href="/players/featured" className="font-bold text-blue underline-offset-2 hover:underline">
+          人気選手ガイドでほかの選手を見る ›
+        </Link>
+      </p>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
     </>
   );

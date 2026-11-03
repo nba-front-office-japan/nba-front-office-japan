@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { BriefSheet, BriefSide } from "@/components/brief-sheet";
@@ -39,9 +40,18 @@ export default async function TeamsPage({ searchParams }: PageProps<"/teams">) {
             : `チーム名から${label}チーム記録へ、その下のリンクから Profile・Stats・Team Profile へ直接進めます。`
         }
         side={
-          <BriefSide label="Season file">
-            <SeasonSelect season={season} options={seasonOptionLinks("/teams")} />
-          </BriefSide>
+          <>
+            <BriefSide label="Season file">
+              <SeasonSelect season={season} options={seasonOptionLinks("/teams")} />
+            </BriefSide>
+            <BriefSide label="Related files">
+              <p>
+                <Link href="/players/featured" className="inline-flex min-h-7 items-center font-bold text-blue hover:underline">
+                  人気選手ガイド ›
+                </Link>
+              </p>
+            </BriefSide>
+          </>
         }
       >
         {error ? (

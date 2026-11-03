@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { BriefSheet, BriefSide } from "@/components/brief-sheet";
@@ -91,14 +92,23 @@ export default async function StatsPage({ searchParams }: PageProps<"/stats">) {
         title="選手スタッツ"
         lead="収録選手の基本スタッツを、シーズン・チーム・ポジション・出場試合数・選手名で検索する。"
         side={
-          data.isCurrent && data.lastGameDate ? (
-            <BriefSide label="Data status">
+          <>
+            {data.isCurrent && data.lastGameDate && (
+              <BriefSide label="Data status">
+                <p>
+                  {CURRENT_LABEL}レギュラーシーズン：{gameDateLabel(data.lastGameDate)}（現地）の試合まで集計
+                  {data.query.minGames === "qualified" && "。規定試合数（所属チームの試合数の70%以上）に達した選手を表示しています"}
+                </p>
+              </BriefSide>
+            )}
+            <BriefSide label="Related files">
               <p>
-                {CURRENT_LABEL}レギュラーシーズン：{gameDateLabel(data.lastGameDate)}（現地）の試合まで集計
-                {data.query.minGames === "qualified" && "。規定試合数（所属チームの試合数の70%以上）に達した選手を表示しています"}
+                <Link href="/players/featured" className="inline-flex min-h-7 items-center font-bold text-blue hover:underline">
+                  人気選手ガイド ›
+                </Link>
               </p>
             </BriefSide>
-          ) : undefined
+          </>
         }
       >
         <StatsListFilters query={data.query} latestSeason={data.latestSeason} seasons={data.seasons} teams={data.teams} />
