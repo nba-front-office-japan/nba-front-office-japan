@@ -1191,3 +1191,16 @@ body:has(.home-cinema) {
 .newspaper main .selection-button.selection-blue:hover {
   box-shadow: 4px 4px 0 rgba(29, 34, 48, 0.25) !important;
 }
+
+/* ボックススコアの固定見出し(下へスクロールしたとき画面上端に出す見出し行の複製。components/games/box-table-scroller.tsx) */
+.box-float-head {
+  position: fixed;
+  top: 0;
+  z-index: 30;
+  overflow: hidden;
+  background-color: var(--surface);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.18);
+}
+.newspaper .box-float-head {
+  background-color: #f1e3c2;
+}

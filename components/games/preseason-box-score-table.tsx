@@ -1,5 +1,6 @@
 import type { GameTeamLine, PreseasonBoxRow, PreseasonBoxTotals } from "@/lib/games/types";
 import { BoxScoreHeading, boxTableFrame } from "./box-score-heading";
+import { BoxTableScroller } from "./box-table-scroller";
 
 // プレシーズンの個人成績(1チーム分)。管理画面で取り込んだ Excel の内容をそのまま表示する。
 // 列: ポジション｜選手名｜分｜点｜FG｜3P｜FT｜リバウンド｜アシスト｜スティール｜ブロック｜TO｜反則
@@ -44,89 +45,90 @@ export function PreseasonBoxScoreTable({
       {rows.length === 0 ? (
         <p className="border-2 border-t-0 border-line bg-surface px-4 py-3 text-sm text-muted">個人成績は準備中です。</p>
       ) : (
-        <div className={boxTableFrame(side)}>
-          <table className="w-full min-w-[820px] border-collapse text-sm">
-            <thead>
-              <tr className="border-b-2 border-foreground text-[11px] font-extrabold text-muted">
-                <th scope="col" className={`${POS} py-2`}>
-                  ポジション
+        <BoxTableScroller
+          frameClassName={boxTableFrame(side)}
+          tableClassName="w-full min-w-[820px] border-collapse text-sm"
+          head={
+            <tr className="border-b-2 border-foreground text-[11px] font-extrabold text-muted">
+              <th scope="col" className={`${POS} py-2`}>
+                ポジション
+              </th>
+              <th scope="col" className={`${NAME} py-2`}>
+                選手名
+              </th>
+              {STAT_HEADERS.map((h) => (
+                <th key={h} scope="col" className="whitespace-nowrap px-2 py-2 text-right">
+                  {h}
                 </th>
-                <th scope="col" className={`${NAME} py-2`}>
-                  選手名
-                </th>
-                {STAT_HEADERS.map((h) => (
-                  <th key={h} scope="col" className="whitespace-nowrap px-2 py-2 text-right">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r, i) => (
-                <tr key={`${r.playerName}-${i}`} className="border-b border-line last:border-b-0">
-                  <td className={`${POS} py-2 text-xs font-bold text-muted`}>{r.position ?? ""}</td>
-                  <th scope="row" className={`${NAME} py-2 font-bold`}>
-                    {r.playerName}
-                  </th>
-                  {r.played ? (
-                    <>
-                      <td className={CELL}>{num(r.minutes)}</td>
-                      <td className={`${CELL} font-bold`}>{num(r.pts)}</td>
-                      <td className={CELL}>{pair(r.fgm, r.fga)}</td>
-                      <td className={CELL}>{pair(r.fg3m, r.fg3a)}</td>
-                      <td className={CELL}>{pair(r.ftm, r.fta)}</td>
-                      <td className={CELL}>{rebounds(r.oreb, r.dreb, r.reb)}</td>
-                      <td className={CELL}>{num(r.ast)}</td>
-                      <td className={CELL}>{num(r.stl)}</td>
-                      <td className={CELL}>{num(r.blk)}</td>
-                      <td className={CELL}>{num(r.tov)}</td>
-                      <td className={CELL}>{num(r.pf)}</td>
-                    </>
-                  ) : (
-                    <td colSpan={STAT_HEADERS.length} className="px-2 py-2 text-left text-xs text-muted">
-                      出場なし
-                    </td>
-                  )}
-                </tr>
               ))}
-            </tbody>
-            {totals && (
-              <tfoot>
-                <tr className="border-t-2 border-foreground font-bold">
-                  <td className={`${POS} py-2`} />
-                  <th scope="row" className={`${NAME} py-2`}>
-                    チーム合計
+            </tr>
+          }
+        >
+          <tbody>
+            {rows.map((r, i) => (
+              <tr key={`${r.playerName}-${i}`} className="border-b border-line last:border-b-0">
+                <td className={`${POS} py-2 text-xs font-bold text-muted`}>{r.position ?? ""}</td>
+                <th scope="row" className={`${NAME} py-2 font-bold`}>
+                  {r.playerName}
+                </th>
+                {r.played ? (
+                  <>
+                    <td className={CELL}>{num(r.minutes)}</td>
+                    <td className={`${CELL} font-bold`}>{num(r.pts)}</td>
+                    <td className={CELL}>{pair(r.fgm, r.fga)}</td>
+                    <td className={CELL}>{pair(r.fg3m, r.fg3a)}</td>
+                    <td className={CELL}>{pair(r.ftm, r.fta)}</td>
+                    <td className={CELL}>{rebounds(r.oreb, r.dreb, r.reb)}</td>
+                    <td className={CELL}>{num(r.ast)}</td>
+                    <td className={CELL}>{num(r.stl)}</td>
+                    <td className={CELL}>{num(r.blk)}</td>
+                    <td className={CELL}>{num(r.tov)}</td>
+                    <td className={CELL}>{num(r.pf)}</td>
+                  </>
+                ) : (
+                  <td colSpan={STAT_HEADERS.length} className="px-2 py-2 text-left text-xs text-muted">
+                    出場なし
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+          {totals && (
+            <tfoot>
+              <tr className="border-t-2 border-foreground font-bold">
+                <td className={`${POS} py-2`} />
+                <th scope="row" className={`${NAME} py-2`}>
+                  チーム合計
+                </th>
+                <td className={CELL} />
+                <td className={CELL}>{num(totals.pts)}</td>
+                <td className={CELL}>{pair(totals.fgm, totals.fga)}</td>
+                <td className={CELL}>{pair(totals.fg3m, totals.fg3a)}</td>
+                <td className={CELL}>{pair(totals.ftm, totals.fta)}</td>
+                <td className={CELL}>{rebounds(totals.oreb, totals.dreb, totals.reb)}</td>
+                <td className={CELL}>{num(totals.ast)}</td>
+                <td className={CELL}>{num(totals.stl)}</td>
+                <td className={CELL}>{num(totals.blk)}</td>
+                <td className={CELL}>{num(totals.tov)}</td>
+                <td className={CELL}>{num(totals.pf)}</td>
+              </tr>
+              {(totals.fgPct || totals.fg3Pct || totals.ftPct) && (
+                <tr className="text-xs text-muted">
+                  <td className={`${POS} py-1.5`} />
+                  <th scope="row" className={`${NAME} py-1.5 font-normal`}>
+                    成功率
                   </th>
                   <td className={CELL} />
-                  <td className={CELL}>{num(totals.pts)}</td>
-                  <td className={CELL}>{pair(totals.fgm, totals.fga)}</td>
-                  <td className={CELL}>{pair(totals.fg3m, totals.fg3a)}</td>
-                  <td className={CELL}>{pair(totals.ftm, totals.fta)}</td>
-                  <td className={CELL}>{rebounds(totals.oreb, totals.dreb, totals.reb)}</td>
-                  <td className={CELL}>{num(totals.ast)}</td>
-                  <td className={CELL}>{num(totals.stl)}</td>
-                  <td className={CELL}>{num(totals.blk)}</td>
-                  <td className={CELL}>{num(totals.tov)}</td>
-                  <td className={CELL}>{num(totals.pf)}</td>
+                  <td className={CELL} />
+                  <td className={CELL}>{totals.fgPct ?? "–"}</td>
+                  <td className={CELL}>{totals.fg3Pct ?? "–"}</td>
+                  <td className={CELL}>{totals.ftPct ?? "–"}</td>
+                  <td colSpan={6} />
                 </tr>
-                {(totals.fgPct || totals.fg3Pct || totals.ftPct) && (
-                  <tr className="text-xs text-muted">
-                    <td className={`${POS} py-1.5`} />
-                    <th scope="row" className={`${NAME} py-1.5 font-normal`}>
-                      成功率
-                    </th>
-                    <td className={CELL} />
-                    <td className={CELL} />
-                    <td className={CELL}>{totals.fgPct ?? "–"}</td>
-                    <td className={CELL}>{totals.fg3Pct ?? "–"}</td>
-                    <td className={CELL}>{totals.ftPct ?? "–"}</td>
-                    <td colSpan={6} />
-                  </tr>
-                )}
-              </tfoot>
-            )}
-          </table>
-        </div>
+              )}
+            </tfoot>
+          )}
+        </BoxTableScroller>
       )}
     </section>
   );
