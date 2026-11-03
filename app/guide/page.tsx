@@ -32,6 +32,7 @@ const GUIDE_CATEGORIES: { category: string; examples: string[] }[] = [
     category: "過去事件",
     examples: ["ジョー・スミス事件", "タンパリング", "サラリーキャップ迂回に関する処分"],
   },
+  { category: "スタッツの見方", examples: ["ネットレーティング", "PER"] },
   { category: "用語一覧", examples: ["ドラフト・制度", "スタッツ・指標", "怪我・インジュリー用語", "プレー用語"] },
 ];
 
