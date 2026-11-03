@@ -21,6 +21,7 @@ import {
   playerPageTitle,
 } from "@/lib/player-page";
 import { fetchPlayerCurrentSeasonStats, gameDateLabel } from "@/lib/player-box-score-stats";
+import { isPlayerPageIndexable } from "@/lib/player-indexable";
 import { ROSTER_SEASON, seasonLabel } from "@/lib/seasons";
 import { deriveStats, formatPct, formatStat } from "@/lib/stats";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
@@ -48,10 +49,18 @@ export async function generateMetadata({ params, searchParams }: PageProps<"/pla
   const title = playerPageTitle(base, view, current);
   const description = playerPageDescription(base, current);
   const canonical = view === "stats" ? `/players/${playerId}?view=stats` : `/players/${playerId}`;
+  // 解説・今季ロスター・今季出場・過去成績のどれも無い空に近いページは検索に載せない(リンクはたどってもらう)
+  const indexable = await isPlayerPageIndexable({
+    playerId,
+    fullName: base.player.full_name,
+    onCurrentRoster: base.currentRosterTeamId !== null,
+    playedThisSeason: current !== null,
+  });
   return {
     title,
     description,
     alternates: { canonical },
+    ...(indexable ? {} : { robots: { index: false, follow: true } }),
     openGraph: { title, description, url: canonical },
   };
 }

@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/site";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import { fetchAllRows } from "@/lib/supabase/fetch-all";
+import { fetchIndexablePlayerIds } from "@/lib/player-indexable";
 import { fetchPublishedArticles } from "@/lib/news/public-articles";
 import { salaryTeams } from "@/lib/salary/data";
 import { teamSlug } from "@/lib/salary/types";
@@ -47,16 +47,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       entries.push({ url: `${SITE_URL}/teams/${team.id}` });
     }
   } catch {}
-  // 選手ページ(現役の選手。is_active = true)。1000件ずつ全件を取る
+  // 選手ページ。検索に載せる選手だけ(解説・今季ロスター・今季出場・過去成績のどれかがある。lib/player-indexable.ts)
   try {
-    const supabase = createServerSupabaseClient();
-    const { data: players, error } = await fetchAllRows<{ id: string }>((from, to) =>
-      supabase.from("players").select("id").eq("is_active", true).order("id").range(from, to)
-    );
-    if (!error) {
-      for (const player of players) {
-        entries.push({ url: `${SITE_URL}/players/${player.id}` });
-      }
+    for (const id of await fetchIndexablePlayerIds()) {
+      entries.push({ url: `${SITE_URL}/players/${id}` });
     }
   } catch {}
   // 終了した試合の詳細ページ(ボックススコア)。毎日の試合データの自動取り込みで増えた試合も、ここで自動的に追加される
