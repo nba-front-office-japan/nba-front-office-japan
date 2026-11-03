@@ -10,7 +10,6 @@ import { SHARE_IMAGE_SIZE } from "@/lib/news/share-image";
 
 const COLORS = {
   background: "#0e1628",
-  panel: "#192a4b",
   red: "#bd2a37",
   yellow: "#eabf36",
   paper: "#fff9e9",
@@ -108,11 +107,19 @@ export async function renderShareCard(
         />
         {/* 左端の赤い帯 */}
         <div style={{ position: "absolute", top: 0, left: 0, width: 14, height: "100%", background: COLORS.red, display: "flex" }} />
-        {/* 下端の紺の帯 */}
-        <div style={{ position: "absolute", left: 0, bottom: 0, width: "100%", height: 112, background: COLORS.panel, display: "flex" }} />
+
+        {/* 上: サイト名と公開日(見出しが無いときは中央にサイト名を大きく出すので省く) */}
+        {headline ? (
+          <div style={{ display: "flex", alignItems: "center", height: 44, paddingRight: 220 }}>
+            <div style={{ display: "flex", fontSize: 32, color: COLORS.yellow, letterSpacing: "0.02em" }}>{SITE_NAME}</div>
+            {content.dateLabel ? (
+              <div style={{ display: "flex", marginLeft: 28, fontSize: 26, color: COLORS.muted }}>{content.dateLabel}</div>
+            ) : null}
+          </div>
+        ) : null}
 
         {/* 上: カテゴリ */}
-        <div style={{ display: "flex", height: 58, alignItems: "flex-start" }}>
+        <div style={{ display: "flex", height: 58, marginTop: 24, alignItems: "flex-start" }}>
           {content.category ? (
             <div
               style={{
@@ -131,7 +138,8 @@ export async function renderShareCard(
         </div>
 
         {/* 中: 見出し(見出しが無いときはサイト名を大きく出す) */}
-        <div style={{ display: "flex", flexGrow: 1, alignItems: "center", paddingRight: 24, paddingBottom: 112 - 52 }}>
+        {/* X はカードの下端に記事タイトルを重ねて表示するので、下の約90pxには何も置かない */}
+        <div style={{ display: "flex", flexGrow: 1, alignItems: "center", paddingRight: 24, paddingBottom: 90 - 52 }}>
           {headline ? (
             <div
               style={{
@@ -155,27 +163,6 @@ export async function renderShareCard(
               <div style={{ display: "flex", marginTop: 24, fontSize: 32, color: COLORS.muted }}>NBAのニュース・スタッツ・年俸を日本語で</div>
             </div>
           )}
-        </div>
-
-        {/* 下: サイト名と公開日 */}
-        <div
-          style={{
-            position: "absolute",
-            left: 72,
-            right: 72,
-            bottom: 0,
-            height: 112,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", fontSize: 34, color: COLORS.yellow, letterSpacing: "0.02em" }}>
-            {SITE_NAME}
-          </div>
-          {content.dateLabel ? (
-            <div style={{ display: "flex", fontSize: 28, color: COLORS.muted }}>{content.dateLabel}</div>
-          ) : null}
         </div>
       </div>
     ),

@@ -9,7 +9,7 @@ import { NEWS_TOPIC_LABEL } from "@/lib/news/constants";
 export const SHARE_IMAGE_SIZE = { width: 1200, height: 630 } as const;
 
 // 画像のデザインを変えたら数字を上げる(XなどのSNSや配信網に残った古い画像を使わせないため)
-const TEMPLATE_VERSION = 1;
+const TEMPLATE_VERSION = 2;
 
 export interface ShareImage {
   url: string;
