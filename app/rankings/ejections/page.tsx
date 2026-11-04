@@ -5,9 +5,9 @@ import { EjectionsTable, EjectionsTabs } from "@/components/ejections-table";
 import { ACTIVE_EJECTIONS, ALL_TIME_EJECTIONS, EJECTIONS_RETRIEVED_ON } from "@/lib/ejections";
 
 export const metadata: Metadata = {
-  title: "NBA 退場回数ランキング（ESPN集計） | NBA Front Office Japan",
+  title: "NBA 退場回数ランキング（1997-98以降・ESPN集計） | NBA Front Office Japan",
   description:
-    "NBAで通算の退場回数が多い選手のランキング。ESPNのキャリア統計をもとに、レギュラーシーズンとプレーオフの内訳つきで、歴代と現役の2つのタブで紹介します。",
+    "NBAで通算の退場回数が多い選手のランキング。1997-98シーズン以降のESPNのキャリア統計をもとに、レギュラーシーズンとプレーオフの内訳つきで、通算と現役の2つのタブで紹介します。",
   alternates: { canonical: "/rankings/ejections" },
 };
 
@@ -47,22 +47,27 @@ export default function EjectionsPage() {
         <span aria-current="page">退場回数ランキング</span>
       </nav>
       <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">Rankings · Ejections</p>
-      <h1 className="mb-3 text-[36px] font-semibold tracking-tight">NBA 退場回数ランキング（ESPN集計）</h1>
+      {/* 狭い画面では「（」の前と「・」の後ろでだけ折り返す。「1997-98」はハイフンの前後にワードジョイナーを入れて分けない */}
+      <h1 className="mb-3 text-[36px] font-semibold tracking-tight [word-break:keep-all]">
+        {"NBA 退場回数ランキング​（1997⁠-⁠98以降・​ESPN集計）"}
+      </h1>
       <p className="mb-6 text-sm text-muted">NBAで、試合中に退場を命じられた回数が多い選手を比べました。</p>
 
       <EjectionsTabs
         allTime={
-          <section aria-label="歴代">
+          <section aria-label="通算">
+            <p className="mb-3 border-l-4 border-gold bg-surface px-3 py-2.5 text-sm leading-relaxed">
+              ESPNの退場データは1997-98シーズン以降のみです。そのため、チャールズ・バークレー、デニス・ロッドマンなど、それ以前に活躍した選手の数字は不完全で、本表には載せていません。
+            </p>
             <SourceLine />
-            <EjectionsTable rows={ALL_TIME_EJECTIONS} caption="歴代の通算退場回数ランキング（ESPN集計）" />
+            <EjectionsTable rows={ALL_TIME_EJECTIONS} caption="1997-98シーズン以降の通算退場回数ランキング（ESPN集計）" />
             <p className="mt-4 text-sm leading-relaxed">
-              ESPNの集計で、通算の退場回数の歴代1位は、ラシード・ウォレスの29回（レギュラーシーズン26回、プレーオフ3回）。現役のドレイモンド・グリーンは、2026年11月2日のサンズ戦で今季初の退場となり、ESPNの集計では通算25回で、ウォレスまであと4回に迫った。報道では31回と伝えるものもあり、数え方によって差が出る。トップ10には、ケニオン・マーティン、マット・バーンズ、レジー・ミラーなど、闘志あふれるプレーで知られた名前も並ぶ。
+              1997-98シーズン以降のESPN集計で、通算の退場回数が最も多いのは、ラシード・ウォレスの29回（レギュラーシーズン26回、プレーオフ3回）。この29回は、Wikipedia・BetMGMなど、ほかの集計でも歴代最多として一致している。現役のドレイモンド・グリーンは、2026年11月2日のサンズ戦で今季初の退場となり、ESPNの集計では通算25回で、ウォレスまであと4回に迫った。報道では31回と伝えるものもあり、数え方によって差が出る。チャールズ・バークレーなど、それより前の時代に活躍した選手は、この表では比較できない。
             </p>
             <Notes
               items={[
                 ...COMMON_NOTES,
                 "通算10回以上の選手を載せています。",
-                "ESPNの統計では、1997-98シーズンより前の退場がすべて0回になっています。それ以前に活躍したチャールズ・バークレー（ESPNでは6回）、デニス・ロッドマン（同5回）、アンソニー・メイソン（同2回）などは実際より少ない可能性があるため、表には載せていません。",
               ]}
             />
           </section>
@@ -70,9 +75,9 @@ export default function EjectionsPage() {
         active={
           <section aria-label="現役">
             <SourceLine />
-            <EjectionsTable rows={ACTIVE_EJECTIONS} caption="現役選手の通算退場回数ランキング（ESPN集計）" />
+            <EjectionsTable rows={ACTIVE_EJECTIONS} caption="現役選手の通算退場回数ランキング（1997-98以降・ESPN集計）" />
             <p className="mt-4 text-sm leading-relaxed">
-              現役で通算の退場回数が最も多いのは、ドレイモンド・グリーンの25回（レギュラーシーズン23回、プレーオフ2回）。2026年11月2日のサンズ戦で、今季初の退場となった。続くのは、10月30日のナゲッツ戦で退場したディロン・ブルックスの12回、アイザイア・スチュワートの8回。
+              1997-98シーズン以降のESPN集計で、現役で通算の退場回数が最も多いのは、ドレイモンド・グリーンの25回（レギュラーシーズン23回、プレーオフ2回）。2026年11月2日のサンズ戦で、今季初の退場となった。続くのは、10月30日のナゲッツ戦で退場したディロン・ブルックスの12回、アイザイア・スチュワートの8回。
             </p>
             <Notes
               items={[

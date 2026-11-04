@@ -87,7 +87,7 @@ async function arenaPricesPreview(): Promise<RankingPreview> {
   };
 }
 
-// 退場回数: 歴代の上位3人と出典(ESPN集計。データはコードに持つのでDBは読まない)
+// 退場回数: 通算(1997-98以降)の上位3人と出典(ESPN集計。データはコードに持つのでDBは読まない)
 async function ejectionsPreview(): Promise<RankingPreview> {
   return {
     top: rankEjections(ALL_TIME_EJECTIONS)
@@ -116,7 +116,7 @@ function RankingCard({ entry, preview }: { entry: RankingEntry; preview: Ranking
     <article className="flex flex-col border border-line bg-surface p-4 sm:p-6">
       <div className="mb-1 flex flex-wrap items-center gap-2">
         <h2 className="text-lg font-semibold">
-          <Link href={href} className="hover:text-blue">
+          <Link href={href} className="hover:text-blue [word-break:keep-all]">
             {entry.title}
           </Link>
         </h2>
@@ -203,7 +203,7 @@ export default async function RankingsPage() {
               <ol className="list-decimal space-y-1 pl-5">
                 {RANKINGS.map((entry) => (
                   <li key={entry.slug}>
-                    <Link href={rankingHref(entry.slug)} className="font-bold text-blue hover:underline">
+                    <Link href={rankingHref(entry.slug)} className="font-bold text-blue hover:underline [word-break:keep-all]">
                       {entry.title}
                     </Link>
                   </li>

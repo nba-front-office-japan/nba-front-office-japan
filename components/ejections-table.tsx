@@ -69,12 +69,12 @@ export function EjectionsTable({ rows, caption }: { rows: EjectionRow[]; caption
 }
 
 const TABS = [
-  { key: "all-time", label: "歴代" },
+  { key: "all-time", label: "通算" },
   { key: "active", label: "現役" },
 ] as const;
 type TabKey = (typeof TABS)[number]["key"];
 
-// 「歴代」「現役」の切り替え。見た目は順位表のタブと同じ。左右キー・Home・End でも切り替えられる
+// 「通算」「現役」の切り替え。見た目は順位表のタブと同じ。左右キー・Home・End でも切り替えられる
 export function EjectionsTabs({ allTime, active }: { allTime: ReactNode; active: ReactNode }) {
   const [tab, setTab] = useState<TabKey>("all-time");
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
