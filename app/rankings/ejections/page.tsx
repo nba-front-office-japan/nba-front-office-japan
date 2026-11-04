@@ -2,20 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageShell } from "@/components/page-shell";
 import { EjectionsTable, EjectionsTabs } from "@/components/ejections-table";
-import {
-  ACTIVE_EJECTIONS,
-  ALL_TIME_EJECTIONS,
-  BASIS_NOTE,
-  EJECTIONS_AS_OF,
-  EJECTIONS_RETRIEVED_ON,
-  EJECTIONS_SOURCE,
-  GREEN_NOTE,
-  GREEN_SOURCES,
-} from "@/lib/ejections";
+import { ACTIVE_EJECTIONS, ALL_TIME_EJECTIONS, EJECTIONS_RETRIEVED_ON } from "@/lib/ejections";
 
 export const metadata: Metadata = {
-  title: "NBA 退場回数ランキング（通算） | NBA Front Office Japan",
-  description: "NBAで通算の退場回数が多い選手のランキング。歴代と現役の2つのタブで、回数と順位を紹介します。",
+  title: "NBA 退場回数ランキング（ESPN集計） | NBA Front Office Japan",
+  description:
+    "NBAで通算の退場回数が多い選手のランキング。ESPNのキャリア統計をもとに、レギュラーシーズンとプレーオフの内訳つきで、歴代と現役の2つのタブで紹介します。",
   alternates: { canonical: "/rankings/ejections" },
 };
 
@@ -23,24 +15,7 @@ export const metadata: Metadata = {
 function SourceLine() {
   return (
     <p className="mb-3 text-xs leading-relaxed text-muted">
-      出典：
-      <a href={EJECTIONS_SOURCE.url} className="text-blue hover:underline" target="_blank" rel="noopener noreferrer">
-        {EJECTIONS_SOURCE.name}「{EJECTIONS_SOURCE.title}」
-      </a>
-      （{EJECTIONS_AS_OF}時点の集計）。グリーンの回数は
-      {GREEN_SOURCES.map((source, i) => (
-        <span key={source.name}>
-          {i > 0 && "、"}
-          {source.url ? (
-            <a href={source.url} className="text-blue hover:underline" target="_blank" rel="noopener noreferrer">
-              {source.name}
-            </a>
-          ) : (
-            source.name
-          )}
-        </span>
-      ))}
-      の記事。いずれも{EJECTIONS_RETRIEVED_ON}取得。
+      出典：ESPN（各選手のキャリア統計。選手名から各ページへ移動できます）。{EJECTIONS_RETRIEVED_ON}取得。
     </p>
   );
 }
@@ -55,7 +30,11 @@ function Notes({ items }: { items: string[] }) {
   );
 }
 
-const COMMON_NOTES = [GREEN_NOTE, BASIS_NOTE, "グリーン以外は、レギュラーシーズンとプレーオフの内訳を載せていない。同数は同順位（T）。"];
+const COMMON_NOTES = [
+  "回数はESPNのキャリア統計（レギュラーシーズン＋プレーオフ）の集計です。同数は同順位（T）。",
+  "グリーンは、Shot Clock・NGSC Sports・CBS Sportsなどで通算31回（プレーオフ8回）と報じられていますが、ESPNの統計ではプレーオフ2回で、集計基準が異なります。",
+  "Wikipediaなど、ほかの集計とは数字が異なる場合があります。",
+];
 
 export default function EjectionsPage() {
   return (
@@ -68,22 +47,22 @@ export default function EjectionsPage() {
         <span aria-current="page">退場回数ランキング</span>
       </nav>
       <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">Rankings · Ejections</p>
-      <h1 className="mb-3 text-[36px] font-semibold tracking-tight">NBA 退場回数ランキング（通算）</h1>
+      <h1 className="mb-3 text-[36px] font-semibold tracking-tight">NBA 退場回数ランキング（ESPN集計）</h1>
       <p className="mb-6 text-sm text-muted">NBAで、試合中に退場を命じられた回数が多い選手を比べました。</p>
 
       <EjectionsTabs
         allTime={
           <section aria-label="歴代">
             <SourceLine />
-            <EjectionsTable rows={ALL_TIME_EJECTIONS} caption="歴代の通算退場回数ランキング" />
+            <EjectionsTable rows={ALL_TIME_EJECTIONS} caption="歴代の通算退場回数ランキング（ESPN集計）" />
             <p className="mt-4 text-sm leading-relaxed">
-              2026年11月2日のサンズ戦で退場となったドレイモンド・グリーンは、プレーオフを含めて通算31回（レギュラーシーズン23回、プレーオフ8回）に達した。長く最多とされてきたラシード・ウォレスの29回に並ぶか、上回る可能性がある。ただし、ウォレスの29回がプレーオフを含む数字かどうかは確認できておらず、基準によって順位が変わる。上位には、チャールズ・バークレー、デニス・ロッドマン、レジー・ミラーら、闘志あふれるプレーで知られた名前も並ぶ。
+              ESPNの集計で、通算の退場回数の歴代1位は、ラシード・ウォレスの29回（レギュラーシーズン26回、プレーオフ3回）。現役のドレイモンド・グリーンは、2026年11月2日のサンズ戦で今季初の退場となり、ESPNの集計では通算25回で、ウォレスまであと4回に迫った。報道では31回と伝えるものもあり、数え方によって差が出る。トップ10には、ケニオン・マーティン、マット・バーンズ、レジー・ミラーなど、闘志あふれるプレーで知られた名前も並ぶ。
             </p>
             <Notes
               items={[
                 ...COMMON_NOTES,
-                "ブルックスは、BetMGM(2026年1月時点で11回)に、2026年10月30日の退場を加えた数字。Wikipediaの12回と一致。",
-                "ドワイト・ハワードは Wikipedia 17回・BetMGM 11回、マット・バーンズは Wikipedia 13回・BetMGM 12回、カズンズは Wikipedia 18回・2023年の記事14回と、情報源で数字が異なります。本ページは Wikipedia の集計を主な出典としています。",
+                "通算10回以上の選手を載せています。",
+                "ESPNの統計では、1997-98シーズンより前の退場がすべて0回になっています。それ以前に活躍したチャールズ・バークレー（ESPNでは6回）、デニス・ロッドマン（同5回）、アンソニー・メイソン（同2回）などは実際より少ない可能性があるため、表には載せていません。",
               ]}
             />
           </section>
@@ -91,14 +70,14 @@ export default function EjectionsPage() {
         active={
           <section aria-label="現役">
             <SourceLine />
-            <EjectionsTable rows={ACTIVE_EJECTIONS} caption="現役選手の通算退場回数ランキング" />
+            <EjectionsTable rows={ACTIVE_EJECTIONS} caption="現役選手の通算退場回数ランキング（ESPN集計）" />
             <p className="mt-4 text-sm leading-relaxed">
-              現役で通算の退場回数が最も多いのは、ドレイモンド・グリーン。2026年11月2日のサンズ戦での退場で、プレーオフを含めて通算31回（レギュラーシーズン23回、プレーオフ8回）となった。ラシード・ウォレスの29回に並ぶか、上回る可能性があるが、基準によって順位が変わる。続くのはディロン・ブルックスの12回。
+              現役で通算の退場回数が最も多いのは、ドレイモンド・グリーンの25回（レギュラーシーズン23回、プレーオフ2回）。2026年11月2日のサンズ戦で、今季初の退場となった。続くのは、10月30日のナゲッツ戦で退場したディロン・ブルックスの12回、アイザイア・スチュワートの8回。
             </p>
             <Notes
               items={[
                 ...COMMON_NOTES,
-                `載せた人数（${ACTIVE_EJECTIONS.length}人）。2026-27シーズンの現役選手のうち、2つ以上の情報源で回数を確認できた選手のみ掲載。`,
+                `載せた人数（${ACTIVE_EJECTIONS.length}人）。2026-27シーズンのロスター入りを、NBA公式かESPNで確認できた選手のみ掲載。`,
               ]}
             />
           </section>

@@ -31,8 +31,8 @@ export const RANKINGS: RankingEntry[] = [
   },
   {
     slug: "ejections",
-    title: "NBA 退場回数ランキング",
-    description: "通算の退場回数が多い選手を、歴代と現役の2つのタブで紹介。",
+    title: "NBA 退場回数ランキング（ESPN集計）",
+    description: "ESPNの集計で、通算の退場回数（レギュラーシーズン＋プレーオフ）が多い選手を、歴代と現役の2つのタブで紹介。",
     badge: "歴代",
   },
 ];

@@ -87,7 +87,7 @@ async function arenaPricesPreview(): Promise<RankingPreview> {
   };
 }
 
-// 退場回数: 歴代の上位3人と出典(データはコードに持つのでDBは読まない)。基準がそろわないグリーンは順位「—」
+// 退場回数: 歴代の上位3人と出典(ESPN集計。データはコードに持つのでDBは読まない)
 async function ejectionsPreview(): Promise<RankingPreview> {
   return {
     top: rankEjections(ALL_TIME_EJECTIONS)
@@ -95,11 +95,11 @@ async function ejectionsPreview(): Promise<RankingPreview> {
       .map((r) => ({
         rank: formatEjectionRank(r),
         label: breakableName(r.name),
-        value: `${r.ejections}回`,
+        value: `${r.total}回`,
         badge: r.active ? "現役" : undefined,
         keepWords: true,
       })),
-    source: `Wikipediaほか（${EJECTIONS_RETRIEVED_ON}取得）`,
+    source: `ESPN（${EJECTIONS_RETRIEVED_ON}取得）`,
   };
 }
 

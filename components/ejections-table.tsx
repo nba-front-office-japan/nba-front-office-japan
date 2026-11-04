@@ -1,47 +1,65 @@
 "use client";
 
 import { useRef, useState, type KeyboardEvent, type ReactNode } from "react";
-import { breakableName, formatEjectionRank, rankEjections, type EjectionRow } from "@/lib/ejections";
+import { breakableName, espnStatsUrl, formatEjectionRank, rankEjections, type EjectionRow } from "@/lib/ejections";
 
-// 退場回数の表(順位 / 選手 / 回数 / 区分)。回数のバーはチーム資産価値の表と同じ見た目
+// 退場回数の表(順位 / 選手 / 通算 / レギュラーシーズン / プレーオフ)。通算のバーはチーム資産価値の表と同じ見た目
+// 選手名は ESPN のキャリア統計ページへのリンク。現役は名前の横にバッジを付ける
+const TH_BASE = "px-1 py-3 text-left text-[11px] font-bold text-muted sm:px-2";
+const TH = `${TH_BASE} whitespace-nowrap`;
+// 狭い画面では見出しを2行にする(ゼロ幅スペースの位置でだけ折り返す)
+const TH_WRAP = `${TH_BASE} text-right leading-tight [word-break:keep-all]`;
+const TD = "px-1 py-3 sm:px-2";
+
 export function EjectionsTable({ rows, caption }: { rows: EjectionRow[]; caption: string }) {
   const ranked = rankEjections(rows);
-  const max = Math.max(...rows.map((r) => r.ejections), 0);
+  const max = Math.max(...ranked.map((r) => r.total), 0);
   return (
     <div className="overflow-x-auto border border-line bg-surface">
-      <table className="w-full border-collapse text-[13px]">
+      <table className="w-full border-collapse text-[12px] sm:text-[13px]">
         <caption className="sr-only">{caption}</caption>
         <thead>
           <tr className="border-b border-line">
-            <th scope="col" className="w-12 whitespace-nowrap px-2 py-3 text-left text-[11px] font-bold text-muted">順位</th>
-            <th scope="col" className="whitespace-nowrap px-2 py-3 text-left text-[11px] font-bold text-muted">選手</th>
-            <th scope="col" className="whitespace-nowrap px-2 py-3 text-left text-[11px] font-bold text-muted">回数</th>
-            <th scope="col" className="w-14 whitespace-nowrap px-2 py-3 text-left text-[11px] font-bold text-muted">区分</th>
+            <th scope="col" className={`${TH} w-8 sm:w-12`}>順位</th>
+            <th scope="col" className={TH}>選手</th>
+            <th scope="col" className={TH}>
+              通算
+            </th>
+            <th scope="col" className={TH_WRAP}>
+              {"レギュラー​シーズン"}
+            </th>
+            <th scope="col" className={TH_WRAP}>
+              {"プレー​オフ"}
+            </th>
           </tr>
         </thead>
         <tbody>
           {ranked.map((row) => (
             <tr key={row.name} className="border-b border-line/60 hover:bg-[#f6f9ff] dark:hover:bg-white/[.03]">
-              <td className="whitespace-nowrap px-2 py-3 font-bold">{formatEjectionRank(row)}</td>
-              <td className="px-2 py-3">
-                <span className="font-semibold [word-break:keep-all]">{breakableName(row.name)}</span>
-              </td>
-              <td className="whitespace-nowrap px-2 py-3">
-                <b className="block font-semibold">{row.ejections}回</b>
-                {row.detail && (
-                  <span className="mt-0.5 block whitespace-normal text-[11px] text-muted [word-break:keep-all]">
-                    （{row.detail}）
+              <td className={`${TD} whitespace-nowrap font-bold`}>{formatEjectionRank(row)}</td>
+              <td className={TD}>
+                <a
+                  href={espnStatsUrl(row.espnId)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold [word-break:keep-all] hover:text-blue hover:underline"
+                >
+                  {breakableName(row.name)}
+                </a>
+                {row.active && (
+                  <span className="ml-1.5 inline-block border border-gold px-1 align-middle text-[10px] font-bold leading-4 text-muted">
+                    現役
                   </span>
                 )}
-                <span aria-hidden className="mt-1 block h-1.5 w-20 bg-line sm:w-28">
-                  <span className="block h-full bg-blue" style={{ width: `${max > 0 ? (row.ejections / max) * 100 : 0}%` }} />
+              </td>
+              <td className={`${TD} whitespace-nowrap`}>
+                <b className="block font-semibold">{row.total}回</b>
+                <span aria-hidden className="mt-1 block h-1.5 w-10 bg-line sm:w-28">
+                  <span className="block h-full bg-blue" style={{ width: `${max > 0 ? (row.total / max) * 100 : 0}%` }} />
                 </span>
               </td>
-              <td className="whitespace-nowrap px-2 py-3">
-                {row.active && (
-                  <span className="border border-gold px-1.5 py-0.5 text-[11px] font-bold text-muted">現役</span>
-                )}
-              </td>
+              <td className={`${TD} whitespace-nowrap text-right tabular-nums`}>{row.regularSeason}</td>
+              <td className={`${TD} whitespace-nowrap text-right tabular-nums`}>{row.playoffs}</td>
             </tr>
           ))}
         </tbody>

@@ -1,83 +1,73 @@
-// 「NBA 退場回数ランキング」(/rankings/ejections)のデータ。
-// 歴代: Wikipedia「List of NBA career ejections leaders」(2026年11月2日時点)の上位(12回以上)。
-//       回数は、ほかの情報源(BetMGM 2026年1月時点・WZAK 2023年12月など)と照合している。情報源で数字が異なる選手はページに注記する。
-//       グリーンだけは、プレーオフを含む通算31回(レギュラーシーズン23回+プレーオフ8回。Shot Clock・NGSC Sports、31回は CBS Sports でも確認)を使う。
-//       ウォレス29回がプレーオフ込みかを2つ以上の情報源で確認できず(ESPNの成績表は26+3回)、ESPNの成績表ではグリーンのプレーオフは2回で、
-//       基準がそろわないため、グリーンには順位を付けない(unranked)。Wikipediaの26回は表では使わない。
-// 現役: 2026-27シーズン開幕時点の現役選手で、回数を2つ以上の情報源で確認できた選手だけを載せる。
-// グリーン以外は、レギュラーシーズンとプレーオフの内訳を持たない。
+// 「NBA 退場回数ランキング（ESPN集計）」(/rankings/ejections)のデータ。
+// 基準: ESPNの選手ごとのキャリア統計(Misc Totals の EJECT 列)。レギュラーシーズンとプレーオフを別々に取り、通算はその合計。
+// - ESPNの統計は1997-98シーズンより前の退場がすべて0回になっている(それ以前の記録が無いとみられる)。
+//   そのため、それ以前に活躍した選手(バークレー6回・ロッドマン5回・メイソン2回)は実際より少なく、表には載せない(ページに注記)。
+// - 歴代: 通算10回以上の選手。候補は Wikipedia・BetMGM の一覧に載る選手と、その周辺で確認した選手。
+// - 現役: 2026-27シーズンのロスター入りを NBA公式か ESPN で確認できた選手だけ(回数の下限なし)。
+//   ウェストブルック(2026年8月に引退発表)・ベバリー(フランスのクラブと契約)は現役に入れない。
 
 export interface EjectionRow {
   name: string;
-  ejections: number;
+  regularSeason: number;
+  playoffs: number;
   active: boolean;
-  // 回数の内訳など、回数の下に出す補足。狭い画面ではゼロ幅スペース(​)の位置でだけ折り返す
-  detail?: string;
-  // 基準がほかの選手とそろわないため、順位を付けない(表では「—」)
-  unranked?: boolean;
+  // ESPNの選手ID(キャリア統計ページのURLに使う)
+  espnId: number;
+  // ESPNから取得した日
+  retrievedOn: string;
 }
 
-export const EJECTIONS_AS_OF = "2026年11月2日";
-// 出典を確認した日
 export const EJECTIONS_RETRIEVED_ON = "2026年11月4日";
 
-// グリーンの回数の出典(記事)
-export const GREEN_SOURCES = [
-  { name: "Shot Clock", url: null },
-  { name: "NGSC Sports", url: null },
-  {
-    name: "CBS Sports",
-    url: "https://www.cbssports.com/nba/news/draymond-green-gets-first-ejection-of-season-after-sparking-warriors-suns-scuffle/",
-  },
-] as const;
+const RETRIEVED = "2026-11-04";
 
-export const EJECTIONS_SOURCE = {
-  name: "Wikipedia",
-  title: "List of NBA career ejections leaders",
-  url: "https://en.wikipedia.org/wiki/List_of_NBA_career_ejections_leaders",
-};
-
-// グリーンの回数についての注記(歴代・現役の両タブで同じ文を使う)
-export const GREEN_NOTE =
-  "ドレイモンド・グリーンの31回は、2026年11月2日のサンズ戦での退場を含む、レギュラーシーズン23回とプレーオフ8回の合計（Shot Clock、NGSC Sportsの記事より。通算31回はCBS Sportsでも確認）。Wikipediaの集計では26回だが、基準が異なる可能性がある。";
-
-// ウォレスとの基準の違いについての注記(両タブ共通)
-export const BASIS_NOTE =
-  "ラシード・ウォレスの29回がプレーオフを含む数字かどうかは、2つ以上の情報源で確認できていない。基準によってグリーンとの順位が変わるため、グリーンには順位を付けていない（—）。他の選手の数字は、出典によりプレーオフの扱いが異なる可能性があります。";
+export function espnStatsUrl(espnId: number): string {
+  return `https://www.espn.com/nba/player/stats/_/id/${espnId}`;
+}
 
 export const ALL_TIME_EJECTIONS: EjectionRow[] = [
-  { name: "ラシード・ウォレス", ejections: 29, active: false },
-  { name: "ドレイモンド・グリーン", ejections: 31, active: true, detail: "レギュラー​シーズン23回＋​プレーオフ8回", unranked: true },
-  { name: "デマーカス・カズンズ", ejections: 18, active: false },
-  { name: "ドワイト・ハワード", ejections: 17, active: false },
-  { name: "チャールズ・バークレー", ejections: 16, active: false },
-  { name: "アンソニー・メイソン", ejections: 16, active: false },
-  { name: "シャキール・オニール", ejections: 14, active: false },
-  { name: "マット・バーンズ", ejections: 13, active: false },
-  { name: "ディロン・ブルックス", ejections: 12, active: true },
-  { name: "ケニオン・マーティン", ejections: 12, active: false },
-  { name: "デニス・ロッドマン", ejections: 12, active: false },
-  { name: "レジー・ミラー", ejections: 12, active: false },
+  { name: "ラシード・ウォレス", regularSeason: 26, playoffs: 3, active: false, espnId: 883, retrievedOn: RETRIEVED },
+  { name: "ドレイモンド・グリーン", regularSeason: 23, playoffs: 2, active: true, espnId: 6589, retrievedOn: RETRIEVED },
+  { name: "デマーカス・カズンズ", regularSeason: 17, playoffs: 1, active: false, espnId: 4258, retrievedOn: RETRIEVED },
+  { name: "ケニオン・マーティン", regularSeason: 12, playoffs: 0, active: false, espnId: 515, retrievedOn: RETRIEVED },
+  { name: "マット・バーンズ", regularSeason: 12, playoffs: 0, active: false, espnId: 1765, retrievedOn: RETRIEVED },
+  { name: "レジー・ミラー", regularSeason: 12, playoffs: 0, active: false, espnId: 552, retrievedOn: RETRIEVED },
+  { name: "ディロン・ブルックス", regularSeason: 10, playoffs: 2, active: true, espnId: 3155526, retrievedOn: RETRIEVED },
+  { name: "メッタ・ワールドピース", regularSeason: 8, playoffs: 3, active: false, espnId: 25, retrievedOn: RETRIEVED },
+  { name: "パトリック・ベバリー", regularSeason: 8, playoffs: 3, active: false, espnId: 3964, retrievedOn: RETRIEVED },
+  { name: "ドワイト・ハワード", regularSeason: 9, playoffs: 2, active: false, espnId: 2384, retrievedOn: RETRIEVED },
+  { name: "カーメロ・アンソニー", regularSeason: 11, playoffs: 0, active: false, espnId: 1975, retrievedOn: RETRIEVED },
+  { name: "ゲイリー・ペイトン", regularSeason: 11, playoffs: 0, active: false, espnId: 640, retrievedOn: RETRIEVED },
+  { name: "ラッセル・ウェストブルック", regularSeason: 10, playoffs: 1, active: false, espnId: 3468, retrievedOn: RETRIEVED },
+  { name: "スティーブン・ジャクソン", regularSeason: 10, playoffs: 1, active: false, espnId: 378, retrievedOn: RETRIEVED },
+  { name: "シャキール・オニール", regularSeason: 10, playoffs: 0, active: false, espnId: 614, retrievedOn: RETRIEVED },
 ];
 
-// 現役は、2つ以上の情報源で回数を確認できた選手だけ(グリーン・ブルックスの2人)
-export const ACTIVE_EJECTIONS: EjectionRow[] = ALL_TIME_EJECTIONS.filter((row) => row.active);
+// 現役は、2026-27シーズンのロスター入りを確認できた選手(グリーン・ブルックス・スチュワート)
+export const ACTIVE_EJECTIONS: EjectionRow[] = [
+  ...ALL_TIME_EJECTIONS.filter((row) => row.active),
+  { name: "アイザイア・スチュワート", regularSeason: 8, playoffs: 0, active: true, espnId: 4432810, retrievedOn: RETRIEVED },
+];
 
-// 多い順に並べ、同数は同順位にする(同順位は「5T」のように T を付けて表示する)。
-// unranked の選手は並びには入れるが、順位は付けない(rank は null)。ほかの選手の順位はその選手を除いて数える
-export function rankEjections(rows: EjectionRow[]): (EjectionRow & { rank: number | null; tied: boolean })[] {
-  const sorted = [...rows].sort((a, b) => b.ejections - a.ejections);
-  const ranked = sorted.filter((r) => !r.unranked);
+export function totalEjections(row: EjectionRow): number {
+  return row.regularSeason + row.playoffs;
+}
+
+// 通算の多い順に並べ、同数は同順位にする(同順位は「4T」のように T を付けて表示する)。
+// 同数の中は、レギュラーシーズンの多い順、さらに同じなら元の並び順
+export function rankEjections(rows: EjectionRow[]): (EjectionRow & { total: number; rank: number; tied: boolean })[] {
+  // Array.prototype.sort は安定ソートなので、同じ値どうしは元の並び順のまま
+  const sorted = rows
+    .map((row) => ({ ...row, total: totalEjections(row) }))
+    .sort((a, b) => b.total - a.total || b.regularSeason - a.regularSeason);
   return sorted.map((row) => {
-    if (row.unranked) return { ...row, rank: null, tied: false };
-    const rank = ranked.findIndex((r) => r.ejections === row.ejections) + 1;
-    const tied = ranked.filter((r) => r.ejections === row.ejections).length > 1;
+    const rank = sorted.findIndex((r) => r.total === row.total) + 1;
+    const tied = sorted.filter((r) => r.total === row.total).length > 1;
     return { ...row, rank, tied };
   });
 }
 
-export function formatEjectionRank(row: { rank: number | null; tied: boolean }): string {
-  if (row.rank === null) return "—";
+export function formatEjectionRank(row: { rank: number; tied: boolean }): string {
   return row.tied ? `${row.rank}T` : String(row.rank);
 }
 
