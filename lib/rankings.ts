@@ -29,6 +29,12 @@ export const RANKINGS: RankingEntry[] = [
     description: "全30チームのホームアリーナで、チケットと飲食の価格を比較。最安席や家族4人の観戦費用がわかります。",
     badge: "目安",
   },
+  {
+    slug: "ejections",
+    title: "NBA 退場回数ランキング",
+    description: "通算の退場回数が多い選手を、歴代と現役の2つのタブで紹介。",
+    badge: "歴代",
+  },
 ];
 
 export function rankingHref(slug: string): string {

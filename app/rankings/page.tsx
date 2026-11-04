@@ -9,6 +9,7 @@ import { TeamColorChip } from "@/components/team-color-chip";
 import { fetchLatestValuationEdition, formatJaDate, formatValueOku } from "@/lib/valuations";
 import { buildOwnerNetWorthRows, fetchLatestOwnerNetWorthEdition } from "@/lib/owner-net-worth";
 import { ARENA_PRICES, ARENA_PRICES_SOURCE, breakableTeamName, formatUsdWhole, rankArenaPrices } from "@/lib/arena-prices";
+import { ALL_TIME_EJECTIONS, EJECTIONS_AS_OF, EJECTIONS_SOURCE, breakableName, rankEjections } from "@/lib/ejections";
 
 interface RankingPreview {
   // 上位の項目(例: 上位3チーム)
@@ -86,10 +87,27 @@ async function arenaPricesPreview(): Promise<RankingPreview> {
   };
 }
 
+// 退場回数: 歴代の上位3人と出典(データはコードに持つのでDBは読まない)
+async function ejectionsPreview(): Promise<RankingPreview> {
+  return {
+    top: rankEjections(ALL_TIME_EJECTIONS)
+      .slice(0, 3)
+      .map((r) => ({
+        rank: r.rank,
+        label: breakableName(r.name),
+        value: `${r.ejections}回`,
+        badge: r.active ? "現役" : undefined,
+        keepWords: true,
+      })),
+    source: `${EJECTIONS_SOURCE.name}（${EJECTIONS_AS_OF}時点）`,
+  };
+}
+
 const PREVIEW_LOADERS: Record<string, (supabase: ServerClient) => Promise<RankingPreview | null>> = {
   "team-valuations": teamValuationsPreview,
   "owner-net-worth": ownerNetWorthPreview,
   "arena-prices": arenaPricesPreview,
+  ejections: ejectionsPreview,
 };
 
 function RankingCard({ entry, preview }: { entry: RankingEntry; preview: RankingPreview | null }) {
@@ -147,8 +165,8 @@ function RankingCard({ entry, preview }: { entry: RankingEntry; preview: Ranking
 }
 
 export const metadata: Metadata = {
-  title: "NBAランキング（チーム資産価値・オーナー資産・アリーナ別価格） | NBA Front Office Japan",
-  description: "NBAのチーム資産価値ランキングやオーナー資産ランキング、アリーナ別の観戦価格比較など、チーム・選手に関するランキングをまとめています。",
+  title: "NBAランキング（チーム資産価値・オーナー資産・アリーナ別価格・退場回数） | NBA Front Office Japan",
+  description: "NBAのチーム資産価値ランキングやオーナー資産ランキング、アリーナ別の観戦価格比較、通算の退場回数ランキングなど、チーム・選手に関するランキングをまとめています。",
   alternates: { canonical: "/rankings" },
 };
 
