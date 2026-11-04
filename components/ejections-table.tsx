@@ -28,6 +28,11 @@ export function EjectionsTable({ rows, caption }: { rows: EjectionRow[]; caption
               </td>
               <td className="whitespace-nowrap px-2 py-3">
                 <b className="block font-semibold">{row.ejections}回</b>
+                {row.detail && (
+                  <span className="mt-0.5 block whitespace-normal text-[11px] text-muted [word-break:keep-all]">
+                    （{row.detail}）
+                  </span>
+                )}
                 <span aria-hidden className="mt-1 block h-1.5 w-20 bg-line sm:w-28">
                   <span className="block h-full bg-blue" style={{ width: `${max > 0 ? (row.ejections / max) * 100 : 0}%` }} />
                 </span>

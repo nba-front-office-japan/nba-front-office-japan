@@ -2,7 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageShell } from "@/components/page-shell";
 import { EjectionsTable, EjectionsTabs } from "@/components/ejections-table";
-import { ACTIVE_EJECTIONS, ALL_TIME_EJECTIONS, EJECTIONS_AS_OF, EJECTIONS_SOURCE, GREEN_NOTE } from "@/lib/ejections";
+import {
+  ACTIVE_EJECTIONS,
+  ALL_TIME_EJECTIONS,
+  BASIS_NOTE,
+  EJECTIONS_AS_OF,
+  EJECTIONS_RETRIEVED_ON,
+  EJECTIONS_SOURCE,
+  GREEN_NOTE,
+  GREEN_SOURCES,
+} from "@/lib/ejections";
 
 export const metadata: Metadata = {
   title: "NBA 退場回数ランキング（通算） | NBA Front Office Japan",
@@ -10,14 +19,28 @@ export const metadata: Metadata = {
   alternates: { canonical: "/rankings/ejections" },
 };
 
+// 出典欄: 情報源の名前と取得日
 function SourceLine() {
   return (
-    <p className="mb-3 text-xs text-muted">
+    <p className="mb-3 text-xs leading-relaxed text-muted">
       出典：
       <a href={EJECTIONS_SOURCE.url} className="text-blue hover:underline" target="_blank" rel="noopener noreferrer">
         {EJECTIONS_SOURCE.name}「{EJECTIONS_SOURCE.title}」
       </a>
-      （{EJECTIONS_AS_OF}時点）
+      （{EJECTIONS_AS_OF}時点の集計）。グリーンの回数は
+      {GREEN_SOURCES.map((source, i) => (
+        <span key={source.name}>
+          {i > 0 && "、"}
+          {source.url ? (
+            <a href={source.url} className="text-blue hover:underline" target="_blank" rel="noopener noreferrer">
+              {source.name}
+            </a>
+          ) : (
+            source.name
+          )}
+        </span>
+      ))}
+      の記事。いずれも{EJECTIONS_RETRIEVED_ON}取得。
     </p>
   );
 }
@@ -32,7 +55,7 @@ function Notes({ items }: { items: string[] }) {
   );
 }
 
-const COMMON_NOTES = [GREEN_NOTE, "レギュラーシーズンとプレーオフの内訳は載せていない。同数は同順位（T）。"];
+const COMMON_NOTES = [GREEN_NOTE, BASIS_NOTE, "グリーン以外は、レギュラーシーズンとプレーオフの内訳を載せていない。同数は同順位（T）。"];
 
 export default function EjectionsPage() {
   return (
@@ -54,7 +77,7 @@ export default function EjectionsPage() {
             <SourceLine />
             <EjectionsTable rows={ALL_TIME_EJECTIONS} caption="歴代の通算退場回数ランキング" />
             <p className="mt-4 text-sm leading-relaxed">
-              通算の退場回数が最も多いのは、ラシード・ウォレスの29回。現役のドレイモンド・グリーンが26回で2位につけ、Wikipediaの集計では、あと3回で並ぶ。トップ10には、チャールズ・バークレー、デニス・ロッドマン、レジー・ミラーら、闘志あふれるプレーで知られた名前も並ぶ。
+              2026年11月2日のサンズ戦で退場となったドレイモンド・グリーンは、プレーオフを含めて通算31回（レギュラーシーズン23回、プレーオフ8回）に達した。長く最多とされてきたラシード・ウォレスの29回に並ぶか、上回る可能性がある。ただし、ウォレスの29回がプレーオフを含む数字かどうかは確認できておらず、基準によって順位が変わる。上位には、チャールズ・バークレー、デニス・ロッドマン、レジー・ミラーら、闘志あふれるプレーで知られた名前も並ぶ。
             </p>
             <Notes
               items={[
@@ -70,7 +93,7 @@ export default function EjectionsPage() {
             <SourceLine />
             <EjectionsTable rows={ACTIVE_EJECTIONS} caption="現役選手の通算退場回数ランキング" />
             <p className="mt-4 text-sm leading-relaxed">
-              現役で通算の退場回数が最も多いのは、ドレイモンド・グリーン。Wikipediaの集計では26回で、通算29回のラシード・ウォレスまで、あと3回に迫っている。続くのはディロン・ブルックスの12回。
+              現役で通算の退場回数が最も多いのは、ドレイモンド・グリーン。2026年11月2日のサンズ戦での退場で、プレーオフを含めて通算31回（レギュラーシーズン23回、プレーオフ8回）となった。ラシード・ウォレスの29回に並ぶか、上回る可能性があるが、基準によって順位が変わる。続くのはディロン・ブルックスの12回。
             </p>
             <Notes
               items={[

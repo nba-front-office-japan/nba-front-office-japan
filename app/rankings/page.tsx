@@ -9,12 +9,12 @@ import { TeamColorChip } from "@/components/team-color-chip";
 import { fetchLatestValuationEdition, formatJaDate, formatValueOku } from "@/lib/valuations";
 import { buildOwnerNetWorthRows, fetchLatestOwnerNetWorthEdition } from "@/lib/owner-net-worth";
 import { ARENA_PRICES, ARENA_PRICES_SOURCE, breakableTeamName, formatUsdWhole, rankArenaPrices } from "@/lib/arena-prices";
-import { ALL_TIME_EJECTIONS, EJECTIONS_AS_OF, EJECTIONS_SOURCE, breakableName, rankEjections } from "@/lib/ejections";
+import { ALL_TIME_EJECTIONS, EJECTIONS_RETRIEVED_ON, breakableName, formatEjectionRank, rankEjections } from "@/lib/ejections";
 
 interface RankingPreview {
   // 上位の項目(例: 上位3チーム)
   // keepWords: 日本語のチーム名を語の途中で折り返さない(label の「・」の後ろでだけ折り返す)
-  top: { rank: number; label: string; value: string; teamAbbr?: string; badge?: string; keepWords?: boolean }[];
+  top: { rank: number | string; label: string; value: string; teamAbbr?: string; badge?: string; keepWords?: boolean }[];
   // 出典と時点(例: 「CNBC（2026年2月13日公開）」)
   source: string | null;
 }
@@ -87,19 +87,19 @@ async function arenaPricesPreview(): Promise<RankingPreview> {
   };
 }
 
-// 退場回数: 歴代の上位3人と出典(データはコードに持つのでDBは読まない)
+// 退場回数: 歴代の上位3人と出典(データはコードに持つのでDBは読まない)。基準がそろわないグリーンは順位「—」
 async function ejectionsPreview(): Promise<RankingPreview> {
   return {
     top: rankEjections(ALL_TIME_EJECTIONS)
       .slice(0, 3)
       .map((r) => ({
-        rank: r.rank,
+        rank: formatEjectionRank(r),
         label: breakableName(r.name),
         value: `${r.ejections}回`,
         badge: r.active ? "現役" : undefined,
         keepWords: true,
       })),
-    source: `${EJECTIONS_SOURCE.name}（${EJECTIONS_AS_OF}時点）`,
+    source: `Wikipediaほか（${EJECTIONS_RETRIEVED_ON}取得）`,
   };
 }
 
