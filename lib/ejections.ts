@@ -1,6 +1,6 @@
 // 「NBA 退場回数ランキング」(/rankings/ejections)のデータ。
-// 歴代: Wikipedia「List of NBA career ejections leaders」(2026年11月2日時点)の上位。
-//       回数は、ほかの情報源(BetMGM 2026年1月時点・WZAK 2023年12月など)と照合して2つ以上で一致したものだけを載せる。
+// 歴代: Wikipedia「List of NBA career ejections leaders」(2026年11月2日時点)の上位(12回以上)。
+//       回数は、ほかの情報源(BetMGM 2026年1月時点・WZAK 2023年12月など)と照合している。情報源で数字が異なる選手はページに注記する。
 // 現役: 2026-27シーズン開幕時点の現役選手で、回数を2つ以上の情報源で確認できた選手だけを載せる。
 // レギュラーシーズンとプレーオフの内訳は取得できないため持たない。
 
@@ -31,12 +31,13 @@ export const ALL_TIME_EJECTIONS: EjectionRow[] = [
   { name: "アンソニー・メイソン", ejections: 16, active: false },
   { name: "シャキール・オニール", ejections: 14, active: false },
   { name: "マット・バーンズ", ejections: 13, active: false },
+  { name: "ディロン・ブルックス", ejections: 12, active: true },
   { name: "ケニオン・マーティン", ejections: 12, active: false },
   { name: "デニス・ロッドマン", ejections: 12, active: false },
   { name: "レジー・ミラー", ejections: 12, active: false },
 ];
 
-// 現役は、2つ以上の情報源で回数を確認できた選手だけ(現在1人)
+// 現役は、2つ以上の情報源で回数を確認できた選手だけ(グリーン・ブルックスの2人)
 export const ACTIVE_EJECTIONS: EjectionRow[] = ALL_TIME_EJECTIONS.filter((row) => row.active);
 
 // 多い順に並べ、同数は同順位にする(同順位は「5T」のように T を付けて表示する)

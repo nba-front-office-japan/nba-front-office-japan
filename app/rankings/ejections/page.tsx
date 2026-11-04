@@ -54,12 +54,13 @@ export default function EjectionsPage() {
             <SourceLine />
             <EjectionsTable rows={ALL_TIME_EJECTIONS} caption="歴代の通算退場回数ランキング" />
             <p className="mt-4 text-sm leading-relaxed">
-              通算の退場回数で歴代1位は、ラシード・ウォレスの29回。現役のドレイモンド・グリーンが26回で2位につけ、あと3回で並ぶ。トップ10には、チャールズ・バークレー、デニス・ロッドマン、レジー・ミラーら、闘志あふれるプレーで知られた名前も並ぶ。
+              通算の退場回数が最も多いのは、ラシード・ウォレスの29回。現役のドレイモンド・グリーンが26回で2位につけ、Wikipediaの集計では、あと3回で並ぶ。トップ10には、チャールズ・バークレー、デニス・ロッドマン、レジー・ミラーら、闘志あふれるプレーで知られた名前も並ぶ。
             </p>
             <Notes
               items={[
                 ...COMMON_NOTES,
-                "Wikipediaでは現役のディロン・ブルックスも12回で9位タイとしているが、ほかの情報源で回数を確認できなかったため載せていない。",
+                "ブルックスは、BetMGM(2026年1月時点で11回)に、2026年10月30日の退場を加えた数字。Wikipediaの12回と一致。",
+                "ドワイト・ハワードは Wikipedia 17回・BetMGM 11回、マット・バーンズは Wikipedia 13回・BetMGM 12回、カズンズは Wikipedia 18回・2023年の記事14回と、情報源で数字が異なります。本ページは Wikipedia の集計を主な出典としています。",
               ]}
             />
           </section>
@@ -69,12 +70,12 @@ export default function EjectionsPage() {
             <SourceLine />
             <EjectionsTable rows={ACTIVE_EJECTIONS} caption="現役選手の通算退場回数ランキング" />
             <p className="mt-4 text-sm leading-relaxed">
-              現役で通算の退場回数が最も多いのは、ドレイモンド・グリーンの26回。歴代1位のラシード・ウォレスまで、あと3回に迫っている。
+              現役で通算の退場回数が最も多いのは、ドレイモンド・グリーン。Wikipediaの集計では26回で、通算29回のラシード・ウォレスまで、あと3回に迫っている。続くのはディロン・ブルックスの12回。
             </p>
             <Notes
               items={[
                 ...COMMON_NOTES,
-                `2026-27シーズン開幕時点の現役選手のうち、2つ以上の情報源で回数を確認できた選手だけを載せている（${ACTIVE_EJECTIONS.length}人）。`,
+                `載せた人数（${ACTIVE_EJECTIONS.length}人）。2026-27シーズンの現役選手のうち、2つ以上の情報源で回数を確認できた選手のみ掲載。`,
               ]}
             />
           </section>
