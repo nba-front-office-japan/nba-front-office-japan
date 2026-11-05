@@ -11,7 +11,7 @@ export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: `NBA順位表 ${seasonLabel(ROSTER_SEASON)}｜東西カンファレンス別の最新順位 | NBA Front Office Japan`,
-  description: `NBA ${seasonLabel(ROSTER_SEASON)}シーズンの最新順位表。東西カンファレンス別に勝敗・勝率・ゲーム差・直近10試合・連勝連敗を毎日更新。試合結果とボックススコアは、ネタバレ防止つき・日本時間で見られます。`,
+  description: `NBA ${seasonLabel(ROSTER_SEASON)}シーズンの最新順位表。東西カンファレンス別に勝敗・勝率・ゲーム差・直近10試合・連勝連敗を毎日更新。録画で観る人も安心、試合結果はネタバレ防止つき。`,
   alternates: { canonical: "/standings" },
 };
 
