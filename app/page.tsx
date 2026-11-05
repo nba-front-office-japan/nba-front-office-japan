@@ -20,7 +20,7 @@ const HOME_COPY = {
 export const metadata: Metadata = {
   title: "NBA Front Office Japan｜NBAの試合結果・スタッツ・年俸・移籍ニュース",
   description:
-    "NBAの試合結果・ボックススコア、選手スタッツ、年俸、トレード・移籍ニュースを日本語で。勝敗の裏側にあるフロントオフィスの意思決定を読むNBAファンサイトです。",
+    "NBAの試合結果・ボックススコアをネタバレ防止つき・日本時間で。順位表、選手スタッツ、年俸、トレード・移籍ニュースも日本語でまとめた、フロントオフィス目線のNBAファンサイトです。",
   alternates: { canonical: "/" },
 };
 
