@@ -8,9 +8,10 @@ export const dynamic = "force-dynamic";
 // Authorization: Bearer <CRON_SECRET> ヘッダを自動付与するため、それを検証する。
 // ブラウザから直接叩かれても収集できてしまわないようにするための最低限のガード。
 //
-// Vercel Hobbyプランはcronの実行頻度が1日1回までのため、vercel.jsonのスケジュールも
-// 1日1回にしている（詳細は仕様書の「30分ごと」から変更）。管理画面の「今すぐRSSを
-// 収集」ボタンで随時の手動収集も可能。
+// Vercel Hobbyプランは「1つのcronにつき1日1回まで」（cron自体は100個まで登録可）。
+// そのためvercel.jsonに同じパスのcronを4つ登録し、日本時間 6時・12時・15時・18時台に
+// 1日4回収集している（UTC指定: 21時・3時・6時・9時。Hobbyは時刻精度±59分）。
+// 管理画面の「今すぐRSSを収集」ボタンで随時の手動収集も可能。
 export async function GET(request: Request) {
   const cronSecret = process.env.CRON_SECRET;
   if (cronSecret) {
