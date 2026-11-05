@@ -116,7 +116,7 @@ export default async function StatsPage({ searchParams }: PageProps<"/stats">) {
         {/* 収録範囲・複数チームの扱いの注意書き(ページ最下部) */}
         <div className="mt-8 space-y-1 border border-line bg-surface px-4 py-3 text-xs leading-6 text-muted">
           <p>
-            {CURRENT_LABEL}シーズンの成績は、試合のボックススコアから自動で集計しています（試合の取り込みから数分で反映）。
+            {CURRENT_LABEL}シーズンの成績は、試合のボックススコアから自動で集計しています（試合終了後に自動で更新）。
             {STATS_LABEL}までは確定したシーズン成績です。SEASON の「All」は{STATS_LABEL}までが対象です。
           </p>
           <p>複数チームに所属した選手は、そのシーズンの合計成績です（チーム欄に「2チーム合計」などと表示）。チームで絞り込むと、そのチームに所属した選手の合計成績を表示します。</p>

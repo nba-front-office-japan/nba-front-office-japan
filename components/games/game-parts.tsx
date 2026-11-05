@@ -96,7 +96,7 @@ export function SpoilerGate({
 export function NotReadyNotice() {
   return (
     <div className="border border-line bg-surface px-5 py-8 text-center text-sm text-muted">
-      試合データは準備中です。データの取り込みを開始すると、ここに試合結果が表示されます。
+      試合データは準備中です。準備ができしだい、ここに試合結果を表示します。
     </div>
   );
 }

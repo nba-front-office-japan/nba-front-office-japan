@@ -40,6 +40,16 @@ const organizationJsonLd = {
   sameAs: SOCIAL_LINKS.map((s) => s.url),
 };
 
+// 検索結果に表示されるサイト名を示す構造化データ(独自ドメインのトップURLで指定する)
+const websiteJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: SITE_NAME,
+  alternateName: ["NBA FOJ", "NBAフロントオフィスジャパン"],
+  url: `${SITE_URL}/`,
+  inLanguage: "ja",
+};
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
@@ -50,6 +60,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd).replace(/</g, "\\u003c") }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd).replace(/</g, "\\u003c") }}
         />
         {children}
         <SiteFooter />

@@ -40,7 +40,7 @@ export function TeamSalaryTable({ rows }: { rows: TeamSalaryRow[] }) {
           <SalaryLineChart season={season} teams={chartTeams} lines={lines} />
           <div className="space-y-1 text-xs leading-6 text-muted">
             <p>
-              ※ この比較は、出典のExcelから取り込んだ「チーム総年俸」を各ラインと比べた参考比較です。
+              ※ この比較は、出典データの「チーム総年俸」を各ラインと比べた参考比較です。
             </p>
             <p className="text-[11px]">
               CBA（労使協定）上の厳密なチーム給与の計算（未契約のドラフト指名権の枠、キャップホールド、ボーナスの扱いなど）とは差が出る場合があります。

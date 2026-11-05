@@ -10,8 +10,9 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: "NBA順位表 | NBA Front Office Japan",
-  description: "管理画面から取り込んだレギュラーシーズンのボックススコアをもとにしたNBA順位表。",
+  title: `NBA順位表 ${seasonLabel(ROSTER_SEASON)}｜東西カンファレンス別の最新順位 | NBA Front Office Japan`,
+  description: `NBA ${seasonLabel(ROSTER_SEASON)}シーズンの最新順位表。イースタン・ウエスタンの東西カンファレンス別に、勝敗・勝率・ゲーム差、直近10試合、連勝・連敗、ホーム／アウェイの成績を毎日更新しています。`,
+  alternates: { canonical: "/standings" },
 };
 
 export default async function StandingsPage() {
@@ -34,12 +35,12 @@ export default async function StandingsPage() {
         report="LEAGUE-WIDE REPORT"
         kicker="Standings"
         title="NBA順位表"
-        lead={`${seasonLabel(ROSTER_SEASON)}レギュラーシーズンの順位です。管理画面で取り込んだボックススコアをもとに自動更新します。プレシーズンは含みません。`}
+        lead={`${seasonLabel(ROSTER_SEASON)}レギュラーシーズンの最新順位です。東西カンファレンス別に、試合結果をもとに毎日更新します。プレシーズンは含みません。`}
         side={
           data && hasRows ? (
             <BriefSide label="Data status">
               <p>集計済み: <strong className="text-foreground">{data.gamesCounted}試合</strong></p>
-              {data.lastUpdatedAt && <p>最終取込: <strong className="text-foreground">{new Intl.DateTimeFormat("ja-JP", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Tokyo" }).format(new Date(data.lastUpdatedAt))}</strong></p>}
+              {data.lastUpdatedAt && <p>最終更新: <strong className="text-foreground">{new Intl.DateTimeFormat("ja-JP", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Tokyo" }).format(new Date(data.lastUpdatedAt))}</strong></p>}
             </BriefSide>
           ) : undefined
         }
@@ -47,7 +48,7 @@ export default async function StandingsPage() {
         {error ? (
           <p className="border-l-4 border-red-500 bg-red-50 px-4 py-3 text-sm text-red-800 dark:bg-red-950/30 dark:text-red-200">{error}</p>
         ) : !data || !hasRows ? (
-          <p className="border border-line bg-surface px-4 py-8 text-sm text-muted">順位表を作成するためのレギュラーシーズンのボックススコアが、まだ取り込まれていません。</p>
+          <p className="border border-line bg-surface px-4 py-8 text-sm text-muted">レギュラーシーズンの試合結果がまだないため、順位表は開幕後に表示します。</p>
         ) : (
           <>
             <StandingsBoard rows={data.rows} />
