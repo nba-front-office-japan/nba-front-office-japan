@@ -20,7 +20,8 @@ import {
   playerPageDescription,
   playerPageTitle,
 } from "@/lib/player-page";
-import { fetchPlayerCurrentSeasonStats, gameDateLabel } from "@/lib/player-box-score-stats";
+import { fetchPlayerCurrentSeasonStats, fetchPlayerGameLog, gameDateLabel } from "@/lib/player-box-score-stats";
+import { PlayerGameLog } from "@/components/player-game-log";
 import { isPlayerPageIndexable } from "@/lib/player-indexable";
 import { ROSTER_SEASON, seasonLabel } from "@/lib/seasons";
 import { deriveStats, formatPct, formatStat } from "@/lib/stats";
@@ -28,29 +29,35 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { fetchPlayerRelatedArticles } from "@/lib/news/player-articles";
 import { formatArticleDate } from "@/components/news/article-view";
 
-// 選手ページは Profile(基本情報・受賞歴)と Stats(シーズン別成績)を ?view= で切り替える。
-// 上部の選手情報(PlayerHeader)はどちらの表示でも出す。
-type PlayerView = "profile" | "stats";
+// 選手ページは Profile(基本情報・受賞歴)・Stats(シーズン別成績)・Game Log(今季の試合ごとの成績)を ?view= で切り替える。
+// 上部の選手情報(PlayerHeader)はどの表示でも出す。
+type PlayerView = "profile" | "stats" | "gamelog";
+
+function parseView(value: string | string[] | undefined): PlayerView {
+  return value === "stats" || value === "gamelog" ? value : "profile";
+}
 
 const VIEW_OPTIONS: { view: PlayerView; label: string }[] = [
   { view: "profile", label: "Profile" },
   { view: "stats", label: "Stats" },
+  { view: "gamelog", label: "Game Log" },
 ];
 
-// タイトル・説明文・canonical。canonical は Profile が /players/{id}、Stats が /players/{id}?view=stats(ほかのクエリは付けない)
+// タイトル・説明文・canonical。canonical は Profile が /players/{id}、Stats・Game Log が /players/{id}?view=stats|gamelog(ほかのクエリは付けない)
 export async function generateMetadata({ params, searchParams }: PageProps<"/players/[playerId]">): Promise<Metadata> {
   const { playerId } = await params;
   const { view: viewParam } = await searchParams;
-  const view: PlayerView = viewParam === "stats" ? "stats" : "profile";
+  const view = parseView(viewParam);
   const base = await fetchPlayerPageBase(playerId);
   if (!base) return {};
 
   const current = await fetchPlayerCurrentSeasonStats(playerId, ROSTER_SEASON);
   const title = playerPageTitle(base, view, current);
   const description = playerPageDescription(base, current);
-  const canonical = view === "stats" ? `/players/${playerId}?view=stats` : `/players/${playerId}`;
+  const canonical = view === "profile" ? `/players/${playerId}` : `/players/${playerId}?view=${view}`;
   // 解説・今季ロスター・今季出場・過去成績のどれも無い空に近いページは検索に載せない(リンクはたどってもらう)
-  const indexable = await isPlayerPageIndexable({
+  // Game Log は今季の出場が無ければ中身が空になるため、検索に載せない
+  const indexable = (view !== "gamelog" || current !== null) && await isPlayerPageIndexable({
     playerId,
     fullName: base.player.full_name,
     onCurrentRoster: base.currentRosterTeamId !== null,
@@ -71,7 +78,7 @@ export default async function PlayerDetailPage({
 }: PageProps<"/players/[playerId]">) {
   const { playerId } = await params;
   const { view: viewParam } = await searchParams;
-  const selectedView: PlayerView = viewParam === "stats" ? "stats" : "profile";
+  const selectedView = parseView(viewParam);
   const supabase = createServerSupabaseClient();
 
   // 選手と2026-27の現在所属（player_team_historyの日付範囲モデルとは別の、
@@ -186,6 +193,9 @@ export default async function PlayerDetailPage({
       : [];
 
   // 関連ニュース: 公開記事のタイトル・本文に日本語名が出てくるもの(lib/news/player-articles.ts)
+  // Game Log: 今季の出場試合ごとの成績(今季成績と同じ試合データ)
+  const gameLog = selectedView === "gamelog" ? await fetchPlayerGameLog(playerId, ROSTER_SEASON) : [];
+
   const relatedArticles =
     selectedView === "profile" ? await fetchPlayerRelatedArticles(createAdminSupabaseClient(), player.full_name_ja) : [];
 
@@ -308,6 +318,13 @@ export default async function PlayerDetailPage({
           </Link>
           で確認できます。
         </p>
+      )}
+      {selectedView === "gamelog" && (
+        <div className="mt-8 border border-line bg-surface p-4 sm:p-6">
+          <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">Game Log</p>
+          <h2 className="mb-4 text-lg font-semibold">{seasonLabel(ROSTER_SEASON)} 試合別成績</h2>
+          <PlayerGameLog rows={gameLog} seasonLabel={seasonLabel(ROSTER_SEASON)} />
+        </div>
       )}
       {selectedView === "stats" && (
         <div className="mt-8 border border-line bg-surface p-6">

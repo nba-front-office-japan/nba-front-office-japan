@@ -85,7 +85,7 @@ const n = (value: number | null | undefined) => value ?? 0;
 // current: 今季の成績(ボックススコアから集計)。出場が無ければ null
 export function playerPageTitle(
   { player, currentTeam }: PlayerPageBase,
-  view: "profile" | "stats",
+  view: "profile" | "stats" | "gamelog",
   current: PlayerCurrentSeasonStats | null = null,
 ): string {
   const name = playerDisplayName(player);
@@ -93,6 +93,7 @@ export function playerPageTitle(
   const tail = [team, current ? currentSeasonTitleText(current) : null].filter(Boolean).join(" ");
   const suffix = tail ? `｜${tail}` : "";
   if (view === "stats") return `${name}のシーズン別成績・スタッツ${suffix}`;
+  if (view === "gamelog") return `${name}の${seasonLabel(ROSTER_SEASON)}試合別成績（ゲームログ）${suffix}`;
   // 「{選手名} 身長」で検索されることが多いため、身長が分かる選手は「身長」を入れる
   const height = player.height_cm ? "身長・" : "";
   // 有名選手(lib/featured-players.ts)は、検索されやすい「年俸・経歴」も入れる
