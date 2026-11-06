@@ -128,6 +128,7 @@ export const GUIDE_PAGES: Record<string, string> = {
   ロッタリー: "/guide/draft-lottery",
   指名権の価値: "/guide/draft-pick-value",
   // 「スタッツの見方」
+  スタッツ表の見方: "/guide/stats-basics",
   ネットレーティング: "/guide/net-rating",
   PER: "/guide/per",
 };

@@ -27,7 +27,7 @@ const STATIC_PATHS = [
   "/guide/contract-terms", "/guide/roster-contracts", "/guide/trade-basics",
   "/guide/buyout", "/guide/waive", "/guide/draft-picks", "/guide/draft-pick-value",
   "/guide/draft-lottery", "/guide/tampering-cases", "/guide/joe-smith-case",
-  "/guide/media-rights", "/guide/revenue-sharing", "/guide/owners", "/guide/team-value", "/guide/net-rating", "/guide/per",
+  "/guide/media-rights", "/guide/revenue-sharing", "/guide/owners", "/guide/team-value", "/guide/stats-basics", "/guide/net-rating", "/guide/per",
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

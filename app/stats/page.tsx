@@ -107,6 +107,11 @@ export default async function StatsPage({ searchParams }: PageProps<"/stats">) {
                   人気選手ガイド ›
                 </Link>
               </p>
+              <p>
+                <Link href="/guide/stats-basics" className="inline-flex min-h-7 items-center font-bold text-blue hover:underline">
+                  スタッツ表の見方（初心者向け） ›
+                </Link>
+              </p>
             </BriefSide>
           </>
         }

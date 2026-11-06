@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { Database } from "@/lib/supabase/types";
 import {
@@ -182,6 +183,13 @@ export function PlayerSeasonStats({ rows }: { rows: PlayerStatRow[] }) {
         各シーズンの合計値から算出した1試合平均と成功率です。同一シーズンに複数チームでプレーした場合は、チーム別の内訳ではなく合計のみを
         <span className="font-semibold"> TOT </span>
         として表示します。
+      </p>
+      <p className="mt-2 text-xs text-muted">
+        PTS・TRB・TS%などの項目の意味と目安は
+        <Link href="/guide/stats-basics" className="mx-1 font-semibold text-blue underline-offset-2 hover:underline">
+          スタッツ表の見方
+        </Link>
+        で解説しています。
       </p>
     </div>
   );
