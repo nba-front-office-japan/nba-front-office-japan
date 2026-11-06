@@ -6,6 +6,7 @@ import { GameCalendar } from "@/components/games/game-calendar";
 import { NewspaperMasthead } from "@/components/games/newspaper-masthead";
 import { NEWSPAPER_FONT_CLASS } from "@/components/games/newspaper-fonts";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { fetchGamePreviewLinks } from "@/lib/games/previews";
 import { fetchAdjacentGameDates, fetchGameCountsForMonth, fetchMatchupsForJstDate } from "@/lib/games/data";
 import {
   GAME_DAY_TABS,
@@ -50,6 +51,8 @@ export default async function GamesPage({ searchParams }: PageProps<"/games">) {
   const adjacent = gameCount === 0 ? await fetchAdjacentGameDates(supabase, selected).catch(() => ({ prev: null, next: null })) : { prev: null, next: null };
   // 結果を隠している画面に出す対戦カード(チーム名だけ)。取得に失敗しても、対戦カードなしでページは表示する
   const matchups = gameCount === 0 ? [] : await fetchMatchupsForJstDate(supabase, selected).catch(() => []);
+  // 試合プレビュー記事(対象試合が一致する公開記事の最新1本)。試合開始前の試合だけ。取得に失敗しても、リンクなしでページは表示する
+  const previews = await fetchGamePreviewLinks(selected, matchups).catch(() => ({}));
 
   const dayLabel = formatJstDateLabel(selected);
   const relative = selected === today ? "今日" : selected === addDays(today, -1) ? "昨日" : selected === addDays(today, 1) ? "明日" : null;
@@ -98,7 +101,7 @@ export default async function GamesPage({ searchParams }: PageProps<"/games">) {
             {gameCount !== null && gameCount > 0 && <span className="np-numeral text-sm font-bold text-[var(--np-red)]">{gameCount}試合</span>}
           </h2>
 
-          <GamesCenter key={`${selected}:${initialView ?? "choose"}`} date={selected} dayLabel={dayLabel} today={today} gameCount={gameCount} dayStatus={dayStatus} matchups={matchups} adjacent={adjacent} initialView={initialView} />
+          <GamesCenter key={`${selected}:${initialView ?? "choose"}`} date={selected} dayLabel={dayLabel} today={today} gameCount={gameCount} dayStatus={dayStatus} matchups={matchups} previews={previews} adjacent={adjacent} initialView={initialView} />
         </div>
 
         <div className="order-1 lg:order-2">

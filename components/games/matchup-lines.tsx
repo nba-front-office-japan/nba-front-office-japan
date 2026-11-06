@@ -1,11 +1,13 @@
 import { formatJstTime } from "@/lib/games/date";
-import type { GameMatchup } from "@/lib/games/types";
+import type { GameMatchup, GamePreviewLink } from "@/lib/games/types";
+import { PreviewLink } from "./preview-link";
 
 // 結果を隠している枠の中に出す、その日の対戦カード(開始時刻(日本時間) アウェイ vs ホーム)。勝敗・得点は出さない(ネタバレ防止)。
 // 左右の列を同じ幅にして、複数行でも「vs」が縦にそろうようにする。
 // PCでは時刻の列と同じ幅の空き列を右にも置き、「vs」を中央にそろえる(スマホは幅を優先して空き列なし)。
 // 開始時刻が分かる試合が1つもない日(プレシーズン等)は、時刻の列ごと出さない。
-export function MatchupLines({ matchups }: { matchups: GameMatchup[] }) {
+// 試合プレビュー記事がある試合(試合開始前だけ)は、その対戦の下に「プレビューを読む」と見出しを出す。ない試合は何も足さない。
+export function MatchupLines({ matchups, previews = {} }: { matchups: GameMatchup[]; previews?: Record<string, GamePreviewLink> }) {
   const showTime = matchups.some((m) => m.tipoffAt);
   return (
     <>
@@ -15,7 +17,7 @@ export function MatchupLines({ matchups }: { matchups: GameMatchup[] }) {
       >
         {matchups.map((m) => (
           <li
-            key={`${m.away}-${m.home}`}
+            key={m.gameId}
             className={`grid ${showTime ? "grid-cols-[2.5rem_minmax(0,1fr)_auto_minmax(0,1fr)] gap-x-1.5 sm:grid-cols-[3rem_minmax(0,1fr)_auto_minmax(0,1fr)_3rem] sm:gap-x-2" : "grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-x-2"}`}
           >
             {showTime && (
@@ -25,6 +27,7 @@ export function MatchupLines({ matchups }: { matchups: GameMatchup[] }) {
             <span className="text-xs font-normal text-muted">vs</span>
             <span className="text-left">{m.home}</span>
             {showTime && <span aria-hidden="true" className="hidden sm:block" />}
+            {previews[m.gameId] && <PreviewLink preview={previews[m.gameId]} className="col-span-full mb-2 mt-1 font-normal" />}
           </li>
         ))}
       </ul>

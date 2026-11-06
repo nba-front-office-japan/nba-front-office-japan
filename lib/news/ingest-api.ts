@@ -10,6 +10,7 @@ import {
 } from "@/lib/news/constants";
 import { validatePublishedAtInput } from "@/lib/news/jst-datetime";
 import { validateRelatedMediaInputs } from "@/lib/news/related-media";
+import { parseTargetGame, targetGameFromRow, type TargetGame } from "@/lib/news/target-game";
 import { SITE_URL } from "@/lib/site";
 import type { ArticleDraftStatus, ArticleKind, ArticleType, Database, NewsEventCategory, NewsTopic } from "@/lib/supabase/types";
 
@@ -111,6 +112,8 @@ export type DraftInput = {
   mediaUrls: string[];
   sources: string | null;
   editorNote: string | null;
+  /** 対象試合(任意)。チーム略称が teams にあるかは、DBを読む呼び出し側で確かめる */
+  targetGame: TargetGame | null;
 };
 
 /** 任意の文字列項目。未指定は null、文字列以外は undefined(エラー) */
@@ -163,6 +166,17 @@ export function parseDraftInput(body: Record<string, unknown>): DraftInput | { e
   const media = validateRelatedMediaInputs((body.mediaUrls as string[] | undefined | null) ?? []);
   if ("error" in media) return { error: media.error };
 
+  // 対象試合(任意): { "gameDate": "YYYY-MM-DD", "awayTeam": "LAL", "homeTeam": "BOS" }。null か省略は未設定
+  let targetGame: TargetGame | null = null;
+  if (body.targetGame !== undefined && body.targetGame !== null) {
+    if (typeof body.targetGame !== "object" || Array.isArray(body.targetGame)) {
+      return { error: "targetGame は { gameDate, awayTeam, homeTeam } の形で指定してください。" };
+    }
+    const parsed = parseTargetGame(body.targetGame as Record<string, unknown>);
+    if (parsed && "error" in parsed) return { error: parsed.error };
+    targetGame = parsed;
+  }
+
   const bodyText = texts.body ?? "";
   // 本文中のメディア([[media:URL]])の URL と、本文中・本文末を合わせた件数を確かめる
   const bodyMediaError = bodyMediaProblem(bodyText, media.urls);
@@ -181,6 +195,7 @@ export function parseDraftInput(body: Record<string, unknown>): DraftInput | { e
     mediaUrls: media.urls,
     sources: texts.sources ?? null,
     editorNote: texts.editorNote?.trim() || null,
+    targetGame,
   };
 }
 
@@ -219,5 +234,7 @@ export function draftDetail(d: DraftRow) {
     mediaUrls: d.related_media_urls ?? [],
     sources: d.source_attribution_markdown,
     editorNote: d.editor_notes,
+    // 対象試合(試合プレビュー記事の /games への紐づけ)。未設定は null
+    targetGame: targetGameFromRow(d),
   };
 }

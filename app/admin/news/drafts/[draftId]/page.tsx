@@ -5,6 +5,7 @@ import { ARTICLE_DRAFT_STATUS_LABEL, isLowConfidence, isRumorOrUnverified, isSin
 import { LINK_CLASS } from "@/app/admin/_components/action-ui";
 import { ApproveButton, DraftEditForm, RejectButton } from "./draft-forms";
 import { PublishButton } from "./publish-button";
+import { teamNameJa } from "@/lib/team-names-ja";
 
 export const dynamic = "force-dynamic";
 
@@ -61,12 +62,17 @@ export default async function AdminNewsDraftDetailPage({
     })),
   };
 
+  // 対象試合で選べるチーム(略称順)
+  const { data: teams } = await supabase.from("teams").select("abbreviation, name").order("abbreviation");
+  const teamOptions = (teams ?? []).map((t) => ({ abbreviation: t.abbreviation, label: `${t.abbreviation}　${teamNameJa(t.abbreviation) ?? t.name}` }));
+
   // 編集画面全体を公開ページの本文欄と同じ幅で表示し、入力欄のすぐ後に公開ページと同じ表示のプレビューを置く(DraftEditForm)
   return (
     <div className="py-8">
       <DraftEditForm
         draft={draft}
         context={previewContext}
+        teamOptions={teamOptions}
         formHeader={
           // サーバーからクライアントの部品へ渡す要素には key を付ける(付けないと開発時に key の警告が出る)
           <div key="form-header">

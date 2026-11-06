@@ -14,6 +14,7 @@ import { validateRelatedMediaInputs } from "@/lib/news/related-media";
 import { bodyMediaProblem } from "@/lib/news/body-media";
 import { validatePublishedAtInput } from "@/lib/news/jst-datetime";
 import { publishDraft } from "@/lib/news/editorial";
+import { parseTargetGame, targetGameColumns, unknownTeamProblem } from "@/lib/news/target-game";
 
 export async function createDraftAction(
   _prevState: ActionState,
@@ -171,7 +172,25 @@ export async function updateDraftAction(
     publishedAtUpdate = { published_at: checked.iso };
   }
 
+  // 対象試合(任意。試合プレビュー記事を /games の試合カードに紐づける)。編集画面が送ったときだけ更新する
+  const sendsTargetGame = formData.has("targetGameDate");
+  const targetGame = sendsTargetGame
+    ? parseTargetGame({
+        gameDate: formData.get("targetGameDate"),
+        awayTeam: formData.get("targetAwayTeam"),
+        homeTeam: formData.get("targetHomeTeam"),
+      })
+    : null;
+  if (targetGame && "error" in targetGame) {
+    return { status: "error", message: targetGame.error };
+  }
+
   const supabase = createAdminSupabaseClient();
+  if (targetGame) {
+    const { data: teams } = await supabase.from("teams").select("abbreviation");
+    const problem = unknownTeamProblem(targetGame, (teams ?? []).map((t) => t.abbreviation));
+    if (problem) return { status: "error", message: problem };
+  }
   if ("published_at" in publishedAtUpdate) {
     // 投稿日を変えられるのは、すでに投稿日がある(公開済みの)記事だけ
     const { data: current } = await supabase.from("article_drafts").select("published_at").eq("id", draftId).single();
@@ -192,6 +211,7 @@ export async function updateDraftAction(
       source_attribution_markdown: sourceAttributionMarkdown,
       editor_notes: editorNotes || null,
       related_media_urls: media.urls,
+      ...(sendsTargetGame ? targetGameColumns(targetGame) : {}),
       ...publishedAtUpdate,
     })
     .eq("id", draftId);
@@ -204,6 +224,7 @@ export async function updateDraftAction(
   revalidatePath("/admin/news/drafts");
   revalidatePath("/news");
   revalidatePath(`/news/${draftId}`);
+  revalidatePath("/games");
   return { status: "success", message: "保存しました" };
 }
 

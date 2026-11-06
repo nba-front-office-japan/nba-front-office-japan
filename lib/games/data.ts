@@ -133,8 +133,11 @@ export async function fetchMatchupsForJstDate(supabase: Client, date: string): P
   const result = await fetchGamesForJstDate(supabase, date);
   if (result.status !== "ok") return [];
   return result.games.map((g) => ({
+    gameId: g.id,
     away: teamShortNameJa(g.away.abbreviation, g.away.name),
     home: teamShortNameJa(g.home.abbreviation, g.home.name),
+    awayAbbr: g.away.abbreviation,
+    homeAbbr: g.home.abbreviation,
     tipoffAt: g.tipoffAt,
   }));
 }

@@ -1215,6 +1215,10 @@ export interface Database {
           reviewed_at: string | null;
           /** 関連メディア(Xポスト・YouTube動画)の正規化済み URL。最大5件 */
           related_media_urls: string[];
+          /** 対象試合(試合プレビュー記事の /games への紐づけ)。日本時間の試合日と、チームの略称。3つとも null なら未設定 */
+          target_game_date: string | null;
+          target_away_team: string | null;
+          target_home_team: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -1236,6 +1240,9 @@ export interface Database {
           reviewed_by?: string | null;
           reviewed_at?: string | null;
           related_media_urls?: string[];
+          target_game_date?: string | null;
+          target_away_team?: string | null;
+          target_home_team?: string | null;
         };
         Update: Partial<
           Database["public"]["Tables"]["article_drafts"]["Insert"]

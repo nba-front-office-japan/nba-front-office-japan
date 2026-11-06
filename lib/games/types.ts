@@ -20,7 +20,11 @@ export type GameTeamLine = {
 
 /** 結果を隠す画面に出す対戦カード。チーム名だけを持つ(得点・勝敗・開始時刻は持たない) */
 /** 結果を隠す画面に出す対戦カード。tipoffAt は試合開始日時(UTC)。未定・プレシーズンは null */
-export type GameMatchup = { away: string; home: string; tipoffAt: string | null };
+/** gameId と awayAbbr / homeAbbr は「プレビューを読む」の紐づけに使う(チームの略称。teams.abbreviation) */
+export type GameMatchup = { gameId: string; away: string; home: string; awayAbbr: string; homeAbbr: string; tipoffAt: string | null };
+
+/** 試合プレビュー記事へのリンク(試合開始前だけ表示する)。tipoffAt は試合開始日時(UTC) */
+export type GamePreviewLink = { articleId: string; headline: string; tipoffAt: string };
 
 export type GameSummary = {
   id: string;

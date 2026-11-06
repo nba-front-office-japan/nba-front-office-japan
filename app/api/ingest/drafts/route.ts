@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { buildEventAttribution } from "@/lib/news/editorial";
+import { targetGameColumns, unknownTeamProblem } from "@/lib/news/target-game";
 import {
   DRAFT_SUMMARY_COLUMNS,
   draftEditUrl,
@@ -47,6 +48,12 @@ export async function POST(request: Request) {
   if ("error" in input) return fail(input.error, 400);
 
   const supabase = createAdminSupabaseClient();
+  if (input.targetGame) {
+    const { data: teams, error: teamsError } = await supabase.from("teams").select("abbreviation");
+    if (teamsError) return fail(`チームの取得に失敗しました: ${teamsError.message}`, 500);
+    const problem = unknownTeamProblem(input.targetGame, (teams ?? []).map((t) => t.abbreviation));
+    if (problem) return fail(problem, 400);
+  }
   if (input.eventId) {
     const { data: event } = await supabase.from("news_events").select("id").eq("id", input.eventId).maybeSingle();
     if (!event) return fail("イベントが見つかりません。", 404);
@@ -75,6 +82,8 @@ export async function POST(request: Request) {
       editor_notes: input.editorNote,
       related_media_urls: input.mediaUrls,
       published_at: input.publishedAt,
+      // 対象試合は指定したときだけ書く(未指定の入稿は従来と同じ列だけを書く)
+      ...(input.targetGame ? targetGameColumns(input.targetGame) : {}),
     })
     .select("id, status")
     .single();

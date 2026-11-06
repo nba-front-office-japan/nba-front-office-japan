@@ -69,9 +69,12 @@ export function DraftEditForm({
   context,
   formHeader,
   afterForm,
+  teamOptions = [],
 }: {
   draft: ArticleDraft;
   context: DraftPreviewContext;
+  /** 対象試合で選べるチーム(略称と表示名) */
+  teamOptions?: { abbreviation: string; label: string }[];
   formHeader?: ReactNode;
   afterForm?: ReactNode;
 }) {
@@ -247,6 +250,49 @@ export function DraftEditForm({
               投稿日：<span className="font-normal">未公開（公開した時点の日時が投稿日になります）</span>
             </p>
           )}
+          {/* 対象試合(任意): 試合プレビュー記事を /games の試合カードに紐づける。公開済みの記事も後から設定・変更できる */}
+          <fieldset className="grid min-w-0 gap-1.5">
+            <legend className="mb-1 text-[11px] font-bold text-muted">対象試合（任意・試合プレビュー記事用）</legend>
+            <p className="text-xs text-muted">
+              設定すると、公開中のこの記事を /games の該当する試合に「プレビューを読む」として表示します（試合開始前だけ）。試合日は /games の日付（日本時間）です。設定しない場合は3つとも空にします。
+            </p>
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <input
+                type="date"
+                name="targetGameDate"
+                aria-label="対象試合の試合日（日本時間）"
+                defaultValue={draft.target_game_date ?? ""}
+                className="border border-line bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-60"
+              />
+              <select
+                name="targetAwayTeam"
+                aria-label="対象試合のアウェイチーム"
+                defaultValue={draft.target_away_team ?? ""}
+                className="border border-line bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-60"
+              >
+                <option value="">アウェイ（未設定）</option>
+                {teamOptions.map((t) => (
+                  <option key={t.abbreviation} value={t.abbreviation}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+              <span className="text-xs text-muted">@</span>
+              <select
+                name="targetHomeTeam"
+                aria-label="対象試合のホームチーム"
+                defaultValue={draft.target_home_team ?? ""}
+                className="border border-line bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-60"
+              >
+                <option value="">ホーム（未設定）</option>
+                {teamOptions.map((t) => (
+                  <option key={t.abbreviation} value={t.abbreviation}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </fieldset>
           </section>
           <BodyEditor name="bodyMarkdown" defaultValue={draft.body_markdown} onChange={(body) => set({ body })} />
           <section className="grid gap-3 border border-line bg-surface p-6">

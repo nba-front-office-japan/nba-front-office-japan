@@ -3,7 +3,8 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { GameMatchup, GameSummary, GamesResponse } from "@/lib/games/types";
+import type { GameMatchup, GamePreviewLink, GameSummary, GamesResponse } from "@/lib/games/types";
+import { PreviewLink } from "./preview-link";
 import { NotReadyNotice, SpoilerGate, StatusBadge, TipoffTime } from "./game-parts";
 import { GameDayStatusInfo, LEVEL_GATE_CLASS } from "./game-day-status";
 import { MatchupLines } from "./matchup-lines";
@@ -45,6 +46,7 @@ export function GamesCenter({
   gameCount,
   dayStatus,
   matchups,
+  previews = {},
   adjacent,
   initialView,
 }: {
@@ -56,6 +58,8 @@ export function GamesCenter({
   dayStatus?: GameDayStatus | null;
   // その日の対戦カード(チーム名だけ。得点・勝敗・開始時刻は含まない)
   matchups: GameMatchup[];
+  // 試合プレビュー記事へのリンク(試合ID → 記事)。試合開始前の試合だけ
+  previews?: Record<string, GamePreviewLink>;
   adjacent: { prev: string | null; next: string | null };
   initialView: "all" | "individual" | null;
 }) {
@@ -103,7 +107,7 @@ export function GamesCenter({
   const gateInfo =
     matchups.length > 0 || dayStatus ? (
       <>
-        {matchups.length > 0 && <MatchupLines matchups={matchups} />}
+        {matchups.length > 0 && <MatchupLines matchups={matchups} previews={previews} />}
         {dayStatus && <GameDayStatusInfo status={dayStatus} />}
       </>
     ) : undefined;
@@ -139,7 +143,7 @@ export function GamesCenter({
   if (result.games.length === 0) return <NoGamesNotice date={date} today={today} adjacent={adjacent} />;
 
   if (view === "individual") {
-    return <IndividualGamesList games={result.games} date={date} onShowAll={reveal} />;
+    return <IndividualGamesList games={result.games} date={date} previews={previews} onShowAll={reveal} />;
   }
 
   // その日の全試合。試合結果とボックススコアは、専用の試合詳細ページで表示する。
@@ -158,6 +162,7 @@ export function GamesCenter({
             </div>
             <p className="np-serif mt-3 text-right text-sm font-extrabold text-[var(--np-red)]">試合詳細・ボックススコア →</p>
           </Link>
+          {previews[game.id] && <PreviewLink preview={previews[game.id]} className="border-t border-line px-4 py-3" />}
         </li>
       ))}
     </ul>
@@ -166,7 +171,17 @@ export function GamesCenter({
 
 // 個別表示の対戦カード。ここでは勝敗・得点を一切描画しない。
 // この試合を押すと、専用の試合詳細ページで結果とボックススコアを表示する。
-function IndividualGamesList({ games, date, onShowAll }: { games: GameSummary[]; date: string; onShowAll: () => void }) {
+function IndividualGamesList({
+  games,
+  date,
+  previews,
+  onShowAll,
+}: {
+  games: GameSummary[];
+  date: string;
+  previews: Record<string, GamePreviewLink>;
+  onShowAll: () => void;
+}) {
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -176,13 +191,13 @@ function IndividualGamesList({ games, date, onShowAll }: { games: GameSummary[];
         </button>
       </div>
       <ul className="grid grid-cols-1 gap-3">
-        {games.map((game) => <IndividualGameCard key={game.id} game={game} date={date} />)}
+        {games.map((game) => <IndividualGameCard key={game.id} game={game} date={date} preview={previews[game.id]} />)}
       </ul>
     </div>
   );
 }
 
-function IndividualGameCard({ game, date }: { game: GameSummary; date: string }) {
+function IndividualGameCard({ game, date, preview }: { game: GameSummary; date: string; preview?: GamePreviewLink }) {
   return (
     <li className="overflow-hidden border-2 border-foreground bg-surface">
       <Link href={`/games/${game.id}?date=${date}&view=individual`} onClick={() => markGameRevealed(game.id)} className="selection-button selection-game-card block p-4 transition-all duration-200">
@@ -191,6 +206,7 @@ function IndividualGameCard({ game, date }: { game: GameSummary; date: string })
         <Scoreboard game={game} hideScore />
         <p className="np-serif mt-4 text-right text-sm font-extrabold text-[var(--np-red)]">試合詳細を見る →</p>
       </Link>
+      {preview && <PreviewLink preview={preview} className="border-t border-line px-4 py-3" />}
     </li>
   );
 }
