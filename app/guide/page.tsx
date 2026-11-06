@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 // ガイドのカテゴリーと、各カテゴリーで扱う内容の例。
 // 詳細ページがある項目だけ GUIDE_PAGES(lib/guide-official.ts)にURLを登録してリンクにする(未作成のページへはリンクしない)。
-// 契約・サラリーの用語は「契約」の「契約用語」に、それ以外の用語は「用語一覧」(/guide/glossary)にまとめ、同じ用語を両方に載せない。
+// 契約・サラリーの用語は「契約」の「契約用語」に、それ以外も含めたレベル別の用語は「NBA用語辞典」(/guide/glossary)にまとめる。
 
 const GUIDE_CATEGORIES: { category: string; examples: string[] }[] = [
   // 最初に読む導入ページ
@@ -33,7 +33,7 @@ const GUIDE_CATEGORIES: { category: string; examples: string[] }[] = [
     examples: ["ジョー・スミス事件", "タンパリング", "サラリーキャップ迂回に関する処分"],
   },
   { category: "スタッツの見方", examples: ["スタッツ表の見方", "ネットレーティング", "PER"] },
-  { category: "用語一覧", examples: ["ドラフト・制度", "スタッツ・指標", "怪我・インジュリー用語", "プレー用語"] },
+  { category: "NBA用語辞典", examples: ["初心者向け", "中級者向け", "上級者向け"] },
 ];
 
 // 例を「、」区切りで並べる。1項目(例:「1st Apron / 2nd Apron」)が行の途中で折り返さないよう、

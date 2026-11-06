@@ -151,9 +151,9 @@ export default function ContractTermsGuidePage() {
         </Section>
 
         <p className="text-sm text-muted">
-          ドラフト・怪我・プレーの用語は
+          ルール・プレー・スタッツ・怪我などの用語は
           <Link href="/guide/glossary" className="font-bold text-blue underline underline-offset-4 hover:no-underline">
-            用語一覧
+            NBA用語辞典
           </Link>
           にまとめています。
         </p>

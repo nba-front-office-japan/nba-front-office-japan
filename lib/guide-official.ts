@@ -119,11 +119,11 @@ export const GUIDE_PAGES: Record<string, string> = {
   "ジョー・スミス事件": "/guide/joe-smith-case",
   タンパリング: "/guide/tampering-cases",
   サラリーキャップ迂回に関する処分: "/guide/salary-cap-circumvention",
-  // 「用語一覧」(URL は /guide/glossary のまま)の各分類へリンクする
-  "ドラフト・制度": "/guide/glossary#draft-system",
-  "スタッツ・指標": "/guide/glossary#stats-metrics",
-  "怪我・インジュリー用語": "/guide/glossary#injury",
-  プレー用語: "/guide/glossary#play",
+  // 「NBA用語辞典」(URL はもとの用語一覧と同じ /guide/glossary)をレベルを選んだ状態で開く
+  NBA用語辞典: "/guide/glossary",
+  初心者向け: "/guide/glossary?level=beginner",
+  中級者向け: "/guide/glossary?level=intermediate",
+  上級者向け: "/guide/glossary?level=advanced",
   ドラフト指名権: "/guide/draft-picks",
   ロッタリー: "/guide/draft-lottery",
   指名権の価値: "/guide/draft-pick-value",

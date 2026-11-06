@@ -263,7 +263,7 @@ export default function NetRatingGuidePage() {
         {/* 8. 関連ガイド */}
         <Section kicker="Related" title="関連ガイド">
           <RelatedGuideLink href={GUIDE_PAGES["PER"]} label="NBAのPERとは？（選手の効率を1つの数字で表す指標）" />
-          <RelatedGuideLink href={GUIDE_PAGES["スタッツ・指標"]} label="用語一覧：スタッツ・指標" />
+          <RelatedGuideLink href={GUIDE_PAGES["NBA用語辞典"]} label="NBA用語辞典" />
         </Section>
 
         {/* 9. 関連用語 */}

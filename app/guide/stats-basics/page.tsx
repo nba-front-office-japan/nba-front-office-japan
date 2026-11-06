@@ -370,7 +370,7 @@ export default function StatsBasicsGuidePage() {
         <Section kicker="Related" title="次に読むガイド">
           <RelatedGuideLink href={GUIDE_PAGES["PER"]} label="NBAのPER（選手効率指標）とは？" />
           <RelatedGuideLink href={GUIDE_PAGES["ネットレーティング"]} label="NBAのネットレーティングとは？" />
-          <RelatedGuideLink href={GUIDE_PAGES["スタッツ・指標"]} label="用語一覧：スタッツ・指標" />
+          <RelatedGuideLink href={GUIDE_PAGES["NBA用語辞典"]} label="NBA用語辞典" />
         </Section>
 
         {/* 8. 関連用語 */}

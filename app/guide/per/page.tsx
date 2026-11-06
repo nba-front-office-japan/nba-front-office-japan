@@ -211,7 +211,7 @@ export default function PerGuidePage() {
         {/* 7. 関連ガイド */}
         <Section kicker="Related" title="関連ガイド">
           <RelatedGuideLink href={GUIDE_PAGES["ネットレーティング"]} label="NBAのネットレーティングとは？（100ポゼッション当たりの得失点差）" />
-          <RelatedGuideLink href={GUIDE_PAGES["スタッツ・指標"]} label="用語一覧：スタッツ・指標" />
+          <RelatedGuideLink href={GUIDE_PAGES["NBA用語辞典"]} label="NBA用語辞典" />
         </Section>
 
         {/* 8. 関連用語 */}
