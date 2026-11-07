@@ -30,7 +30,9 @@ const LEVEL_DOTS: Record<GlossaryLevel, number> = { beginner: 1, intermediate: 2
 
 type LevelFilter = GlossaryLevel | "all";
 type Speed = "slow" | "normal";
-const RATES: Record<Speed, number> = { slow: 0.75, normal: 1.05 };
+// 速さ。「ふつう」は声の標準(1.0)だと遅く聞こえるため少し速め、「ゆっくり」は差がはっきりわかる程度に
+const RATES: Record<Speed, number> = { slow: 0.85, normal: 1.3 };
+const VOICE_KEY = "glossary-voice";
 
 // useSyncExternalStore 用(表示中に変わらない値を読むだけなので購読は不要)
 const subscribeNoop = () => () => {};
@@ -67,28 +69,58 @@ function toSpeechText(t: GlossaryTerm): string {
     .replace(/[）)]/g, "、");
 }
 
-// 日本語の声を選ぶ。自然に聞こえやすい声(Edge の Natural/Online、Google、iPhone の Kyoko など)を優先する。
-function pickJapaneseVoice(): SpeechSynthesisVoice | null {
-  const voices = window.speechSynthesis.getVoices().filter((v) => v.lang.replace("_", "-").toLowerCase().startsWith("ja"));
-  if (voices.length === 0) return null;
-  const preferred = [/Natural/i, /Online/i, /Nanami/i, /Google/i, /Kyoko/i, /O-ren/i];
-  for (const re of preferred) {
-    const v = voices.find((voice) => re.test(voice.name));
-    if (v) return v;
+// 端末にある日本語の声。自然に聞こえやすい順に並べる
+// (Edge の「Natural/Online」(ニューラル音声) > Chrome の「Google 日本語」 > iPhone/Mac の Kyoko・O-ren > その他)
+const VOICE_RANK = [/Natural/i, /Online/i, /Google/i, /Kyoko|O-ren|Otoya|Hattori/i, /Nanami|Keita/i];
+function japaneseVoices(): SpeechSynthesisVoice[] {
+  const rank = (v: SpeechSynthesisVoice) => {
+    const i = VOICE_RANK.findIndex((re) => re.test(v.name));
+    return i === -1 ? VOICE_RANK.length : i;
+  };
+  return window.speechSynthesis
+    .getVoices()
+    .filter((v) => v.lang.replace("_", "-").toLowerCase().startsWith("ja"))
+    .sort((a, b) => rank(a) - rank(b));
+}
+function readSavedVoice(): string {
+  try {
+    return localStorage.getItem(VOICE_KEY) ?? "";
+  } catch {
+    return "";
   }
-  return voices[0];
 }
 
 function useSpeech() {
   const supported = useSyncExternalStore(subscribeNoop, readSpeechSupported, serverFalse);
   const [speaking, setSpeaking] = useState<{ id: string; speed: Speed } | null>(null);
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [voiceName, setVoiceNameState] = useState("");
   const runRef = useRef(0);
 
   useEffect(() => {
     if (!("speechSynthesis" in window)) return;
-    // 一部のブラウザ(Chrome など)は声の一覧を後から読み込むため、先に読み込みを始めておく
-    window.speechSynthesis.getVoices();
-    return () => window.speechSynthesis.cancel();
+    const synth = window.speechSynthesis;
+    // 声の一覧は後から読み込まれるブラウザ(Chrome など)があるため、読み込み完了の知らせを待つ
+    const load = () => {
+      setVoices(japaneseVoices());
+      setVoiceNameState(readSavedVoice());
+    };
+    synth.addEventListener("voiceschanged", load);
+    const timer = window.setTimeout(load, 0);
+    return () => {
+      synth.removeEventListener("voiceschanged", load);
+      window.clearTimeout(timer);
+      synth.cancel();
+    };
+  }, []);
+
+  const setVoiceName = useCallback((name: string) => {
+    setVoiceNameState(name);
+    try {
+      localStorage.setItem(VOICE_KEY, name);
+    } catch {
+      // 保存できない環境(プライベートモードなど)では、この画面の間だけ有効
+    }
   }, []);
 
   const stop = useCallback(() => {
@@ -102,7 +134,8 @@ function useSpeech() {
     const synth = window.speechSynthesis;
     synth.cancel();
     const run = ++runRef.current;
-    const voice = pickJapaneseVoice();
+    const list = japaneseVoices();
+    const voice = list.find((v) => v.name === voiceName) ?? list[0] ?? null;
     // 長い文を一度に渡すと途中で止まるブラウザがあるため、文ごとに分けて順番に読む
     const sentences = toSpeechText(term)
       .split(/(?<=。)/)
@@ -124,9 +157,9 @@ function useSpeech() {
       };
       synth.speak(u);
     });
-  }, []);
+  }, [voiceName]);
 
-  return { supported, speaking, speak, stop };
+  return { supported, speaking, speak, stop, voices, voiceName, setVoiceName };
 }
 type Speech = ReturnType<typeof useSpeech>;
 
@@ -179,6 +212,25 @@ function SpeechControls({ term, speech }: { term: GlossaryTerm; speech: Speech }
       <span className="text-[11px] font-extrabold tracking-[1px] text-muted">音声で聞く</span>
       {button("slow", "ゆっくり")}
       {button("normal", "ふつう")}
+      {speech.voices.length > 1 && (
+        <label className="inline-flex items-center gap-1.5 text-[11px] font-bold text-muted">
+          声
+          <select
+            value={speech.voiceName || speech.voices[0]?.name}
+            onChange={(e) => {
+              speech.stop();
+              speech.setVoiceName(e.target.value);
+            }}
+            className="max-w-[180px] border border-line bg-surface px-1.5 py-1 text-xs text-foreground"
+          >
+            {speech.voices.map((v) => (
+              <option key={v.name} value={v.name}>
+                {v.name.replace(/^Microsoft\s+/, "").replace(/\s*-\s*Japanese \(Japan\)/, "")}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
     </div>
   );
 }
