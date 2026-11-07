@@ -1,5 +1,6 @@
 // レジェンド枠(/legends)のデータ。NBA 75th Anniversary Team の76人(50 Greatest Players の50人を含む)。
-// 元データは data/legends/legends.json(scripts/build-legends-data.py が NBA公式の統計 stats.nba.com から作る)。
+// 元データは data/legends/legends.json(scripts/build-legends-from-bref.py が公開データセット(Basketball-Reference の記録)から作る)。
+// 優勝・ファイナルMVP・オールスターMVPはスクリプト内の一覧(出典つき)から付ける。プレーオフ成績は未収録(playoffsAvailable=false)。
 // DB(player_stats)には入れない: /stats の一覧に昔のシーズンが混ざらないようにするため。
 //
 // 記録が無い項目(1973-74より前のスティール・ブロック・ターンオーバー、1979-80より前の3P、初期の出場時間など)は null。
@@ -14,12 +15,14 @@ export * from "@/lib/legends/calc";
 type RawFile = {
   source: string;
   generatedAt: string;
+  playoffsAvailable?: boolean;
   legends: Omit<Legend, "nameJa">[];
 };
 
 const FILE = raw as unknown as RawFile;
 
 export const LEGENDS_GENERATED_AT = FILE.generatedAt;
+export const LEGEND_PLAYOFFS_AVAILABLE = FILE.playoffsAvailable !== false;
 
 export const LEGENDS: Legend[] = FILE.legends
   .map((l) => ({ ...l, nameJa: LEGEND_NAMES_JA[l.slug] ?? l.name }))
@@ -124,12 +127,17 @@ export function legendTeams(l: Legend): string[] {
   return teams;
 }
 
+const POSITION_JA: Record<string, string> = { G: "ガード", F: "フォワード", C: "センター", PG: "ポイントガード", SG: "シューティングガード", SF: "スモールフォワード", PF: "パワーフォワード" };
+
+/** "G-F" → "ガード／フォワード" */
 export function positionLabel(position: string | null): string {
   if (!position) return "-";
-  return position
-    .replace("Guard", "ガード")
-    .replace("Forward", "フォワード")
-    .replace("Center", "センター");
+  return position.split("-").map((p) => POSITION_JA[p] ?? p).join("／");
+}
+
+/** ポジションの絞り込み(G / F / C)に当てはまるか */
+export function hasPosition(position: string | null, letter: "G" | "F" | "C"): boolean {
+  return (position ?? "").split("-").some((p) => p === letter || p.endsWith(letter));
 }
 
 /** 76人の中での順位(大きいほど上位の項目) */

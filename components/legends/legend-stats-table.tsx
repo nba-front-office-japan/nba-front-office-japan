@@ -88,9 +88,12 @@ function CareerRows({ seasons }: { seasons: LegendDisplaySeason[] }) {
 export function LegendStatsTable({
   regular,
   playoffs,
+  playoffsAvailable,
 }: {
   regular: LegendDisplaySeason[];
   playoffs: LegendDisplaySeason[];
+  /** プレーオフ成績を収録済みか(未収録なら「準備中」と表示する) */
+  playoffsAvailable: boolean;
 }) {
   const [type, setType] = useState<"regular" | "playoffs">("regular");
   const rows = type === "regular" ? regular : playoffs;
@@ -127,7 +130,11 @@ export function LegendStatsTable({
             {rows.length === 0 ? (
               <tr>
                 <td colSpan={HEAD.length} className="px-2 py-6 text-center text-sm text-muted">
-                  {type === "playoffs" ? "プレーオフの出場記録はありません。" : "データがありません。"}
+                  {type === "playoffs"
+                    ? playoffsAvailable
+                      ? "プレーオフの出場記録はありません。"
+                      : "プレーオフ成績は準備中です。"
+                    : "データがありません。"}
                 </td>
               </tr>
             ) : (
@@ -144,8 +151,9 @@ export function LegendStatsTable({
 
       <ul className="mt-3 space-y-1 text-xs leading-relaxed text-muted">
         <li>・MIN〜BLK・TOVは1試合平均。移籍したシーズンは合計を1行で表示し、在籍チームを並べています。</li>
-        <li>・「—」は公式記録が無い項目です（スティール・ブロック・ターンオーバーは1973-74以降、3Pは1979-80以降に記録開始）。通算平均は、その項目が記録されているシーズンの試合だけで計算しています。</li>
-        <li>・NBA在籍時の成績のみ（ABAの成績は含みません）。出典: NBA公式統計（stats.nba.com）</li>
+        <li>・「—」は公式記録が無い項目です（出場時間は1951-52以降、スティール・ブロックは1973-74以降、ターンオーバーは1977-78以降、3Pは1979-80以降に記録開始）。通算平均は、その項目が記録されているシーズンの試合だけで計算しています。</li>
+        <li>・NBA（前身のBAAを含む）での成績です。ABAの成績は含みません。</li>
+        <li>・出典: Basketball-Reference（公開データセット sumitrodatta/bball-reference-datasets）</li>
         <li>
           ・項目の意味は
           <Link href="/guide/stats-basics" className="mx-1 font-semibold text-blue underline-offset-2 hover:underline">

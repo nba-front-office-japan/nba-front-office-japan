@@ -10,6 +10,7 @@ import {
   careerSpan,
   collapseLegendSeasons,
   debutDecade,
+  hasPosition,
   summarizeLegendAwards,
   type Legend,
 } from "@/lib/legends/data";
@@ -53,8 +54,7 @@ function href(list: ListFilter, pos: PosFilter): string {
 
 function matchesPosition(l: Legend, pos: PosFilter): boolean {
   if (pos === "all") return true;
-  const p = l.position ?? "";
-  return (pos === "G" && p.includes("Guard")) || (pos === "F" && p.includes("Forward")) || (pos === "C" && p.includes("Center"));
+  return hasPosition(l.position, pos);
 }
 
 function FilterLinks<T extends string>({ options, current, link }: { options: { value: T; label: string }[]; current: T; link: (v: T) => string }) {

@@ -8,6 +8,7 @@ import { fetchActiveLegendPlayerIds } from "@/lib/legends/active-links";
 import { seasonLabel } from "@/lib/awards/history";
 import {
   LEGENDS,
+  LEGEND_PLAYOFFS_AVAILABLE,
   awardCount,
   careerAverages,
   careerPoints,
@@ -69,6 +70,7 @@ const Eyebrow = ({ children }: { children: React.ReactNode }) => (
 );
 
 function AwardSeasons({ seasons, yearOnly }: { seasons: number[]; yearOnly: boolean }) {
+  if (seasons.length === 0) return <p className="text-sm">選出</p>;
   return (
     <ul className="flex flex-wrap gap-x-1.5 gap-y-1">
       {seasons.map((s, i) => (
@@ -98,7 +100,7 @@ function AwardsSection({ summaries, others }: { summaries: LegendAwardSummary[];
             <div key={a.key} className="grid gap-x-6 gap-y-1.5 py-3 first:pt-0 last:pb-0 sm:grid-cols-[200px_1fr]">
               <dt>
                 <span className="text-base font-bold">{a.label}</span>
-                {!isYearOnlyAward(a.key) && (
+                {!isYearOnlyAward(a.key) && a.seasons.length > 0 && (
                   <span className="ml-2 text-base font-extrabold tabular-nums text-blue">{a.seasons.length}回</span>
                 )}
                 {a.note && <span className="mt-0.5 block text-xs text-muted">{a.note}</span>}
@@ -138,7 +140,9 @@ function AwardsSection({ summaries, others }: { summaries: LegendAwardSummary[];
           </ul>
         </details>
       )}
-      <p className="mt-4 text-xs text-muted">出典: NBA公式統計（stats.nba.com）の受賞記録。週間・月間MVPは除いています。</p>
+      <p className="mt-4 text-xs text-muted">
+        出典: Basketball-Reference（公開データセット）。NBA優勝・ファイナルMVPはNBA.com、オールスターMVPはCBS Sports・Wikipediaの一覧から。優勝は優勝シーズンの最終所属チームで判定しています。
+      </p>
     </section>
   );
 }
@@ -181,7 +185,7 @@ function highlights(l: Legend, summaries: LegendAwardSummary[]): string[] {
     .filter(([, n]) => n > 0)
     .map(([label, n]) => `${label}${n}回`);
   if (titles.length > 0) lines.push(`主なタイトルは${titles.join("、")}。`);
-  if (playoffs.length > 0 && po.ppg !== null) {
+  if (LEGEND_PLAYOFFS_AVAILABLE && playoffs.length > 0 && po.ppg !== null) {
     lines.push(`プレーオフは${playoffs.length}シーズン・通算${po.career.gp}試合に出場し、平均${po.ppg.toFixed(1)}点を記録しました。`);
   }
   return lines;
@@ -211,13 +215,13 @@ export default async function LegendPage({ params, searchParams }: PageProps<"/l
     { label: "体重", value: l.weightKg ? `${l.weightKg} kg` : "-" },
     { label: "生年月日", value: l.birthDate ?? "-" },
     { label: "ポジション", value: positionLabel(l.position) },
-    { label: "国籍", value: l.country ?? "-" },
     {
       label: "ドラフト",
       value: l.draftYear
         ? `${l.draftYear}年${l.draftRound ? ` ${l.draftRound}巡目` : ""}${l.draftNumber ? ` ${l.draftNumber}位` : ""}`
         : "ドラフト外・記録なし",
     },
+    ...(l.draftTeam ? [{ label: "指名チーム", value: l.draftTeam }] : []),
     { label: "出身校", value: l.school ?? "-" },
     { label: "NBA在籍", value: span ? `${seasonLabel(span.first)}〜${seasonLabel(span.last)}（${regular.length}シーズン）` : "-" },
     { label: "在籍チーム", value: teams.join("・") || "-" },
@@ -286,7 +290,7 @@ export default async function LegendPage({ params, searchParams }: PageProps<"/l
           </section>
 
           <p className="mt-6 text-sm text-muted">
-            シーズン別の成績（レギュラーシーズン・プレーオフ）は
+            シーズン別の成績は
             <Link href={`/legends/${slug}?view=stats`} className="mx-1 font-semibold text-blue underline-offset-2 hover:underline">
               Stats
             </Link>
@@ -299,7 +303,7 @@ export default async function LegendPage({ params, searchParams }: PageProps<"/l
         <section className="mt-4 border border-line bg-surface p-4 sm:p-6">
           <Eyebrow>Career Stats</Eyebrow>
           <h2 className="mb-4 text-lg font-semibold">生涯成績（シーズン別・通算）</h2>
-          <LegendStatsTable regular={regular} playoffs={playoffs} />
+          <LegendStatsTable regular={regular} playoffs={playoffs} playoffsAvailable={LEGEND_PLAYOFFS_AVAILABLE} />
         </section>
       )}
 

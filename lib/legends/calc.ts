@@ -40,7 +40,7 @@ export type LegendAwardRow = {
 
 export type Legend = {
   slug: string;
-  personId: number;
+  personId: string | number;
   name: string;
   nameJa: string;
   greatest50: boolean;
@@ -56,7 +56,9 @@ export type Legend = {
   draftYear: number | null;
   draftRound: number | null;
   draftNumber: number | null;
+  draftTeam?: string | null;
   isActive: boolean;
+  hallOfFame?: boolean;
   regularSeason: LegendSeasonRow[];
   playoffs: LegendSeasonRow[];
   awards: LegendAwardRow[];
