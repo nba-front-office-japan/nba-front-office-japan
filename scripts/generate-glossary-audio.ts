@@ -56,7 +56,8 @@ async function synthesize(key: string, voice: string, text: string): Promise<Buf
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      input: { text },
+      // Chirp 3 は句点のない長い文を受け付けないので、「」を外して区切りを句点にして送る(画面の文章は変えない)
+      input: { text: text.replace(/「/g, "").replace(/、?」/g, "。") },
       voice: { languageCode: "ja-JP", name: voice },
       audioConfig: { audioEncoding: "MP3" },
     }),
