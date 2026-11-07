@@ -2,16 +2,16 @@
 //
 // 実行方法(PCで): npx tsx scripts/generate-glossary-audio.ts
 //   ・.env.local に GOOGLE_TTS_API_KEY=(Google Cloud の APIキー) が必要。
-//   ・声を変えたいときは GLOSSARY_TTS_VOICE=ja-JP-Chirp3-HD-Aoede のように指定する(未指定なら自動で選ぶ)。
 //   ・--dry を付けると、APIを呼ばずに文字数と作成対象だけ表示する。
 //
+// 「ゆっくり」「ふつう」で声と速さを変え、2セット作る(下の MODES。2026-11 に聞き比べて決定)。
 // 出力:
-//   ・public/audio/glossary/<用語ID>.mp3
-//   ・lib/glossary-audio.json(音声がある用語IDと、文章のハッシュ。画面はこれを見て音声ファイルを使う)
-// 文章(lib/glossary-speech.ts の toSpeechText)と声が前回と同じ用語は作り直さない。用語を追加・修正したら、もう一度実行すればよい。
+//   ・public/audio/glossary/<slow|normal>/<用語ID>.mp3
+//   ・lib/glossary-audio.json(モードごとの声・速さと、音声がある用語IDのハッシュ。画面はこれを見て音声ファイルを使う)
+// 文章(lib/glossary-speech.ts の toSpeechText)・声・速さが前回と同じ用語は作り直さない。用語を追加・修正したら、もう一度実行すればよい。
 //
 // 費用: Chirp 3: HD 音声は毎月100万文字まで無料(2026-11 確認。それを超えると100万文字あたり30ドル)。
-// 全用語でも約3万文字なので、通常は無料枠に収まる。
+// 全用語・2セットでも約6万文字なので、通常は無料枠に収まる。
 
 import { loadEnvConfig } from "@next/env";
 
@@ -24,34 +24,28 @@ import { GLOSSARY_TERMS } from "../lib/glossary-terms";
 import { toSpeechText } from "../lib/glossary-speech";
 
 const API = "https://texttospeech.googleapis.com/v1";
-const OUT_DIR = path.join(process.cwd(), "public", "audio", "glossary");
+const AUDIO_DIR = path.join(process.cwd(), "public", "audio", "glossary");
 const MANIFEST = path.join(process.cwd(), "lib", "glossary-audio.json");
 const dry = process.argv.includes("--dry");
 
-type Manifest = { voice: string; items: Record<string, string> };
-type Voice = { name: string; ssmlGender?: string; languageCodes: string[] };
+type Mode = "slow" | "normal";
+const MODES: Record<Mode, { voice: string; rate: number }> = {
+  slow: { voice: "ja-JP-Chirp3-HD-Kore", rate: 1.0 },
+  normal: { voice: "ja-JP-Chirp3-HD-Orus", rate: 1.1 },
+};
 
-function readManifest(): Manifest {
+type ModeManifest = { voice: string; rate: number; items: Record<string, string> };
+type Manifest = Record<Mode, ModeManifest>;
+
+function readManifest(): Partial<Manifest> {
   try {
-    return JSON.parse(readFileSync(MANIFEST, "utf8")) as Manifest;
+    return JSON.parse(readFileSync(MANIFEST, "utf8")) as Partial<Manifest>;
   } catch {
-    return { voice: "", items: {} };
+    return {};
   }
 }
 
-async function pickVoice(key: string): Promise<string> {
-  if (process.env.GLOSSARY_TTS_VOICE) return process.env.GLOSSARY_TTS_VOICE;
-  const res = await fetch(`${API}/voices?languageCode=ja-JP&key=${key}`);
-  if (!res.ok) throw new Error(`声の一覧を取得できませんでした (${res.status}): ${await res.text()}`);
-  const { voices = [] } = (await res.json()) as { voices?: Voice[] };
-  const ja = voices.filter((v) => v.languageCodes.includes("ja-JP"));
-  const female = (re: RegExp) => ja.find((v) => re.test(v.name) && v.ssmlGender === "FEMALE") ?? ja.find((v) => re.test(v.name));
-  const chosen = ja.find((v) => v.name === "ja-JP-Chirp3-HD-Aoede") ?? female(/Chirp3-HD/) ?? female(/Neural2/) ?? female(/Wavenet/i) ?? ja[0];
-  if (!chosen) throw new Error("日本語の声が見つかりませんでした");
-  return chosen.name;
-}
-
-async function synthesize(key: string, voice: string, text: string): Promise<Buffer> {
+async function synthesize(key: string, voice: string, rate: number, text: string): Promise<Buffer> {
   const res = await fetch(`${API}/text:synthesize?key=${key}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -59,7 +53,7 @@ async function synthesize(key: string, voice: string, text: string): Promise<Buf
       // Chirp 3 は句点のない長い文を受け付けないので、「」を外して区切りを句点にして送る(画面の文章は変えない)
       input: { text: text.replace(/「/g, "").replace(/、?」/g, "。") },
       voice: { languageCode: "ja-JP", name: voice },
-      audioConfig: { audioEncoding: "MP3" },
+      audioConfig: { audioEncoding: "MP3", speakingRate: rate },
     }),
   });
   if (!res.ok) throw new Error(`音声の作成に失敗しました (${res.status}): ${await res.text()}`);
@@ -73,41 +67,49 @@ async function main() {
     console.error("GOOGLE_TTS_API_KEY が .env.local にありません。");
     process.exit(1);
   }
-  const voice = dry && !key ? process.env.GLOSSARY_TTS_VOICE ?? "(自動選択)" : await pickVoice(key);
-  const manifest = readManifest();
-  const items: Record<string, string> = {};
-  const todo: { id: string; text: string; hash: string }[] = [];
-  let chars = 0;
-  for (const t of GLOSSARY_TERMS) {
-    const text = toSpeechText(t);
-    const hash = createHash("sha1").update(`${voice}\n${text}`).digest("hex").slice(0, 10);
-    items[t.id] = hash;
-    const file = path.join(OUT_DIR, `${t.id}.mp3`);
-    if (manifest.items[t.id] === hash && existsSync(file)) continue;
-    todo.push({ id: t.id, text, hash });
-    chars += text.length;
-  }
-  console.log(`声: ${voice}`);
-  console.log(`用語 ${GLOSSARY_TERMS.length} 語のうち、作成するのは ${todo.length} 語(${chars.toLocaleString()} 文字)`);
-  if (dry) return;
+  const old = readManifest();
+  const next = {} as Manifest;
+  for (const mode of Object.keys(MODES) as Mode[]) next[mode] = { ...MODES[mode], items: {} };
 
-  mkdirSync(OUT_DIR, { recursive: true });
-  const done: Record<string, string> = {};
+  // 作成済みの用語だけを書き出す(途中で失敗しても、できた分は使えるようにする)
+  const save = () => {
+    writeFileSync(MANIFEST, `${JSON.stringify(next, null, 2)}\n`);
+    console.log(`lib/glossary-audio.json: ${(Object.keys(MODES) as Mode[]).map((m) => `${m} ${Object.keys(next[m].items).length}語`).join("、")}`);
+  };
+
   try {
-    for (const [i, item] of todo.entries()) {
-      const mp3 = await synthesize(key, voice, item.text);
-      writeFileSync(path.join(OUT_DIR, `${item.id}.mp3`), mp3);
-      done[item.id] = item.hash;
-      console.log(`(${i + 1}/${todo.length}) ${item.id}.mp3  ${(mp3.length / 1024).toFixed(0)}KB`);
+    for (const mode of Object.keys(MODES) as Mode[]) {
+      const { voice, rate } = MODES[mode];
+      const dir = path.join(AUDIO_DIR, mode);
+      const prev = old[mode]?.items ?? {};
+      const todo: { id: string; text: string; hash: string }[] = [];
+      let chars = 0;
+      for (const t of GLOSSARY_TERMS) {
+        const text = toSpeechText(t);
+        const hash = createHash("sha1").update(`${voice}\n${rate}\n${text}`).digest("hex").slice(0, 10);
+        if (prev[t.id] === hash && existsSync(path.join(dir, `${t.id}.mp3`))) next[mode].items[t.id] = hash;
+        else {
+          todo.push({ id: t.id, text, hash });
+          chars += text.length;
+        }
+      }
+      console.log(`[${mode}] 声: ${voice} 速さ: ${rate} / 用語 ${GLOSSARY_TERMS.length} 語のうち、作成するのは ${todo.length} 語(${chars.toLocaleString()} 文字)`);
+      if (dry) continue;
+      mkdirSync(dir, { recursive: true });
+      for (const [i, item] of todo.entries()) {
+        const mp3 = await synthesize(key, voice, rate, item.text);
+        writeFileSync(path.join(dir, `${item.id}.mp3`), mp3);
+        next[mode].items[item.id] = item.hash;
+        console.log(`[${mode}] (${i + 1}/${todo.length}) ${item.id}.mp3  ${(mp3.length / 1024).toFixed(0)}KB`);
+      }
     }
   } finally {
-    // 作成済みの用語だけを書き出す(途中で失敗しても、できた分は使えるようにする)
-    const next: Manifest = { voice, items: {} };
-    for (const id of Object.keys(items).sort()) {
-      if (done[id] || (manifest.items[id] === items[id] && existsSync(path.join(OUT_DIR, `${id}.mp3`)))) next.items[id] = items[id];
+    if (!dry) {
+      for (const mode of Object.keys(MODES) as Mode[]) {
+        next[mode].items = Object.fromEntries(Object.entries(next[mode].items).sort(([a], [b]) => a.localeCompare(b)));
+      }
+      save();
     }
-    writeFileSync(MANIFEST, `${JSON.stringify(next, null, 2)}\n`);
-    console.log(`lib/glossary-audio.json に ${Object.keys(next.items).length} 語を記録しました`);
   }
 }
 

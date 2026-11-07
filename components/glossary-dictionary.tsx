@@ -20,7 +20,7 @@ import GLOSSARY_AUDIO from "@/lib/glossary-audio.json";
 // ・用語カードをクリックすると、その用語の解説をポップアップ(<dialog>)で開く。
 // ・全用語の解説はサーバー側でHTMLに含める(閉じた<dialog>の中身として出力するので、検索エンジンも読める)。
 // ・URL の #用語ID で直接開ける(共有用)。?level=beginner などでレベルを選んだ状態で開ける。
-// ・音声読み上げはブラウザ標準の speechSynthesis(費用なし)。「ゆっくり」「ふつう」の2速度。
+// ・音声読み上げは「ゆっくり」「ふつう」の2速度。Googleの音声で作ったファイルを再生し、ファイルが無い用語だけブラウザ標準の speechSynthesis で読む。
 
 type Category = (typeof GLOSSARY_CATEGORIES)[number];
 const CATEGORY_BY_KEY = Object.fromEntries(GLOSSARY_CATEGORIES.map((c) => [c.key, c])) as Record<GlossaryCategory, Category>;
@@ -34,11 +34,16 @@ type LevelFilter = GlossaryLevel | "all";
 type Speed = "slow" | "normal";
 // 速さ。「ふつう」は声の標準(1.0)だと遅く聞こえるため少し速め、「ゆっくり」は差がはっきりわかる程度に
 const RATES: Record<Speed, number> = { slow: 0.85, normal: 1.3 };
-// 事前に作った音声ファイル(Googleの音声で作成)の再生速度。自然な速さで録音されているので「ふつう」は等倍
-const AUDIO_RATES: Record<Speed, number> = { slow: 0.8, normal: 1.0 };
-// 音声ファイルがある用語(scripts/generate-glossary-audio.ts が lib/glossary-audio.json に書き出す)
-const AUDIO_ITEMS = GLOSSARY_AUDIO.items as Record<string, string>;
-const audioSrc = (id: string) => (AUDIO_ITEMS[id] ? `/audio/glossary/${id}.mp3?v=${AUDIO_ITEMS[id]}` : null);
+// 事前に作った音声ファイル(Googleの音声で作成)。「ゆっくり」「ふつう」で声と速さを変えて別々に作ってあるので、等倍で再生する
+// (scripts/generate-glossary-audio.ts が public/audio/glossary/<slow|normal>/ と lib/glossary-audio.json に書き出す)
+const AUDIO_ITEMS: Record<Speed, Record<string, string>> = {
+  slow: GLOSSARY_AUDIO.slow.items as Record<string, string>,
+  normal: GLOSSARY_AUDIO.normal.items as Record<string, string>,
+};
+const audioSrc = (id: string, speed: Speed) => {
+  const v = AUDIO_ITEMS[speed][id];
+  return v ? `/audio/glossary/${speed}/${id}.mp3?v=${v}` : null;
+};
 const VOICE_KEY = "glossary-voice";
 
 // useSyncExternalStore 用(表示中に変わらない値を読むだけなので購読は不要)
@@ -122,11 +127,10 @@ function useSpeech() {
     audioRef.current?.pause();
     audioRef.current = null;
     // 音声ファイルがあればそれを再生する(どの端末でも同じ自然な声)
-    const src = audioSrc(term.id);
+    const src = audioSrc(term.id, speed);
     if (src) {
       if ("speechSynthesis" in window) window.speechSynthesis.cancel();
       const audio = new Audio(src);
-      audio.playbackRate = AUDIO_RATES[speed];
       audio.onended = () => {
         if (runRef.current === run) setSpeaking(null);
       };
@@ -201,7 +205,8 @@ function LevelDots({ level, light = false }: { level: GlossaryLevel; light?: boo
 }
 
 function SpeechControls({ term, speech }: { term: GlossaryTerm; speech: Speech }) {
-  const hasAudio = !!audioSrc(term.id);
+  // 両方の速さの音声ファイルがあれば端末の声は使わない(声の選択も出さない)
+  const hasAudio = !!audioSrc(term.id, "slow") && !!audioSrc(term.id, "normal");
   if (!speech.supported && !hasAudio) return null;
   const active = speech.speaking?.id === term.id ? speech.speaking.speed : null;
   const button = (speed: Speed, label: string) => (
