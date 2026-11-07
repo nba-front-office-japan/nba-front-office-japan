@@ -11,6 +11,8 @@ import {
   type GlossaryTerm,
 } from "@/lib/glossary-terms";
 import { GlossaryFigureView, PositionCourt } from "@/components/glossary-figures";
+import { toSpeechText } from "@/lib/glossary-speech";
+import GLOSSARY_AUDIO from "@/lib/glossary-audio.json";
 
 // NBA用語辞典の本体。
 // ・用語は「分類」ごとの見出しの下に並べる(分類は色だけでなく、1文字のマークと名前で区別する)。
@@ -32,6 +34,11 @@ type LevelFilter = GlossaryLevel | "all";
 type Speed = "slow" | "normal";
 // 速さ。「ふつう」は声の標準(1.0)だと遅く聞こえるため少し速め、「ゆっくり」は差がはっきりわかる程度に
 const RATES: Record<Speed, number> = { slow: 0.85, normal: 1.3 };
+// 事前に作った音声ファイル(Googleの音声で作成)の再生速度。自然な速さで録音されているので「ふつう」は等倍
+const AUDIO_RATES: Record<Speed, number> = { slow: 0.8, normal: 1.0 };
+// 音声ファイルがある用語(scripts/generate-glossary-audio.ts が lib/glossary-audio.json に書き出す)
+const AUDIO_ITEMS = GLOSSARY_AUDIO.items as Record<string, string>;
+const audioSrc = (id: string) => (AUDIO_ITEMS[id] ? `/audio/glossary/${id}.mp3?v=${AUDIO_ITEMS[id]}` : null);
 const VOICE_KEY = "glossary-voice";
 
 // useSyncExternalStore 用(表示中に変わらない値を読むだけなので購読は不要)
@@ -45,29 +52,6 @@ const readUrlTerm = () => decodeURIComponent(location.hash.slice(1));
 const serverNull = () => null;
 const serverEmpty = () => "";
 const serverFalse = () => false;
-
-// 読み上げ用に、記号や略語を読みやすい形に置き換える。
-function toSpeechText(t: GlossaryTerm): string {
-  const parts = [t.yomi ?? t.term, "。", t.short];
-  if (t.detail) parts.push(t.detail);
-  if (t.points?.length) parts.push("覚えておきたいポイント。", ...t.points);
-  if (t.watch) parts.push("観戦のときは、", t.watch);
-  if (t.example) parts.push("NBAでの実例。", t.example);
-  return parts
-    .join("")
-    .replace(/＋\/−|\+\/-/g, "プラスマイナス")
-    .replace(/＆/g, "アンド")
-    .replace(/3P/g, "スリーポイント")
-    .replace(/eFG%/g, "実効フィールドゴール率")
-    .replace(/FG%/g, "フィールドゴール成功率")
-    .replace(/FT%/g, "フリースロー成功率")
-    .replace(/TS%/g, "トゥルーシューティング")
-    .replace(/USG%/g, "ユーセージ率")
-    .replace(/PTS/g, "ピーティーエス")
-    .replace(/(\d)-(\d{2})シーズン/g, "$1、$2シーズン")
-    .replace(/[（(]/g, "、")
-    .replace(/[）)]/g, "、");
-}
 
 // 端末にある日本語の声。自然に聞こえやすい順に並べる
 // (Edge の「Natural/Online」(ニューラル音声) > Chrome の「Google 日本語」 > iPhone/Mac の Kyoko・O-ren > その他)
@@ -96,6 +80,7 @@ function useSpeech() {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [voiceName, setVoiceNameState] = useState("");
   const runRef = useRef(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     if (!("speechSynthesis" in window)) return;
@@ -111,6 +96,7 @@ function useSpeech() {
       synth.removeEventListener("voiceschanged", load);
       window.clearTimeout(timer);
       synth.cancel();
+      audioRef.current?.pause();
     };
   }, []);
 
@@ -126,14 +112,37 @@ function useSpeech() {
   const stop = useCallback(() => {
     runRef.current += 1;
     if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
+    audioRef.current?.pause();
+    audioRef.current = null;
     setSpeaking(null);
   }, []);
 
   const speak = useCallback((term: GlossaryTerm, speed: Speed) => {
+    const run = ++runRef.current;
+    audioRef.current?.pause();
+    audioRef.current = null;
+    // 音声ファイルがあればそれを再生する(どの端末でも同じ自然な声)
+    const src = audioSrc(term.id);
+    if (src) {
+      if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+      const audio = new Audio(src);
+      audio.playbackRate = AUDIO_RATES[speed];
+      audio.onended = () => {
+        if (runRef.current === run) setSpeaking(null);
+      };
+      audio.onerror = () => {
+        if (runRef.current === run) setSpeaking(null);
+      };
+      audioRef.current = audio;
+      setSpeaking({ id: term.id, speed });
+      audio.play().catch(() => {
+        if (runRef.current === run) setSpeaking(null);
+      });
+      return;
+    }
     if (!("speechSynthesis" in window)) return;
     const synth = window.speechSynthesis;
     synth.cancel();
-    const run = ++runRef.current;
     const list = japaneseVoices();
     const voice = list.find((v) => v.name === voiceName) ?? list[0] ?? null;
     // 長い文を一度に渡すと途中で止まるブラウザがあるため、文ごとに分けて順番に読む
@@ -192,7 +201,8 @@ function LevelDots({ level, light = false }: { level: GlossaryLevel; light?: boo
 }
 
 function SpeechControls({ term, speech }: { term: GlossaryTerm; speech: Speech }) {
-  if (!speech.supported) return null;
+  const hasAudio = !!audioSrc(term.id);
+  if (!speech.supported && !hasAudio) return null;
   const active = speech.speaking?.id === term.id ? speech.speaking.speed : null;
   const button = (speed: Speed, label: string) => (
     <button
@@ -212,7 +222,7 @@ function SpeechControls({ term, speech }: { term: GlossaryTerm; speech: Speech }
       <span className="text-[11px] font-extrabold tracking-[1px] text-muted">音声で聞く</span>
       {button("slow", "ゆっくり")}
       {button("normal", "ふつう")}
-      {speech.voices.length > 1 && (
+      {!hasAudio && speech.voices.length > 1 && (
         <label className="inline-flex items-center gap-1.5 text-[11px] font-bold text-muted">
           声
           <select
