@@ -12,6 +12,7 @@ const CONTENT_LINKS = [
   { href: "/teams", label: "チーム" },
   { href: "/players", label: "選手名鑑" },
   { href: "/players/featured", label: "人気選手ガイド" },
+  { href: "/legends", label: "NBAレジェンド" },
   { href: "/salary", label: "サラリー" },
   { href: "/guide", label: "NBAガイド" },
 ];
