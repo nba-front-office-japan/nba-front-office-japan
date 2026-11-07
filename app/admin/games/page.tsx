@@ -128,6 +128,32 @@ async function fetchBoxScoreAdmin(): Promise<{ ready: boolean; games: number }> 
   return { ready: true, games: count ?? 0 };
 }
 
+type UnmatchedBoxScorePlayer = { id: string; gameDate: string; team: string; playerName: string };
+
+// ボックススコアの取り込みで選手データと照合できず、選手ページにつながっていない行(box_score_players.player_id が空)。
+// 取り込みのたびに作り直されるため、ここに出ている行は「今も照合できていない選手」
+async function fetchUnmatchedBoxScorePlayers(): Promise<{ rows: UnmatchedBoxScorePlayer[]; error?: string }> {
+  const supabase = createAdminSupabaseClient();
+  const { data, error } = await supabase.from("box_score_players").select("id, game_id, team_id, player_name").is("player_id", null);
+  if (error) return { rows: [], error: error.message };
+  const rows = data ?? [];
+  if (rows.length === 0) return { rows: [] };
+
+  const gameIds = [...new Set(rows.map((r) => r.game_id))];
+  const [gamesRes, teamsRes] = await Promise.all([
+    supabase.from("box_score_games").select("id, game_date").in("id", gameIds),
+    supabase.from("teams").select("id, abbreviation"),
+  ]);
+  if (gamesRes.error) return { rows: [], error: gamesRes.error.message };
+  const dateByGame = new Map((gamesRes.data ?? []).map((g) => [g.id, g.game_date]));
+  const abbr = new Map((teamsRes.data ?? []).map((t) => [t.id, t.abbreviation]));
+  return {
+    rows: rows
+      .map((r) => ({ id: r.id, gameDate: dateByGame.get(r.game_id) ?? "—", team: abbr.get(r.team_id) ?? "—", playerName: r.player_name }))
+      .sort((a, b) => b.gameDate.localeCompare(a.gameDate) || a.team.localeCompare(b.team) || a.playerName.localeCompare(b.playerName)),
+  };
+}
+
 function Card({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="border border-line bg-surface p-5 sm:p-6">
@@ -140,7 +166,12 @@ function Card({ title, children }: { title: string; children: ReactNode }) {
 export default async function AdminGamesPage({ searchParams }: PageProps<"/admin/games">) {
   const { date: dateParam } = await searchParams;
   const date = typeof dateParam === "string" && isValidDateString(dateParam) ? dateParam : null;
-  const [recent, preseason, boxScores] = await Promise.all([fetchRecentGames(date), fetchPreseasonAdmin(), fetchBoxScoreAdmin()]);
+  const [recent, preseason, boxScores, unmatched] = await Promise.all([
+    fetchRecentGames(date),
+    fetchPreseasonAdmin(),
+    fetchBoxScoreAdmin(),
+    fetchUnmatchedBoxScorePlayers(),
+  ]);
   const syncDates = defaultSyncDates();
 
   return (
@@ -173,7 +204,7 @@ export default async function AdminGamesPage({ searchParams }: PageProps<"/admin
           <li>
             NBA公式書式で列名が違う Excel（Date (US)、Away/Home OT1〜OT5、H/A、Pos、MP、Status が Starter / Bench / DNP、Team Totals の TRB (players) / TOV (players)）も同じ検査で取り込みます。
           </li>
-          <li>チーム略称 BRK / CHO / PHO は当サイトの BKN / CHA / PHX に置き換えます。選手は NBA Player ID（選手データの NBA ID）、次に選手名で照合し、照合できない選手は名前だけで表示します。</li>
+          <li>チーム略称 BRK / CHO / PHO は当サイトの BKN / CHA / PHX に置き換えます。選手は NBA Player ID（選手データの NBA ID）、次に選手名で照合します。同じ名前が複数の選手に当てはまるときは、試合のチームの現在ロスターにいる選手を選びます。照合できない選手は名前だけで表示し、下の「照合できなかった選手」に出ます。</li>
           <li>Date は米国東部時間の試合日として保存します。試合結果＆ボックススコアのページでは、日程（balldontlie）の同じ日付・同じ対戦の試合にボックススコアを表示し、日程に無い試合は1日加えた日本時間の日付に表示します。</li>
           <li>Metadata・Errors シートは取り込み結果に表示するだけで、公開ページには使いません。</li>
         </ul>
@@ -185,6 +216,39 @@ export default async function AdminGamesPage({ searchParams }: PageProps<"/admin
           <>
             <p className="text-xs text-muted">取り込み済み：{boxScores.games}試合</p>
             <BoxScoreWorkbookForm />
+            <div>
+              <h3 className="mb-2 font-bold">照合できなかった選手（選手ページにつながっていない行）</h3>
+              <p className="mb-2 text-xs text-muted">
+                取り込み済みのボックススコアのうち、選手データと照合できなかった選手です。同じ名前の選手が複数いて、試合のチームの現在ロスターでも1人に絞れなかった場合もここに出ます。
+                選手データ（別名・NBA ID）を直してから同じExcelを取り込み直すと、ここから消えます。
+              </p>
+              {unmatched.error ? (
+                <p className="text-[#cf4a51]">取得に失敗しました: {unmatched.error}</p>
+              ) : unmatched.rows.length === 0 ? (
+                <p className="font-bold text-[#218c68]">照合できなかった選手はいません</p>
+              ) : (
+                <div className="max-h-[20rem] overflow-auto border border-line">
+                  <table className="w-full border-collapse text-sm">
+                    <thead>
+                      <tr className="border-b border-line text-left text-xs text-muted">
+                        <th className="px-3 py-2">試合日（米国）</th>
+                        <th className="px-3 py-2">チーム</th>
+                        <th className="px-3 py-2">選手名</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {unmatched.rows.map((r) => (
+                        <tr key={r.id} className="border-b border-line last:border-b-0">
+                          <td className="whitespace-nowrap px-3 py-2 tabular-nums">{r.gameDate}</td>
+                          <td className="px-3 py-2 font-bold">{r.team}</td>
+                          <td className="px-3 py-2">{r.playerName}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </>
         )}
       </Card>

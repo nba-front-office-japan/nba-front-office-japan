@@ -9,6 +9,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
+import { ROSTER_SEASON } from "@/lib/seasons";
 import { readXlsx } from "./xlsx-reader";
 import { parseBoxScoreWorkbook, type ImportIssue, type SourceError } from "./box-score-excel";
 
@@ -44,16 +45,22 @@ export function normalizePlayerName(name: string): string {
 }
 
 async function buildPlayerMatcher(supabase: Client) {
-  const [players, aliases] = await Promise.all([
+  const [players, aliases, rosters] = await Promise.all([
     fetchAllRows<{ id: string; full_name: string; nba_person_id: number | null }>((from, to) =>
       supabase.from("players").select("id, full_name, nba_person_id").order("id").range(from, to)
     ),
     fetchAllRows<{ player_id: string; alias_full_name: string }>((from, to) =>
       supabase.from("player_name_aliases").select("player_id, alias_full_name").order("id").range(from, to)
     ),
+    // 同じ名前が複数の選手に当てはまるとき、試合のチームの現在ロスター(チームページと同じ player_season_rosters)で1人に絞るために使う
+    fetchAllRows<{ player_id: string; team_id: string }>((from, to) =>
+      supabase.from("player_season_rosters").select("player_id, team_id").eq("season", ROSTER_SEASON).order("id").range(from, to)
+    ),
   ]);
   if (players.error) throw new Error(`playersの取得に失敗しました: ${players.error.message}`);
   if (aliases.error) throw new Error(`player_name_aliasesの取得に失敗しました: ${aliases.error.message}`);
+  if (rosters.error) throw new Error(`player_season_rostersの取得に失敗しました: ${rosters.error.message}`);
+  const onTeamRoster = new Set(rosters.data.map((r) => `${r.team_id}|${r.player_id}`));
 
   const exact = new Map<string, Set<string>>();
   const normalized = new Map<string, Set<string>>();
@@ -71,15 +78,22 @@ async function buildPlayerMatcher(supabase: Client) {
     add(exact, a.alias_full_name, a.player_id);
     add(normalized, normalizePlayerName(a.alias_full_name), a.player_id);
   }
-  // NBA公式の選手ID(players.nba_person_id)で照合し、見つからなければ名前(別名を含む)で照合する。
-  // 同じIDや名前の選手が複数いる場合は、取り違えないよう照合しない
-  return (name: string, nbaPlayerId?: string | null): string | null => {
+  // 候補が1人ならその選手。複数なら、試合のチームの現在ロスターにいる候補が1人だけのときにその選手。
+  // それでも絞れなければ、取り違えないよう照合しない(リンクなしで登録し、管理画面の「照合できなかった選手」に出る)
+  const pick = (candidates: Set<string>, teamId: string | undefined): string | null => {
+    if (candidates.size === 1) return [...candidates][0];
+    if (!teamId) return null;
+    const onRoster = [...candidates].filter((id) => onTeamRoster.has(`${teamId}|${id}`));
+    return onRoster.length === 1 ? onRoster[0] : null;
+  };
+  // NBA公式の選手ID(players.nba_person_id)で照合し、見つからなければ名前(別名を含む)で照合する
+  return (name: string, nbaPlayerId: string | null | undefined, teamId: string | undefined): string | null => {
     const byId = nbaPlayerId ? byNbaId.get(nbaPlayerId.trim()) : undefined;
     if (byId && byId.size === 1) return [...byId][0];
     const e = exact.get(name);
-    if (e) return e.size === 1 ? [...e][0] : null;
+    if (e) return pick(e, teamId);
     const n = normalized.get(normalizePlayerName(name));
-    return n && n.size === 1 ? [...n][0] : null;
+    return n ? pick(n, teamId) : null;
   };
 }
 
@@ -125,7 +139,7 @@ export async function importBoxScoreWorkbook(
   const players = parsed.players
     .filter((p) => ok.has(p.bref_game_id))
     .map(({ team_abbr, nba_player_id, ...p }) => {
-      const playerId = matchPlayer(p.player_name, nba_player_id);
+      const playerId = matchPlayer(p.player_name, nba_player_id, teamIdByAbbr.get(team_abbr));
       if (!playerId) {
         unmatched.add(p.player_name);
         unmatchedPlayerDetails.push({ gameId: p.bref_game_id, date: dateByGame.get(p.bref_game_id)!, team: team_abbr, playerName: p.player_name });
