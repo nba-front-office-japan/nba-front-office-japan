@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
 import {
   GLOSSARY_CATEGORIES,
@@ -10,20 +10,23 @@ import {
   type GlossaryLevel,
   type GlossaryTerm,
 } from "@/lib/glossary-terms";
+import { GlossaryFigureView, PositionCourt } from "@/components/glossary-figures";
 
 // NBA用語辞典の本体。
+// ・用語は「分類」ごとの見出しの下に並べる(分類は色だけでなく、1文字のマークと名前で区別する)。
+// ・上部の分類ボタンで、その分類の見出しへ移動する。レベル(初心者/中級者/上級者)と検索で絞り込める。
 // ・用語カードをクリックすると、その用語の解説をポップアップ(<dialog>)で開く。
 // ・全用語の解説はサーバー側でHTMLに含める(閉じた<dialog>の中身として出力するので、検索エンジンも読める)。
 // ・URL の #用語ID で直接開ける(共有用)。?level=beginner などでレベルを選んだ状態で開ける。
 // ・音声読み上げはブラウザ標準の speechSynthesis(費用なし)。「ゆっくり」「ふつう」の2速度。
 
-const CATEGORY_BY_KEY = Object.fromEntries(GLOSSARY_CATEGORIES.map((c) => [c.key, c])) as Record<
-  GlossaryCategory,
-  (typeof GLOSSARY_CATEGORIES)[number]
->;
+type Category = (typeof GLOSSARY_CATEGORIES)[number];
+const CATEGORY_BY_KEY = Object.fromEntries(GLOSSARY_CATEGORIES.map((c) => [c.key, c])) as Record<GlossaryCategory, Category>;
 const LEVEL_LABEL = Object.fromEntries(GLOSSARY_LEVELS.map((l) => [l.key, l.label])) as Record<GlossaryLevel, string>;
-const TERM_IDS = new Set(GLOSSARY_TERMS.map((t) => t.id));
+const TERM_BY_ID = Object.fromEntries(GLOSSARY_TERMS.map((t) => [t.id, t])) as Record<string, GlossaryTerm>;
 const dialogId = (id: string) => `term-${id}`;
+const sectionId = (c: GlossaryCategory) => `cat-${c}`;
+const LEVEL_DOTS: Record<GlossaryLevel, number> = { beginner: 1, intermediate: 2, advanced: 3 };
 
 type LevelFilter = GlossaryLevel | "all";
 type Speed = "slow" | "normal";
@@ -36,13 +39,17 @@ const readUrlLevel = (): LevelFilter | null => {
   const lv = new URLSearchParams(location.search).get("level");
   return lv === "beginner" || lv === "intermediate" || lv === "advanced" ? lv : null;
 };
+const readUrlTerm = () => decodeURIComponent(location.hash.slice(1));
 const serverNull = () => null;
+const serverEmpty = () => "";
 const serverFalse = () => false;
 
 // 読み上げ用に、記号や略語を読みやすい形に置き換える。
 function toSpeechText(t: GlossaryTerm): string {
   const parts = [t.yomi ?? t.term, "。", t.short];
   if (t.detail) parts.push(t.detail);
+  if (t.points?.length) parts.push("覚えておきたいポイント。", ...t.points);
+  if (t.watch) parts.push("観戦のときは、", t.watch);
   if (t.example) parts.push("NBAでの実例。", t.example);
   return parts
     .join("")
@@ -51,8 +58,10 @@ function toSpeechText(t: GlossaryTerm): string {
     .replace(/3P/g, "スリーポイント")
     .replace(/eFG%/g, "実効フィールドゴール率")
     .replace(/FG%/g, "フィールドゴール成功率")
+    .replace(/FT%/g, "フリースロー成功率")
     .replace(/TS%/g, "トゥルーシューティング")
     .replace(/USG%/g, "ユーセージ率")
+    .replace(/PTS/g, "ピーティーエス")
     .replace(/(\d)-(\d{2})シーズン/g, "$1、$2シーズン")
     .replace(/[（(]/g, "、")
     .replace(/[）)]/g, "、");
@@ -88,75 +97,68 @@ function useSpeech() {
     setSpeaking(null);
   }, []);
 
-  const speak = useCallback(
-    (term: GlossaryTerm, speed: Speed) => {
-      if (!("speechSynthesis" in window)) return;
-      const synth = window.speechSynthesis;
-      synth.cancel();
-      const run = ++runRef.current;
-      const voice = pickJapaneseVoice();
-      // 長い文を一度に渡すと途中で止まるブラウザがあるため、文ごとに分けて順番に読む
-      const sentences = toSpeechText(term)
-        .split(/(?<=。)/)
-        .map((s) => s.trim())
-        .filter(Boolean);
-      setSpeaking({ id: term.id, speed });
-      sentences.forEach((sentence, i) => {
-        const u = new SpeechSynthesisUtterance(sentence);
-        u.lang = "ja-JP";
-        if (voice) u.voice = voice;
-        u.rate = RATES[speed];
-        if (i === sentences.length - 1) {
-          u.onend = () => {
-            if (runRef.current === run) setSpeaking(null);
-          };
-        }
-        u.onerror = () => {
+  const speak = useCallback((term: GlossaryTerm, speed: Speed) => {
+    if (!("speechSynthesis" in window)) return;
+    const synth = window.speechSynthesis;
+    synth.cancel();
+    const run = ++runRef.current;
+    const voice = pickJapaneseVoice();
+    // 長い文を一度に渡すと途中で止まるブラウザがあるため、文ごとに分けて順番に読む
+    const sentences = toSpeechText(term)
+      .split(/(?<=。)/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    setSpeaking({ id: term.id, speed });
+    sentences.forEach((sentence, i) => {
+      const u = new SpeechSynthesisUtterance(sentence);
+      u.lang = "ja-JP";
+      if (voice) u.voice = voice;
+      u.rate = RATES[speed];
+      if (i === sentences.length - 1) {
+        u.onend = () => {
           if (runRef.current === run) setSpeaking(null);
         };
-        synth.speak(u);
-      });
-    },
-    [],
-  );
+      }
+      u.onerror = () => {
+        if (runRef.current === run) setSpeaking(null);
+      };
+      synth.speak(u);
+    });
+  }, []);
 
   return { supported, speaking, speak, stop };
 }
+type Speech = ReturnType<typeof useSpeech>;
 
-function CategoryBadge({ category }: { category: GlossaryCategory }) {
-  const c = CATEGORY_BY_KEY[category];
+// 分類のマーク(1文字)。色だけに頼らず文字でも見分けられるようにする
+function CategoryMark({ c, size = "sm" }: { c: Category; size?: "sm" | "lg" }) {
+  const cls = size === "lg" ? "size-12 text-2xl" : "size-6 text-[13px]";
   return (
     <span
-      className="inline-flex items-center gap-1.5 border px-2 py-0.5 text-[11px] font-extrabold"
-      style={{ color: c.color, borderColor: c.color, backgroundColor: c.tint }}
+      aria-hidden
+      className={`inline-flex shrink-0 items-center justify-center font-black text-white ${cls}`}
+      style={{ backgroundColor: c.color }}
     >
-      <span aria-hidden className="inline-block size-1.5 rounded-full" style={{ backgroundColor: c.color }} />
-      {c.label}
+      {c.mark}
     </span>
   );
 }
 
-function LevelBadge({ level }: { level: GlossaryLevel }) {
-  const dots = level === "beginner" ? 1 : level === "intermediate" ? 2 : 3;
+function LevelDots({ level, light = false }: { level: GlossaryLevel; light?: boolean }) {
+  const dots = LEVEL_DOTS[level];
   return (
-    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-muted">
-      <span aria-hidden className="inline-flex gap-0.5">
-        {[1, 2, 3].map((n) => (
-          <span key={n} className={`inline-block size-1.5 ${n <= dots ? "bg-foreground" : "bg-line"}`} />
-        ))}
-      </span>
-      {LEVEL_LABEL[level]}
+    <span aria-hidden className="inline-flex gap-0.5">
+      {[1, 2, 3].map((n) => (
+        <span
+          key={n}
+          className={`inline-block size-1.5 ${n <= dots ? (light ? "bg-gold" : "bg-foreground") : light ? "bg-white/30" : "bg-line"}`}
+        />
+      ))}
     </span>
   );
 }
 
-function SpeechControls({
-  term,
-  speech,
-}: {
-  term: GlossaryTerm;
-  speech: ReturnType<typeof useSpeech>;
-}) {
+function SpeechControls({ term, speech }: { term: GlossaryTerm; speech: Speech }) {
   if (!speech.supported) return null;
   const active = speech.speaking?.id === term.id ? speech.speaking.speed : null;
   const button = (speed: Speed, label: string) => (
@@ -181,16 +183,25 @@ function SpeechControls({
   );
 }
 
+function SectionLabel({ children }: { children: ReactNode }) {
+  return <p className="mb-2 text-[11px] font-extrabold tracking-[1px] text-muted">{children}</p>;
+}
+
 function TermDialog({
   term,
   onClose,
+  onOpen,
   speech,
+  showFigure,
 }: {
   term: GlossaryTerm;
   onClose: () => void;
-  speech: ReturnType<typeof useSpeech>;
+  onOpen: (id: string) => void;
+  speech: Speech;
+  showFigure: boolean;
 }) {
   const c = CATEGORY_BY_KEY[term.category];
+  const related = (term.related ?? []).map((id) => TERM_BY_ID[id]).filter(Boolean);
   return (
     <dialog
       id={dialogId(term.id)}
@@ -200,29 +211,32 @@ function TermDialog({
         // 背景(ダイアログの外側)をクリックしたら閉じる
         if (e.target === e.currentTarget) e.currentTarget.close();
       }}
-      className="glossary-dialog m-auto max-h-[88dvh] w-[calc(100%-24px)] max-w-[680px] overflow-y-auto border border-line bg-surface p-0 text-foreground shadow-2xl backdrop:bg-black/60"
+      className="m-auto max-h-[90dvh] w-[calc(100%-20px)] max-w-[720px] overflow-y-auto border border-line bg-surface p-0 text-foreground shadow-2xl backdrop:bg-black/60"
     >
       <div
-        className="relative border-b px-5 pb-5 pt-6 sm:px-8 sm:pt-8"
+        className="relative border-b-2 px-5 pb-5 pt-6 sm:px-8 sm:pt-8"
         style={{ borderColor: c.color, background: `linear-gradient(180deg, ${c.tint} 0%, var(--surface) 100%)` }}
       >
         <form method="dialog" className="absolute right-3 top-3">
           <button
             type="submit"
             aria-label="閉じる"
-            className="flex size-9 items-center justify-center text-2xl leading-none text-muted hover:text-foreground"
+            className="flex size-9 items-center justify-center text-2xl leading-none text-muted outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-foreground"
           >
             ×
           </button>
         </form>
         <div className="mb-3 flex flex-wrap items-center gap-3 pr-10">
-          <CategoryBadge category={term.category} />
-          <LevelBadge level={term.level} />
+          <span className="inline-flex items-center gap-2 text-xs font-extrabold" style={{ color: c.color }}>
+            <CategoryMark c={c} />
+            {c.label}
+          </span>
+          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-muted">
+            <LevelDots level={term.level} />
+            {LEVEL_LABEL[term.level]}
+          </span>
         </div>
-        <h2
-          id={`${dialogId(term.id)}-title`}
-          className="text-balance text-[26px] font-bold leading-tight tracking-tight [word-break:auto-phrase] sm:text-[32px]"
-        >
+        <h2 id={`${dialogId(term.id)}-title`} tabIndex={-1} data-autofocus className="text-balance outline-none text-[26px] font-bold leading-tight tracking-tight [word-break:auto-phrase] sm:text-[32px]">
           {term.term}
         </h2>
         <p lang="en" className="mt-1 text-xs font-semibold uppercase tracking-[1.5px] text-muted">
@@ -240,33 +254,72 @@ function TermDialog({
           <p className="text-pretty text-[16px] font-bold leading-7 [word-break:auto-phrase] sm:text-[17px]">{term.short}</p>
         </div>
 
+        {/* 図解はページを軽くするため、一度開いた用語だけ描く */}
+        {term.figure && showFigure && <GlossaryFigureView figure={term.figure} />}
+
         {term.detail && (
           <div>
-            <p className="mb-2 text-[11px] font-extrabold tracking-[1px] text-muted">詳しい解説</p>
+            <SectionLabel>詳しい解説</SectionLabel>
             <p className="text-pretty text-[15px] leading-8 [word-break:auto-phrase]">{term.detail}</p>
+          </div>
+        )}
+
+        {term.points && term.points.length > 0 && (
+          <div>
+            <SectionLabel>覚えておきたいポイント</SectionLabel>
+            <ul className="space-y-2">
+              {term.points.map((p) => (
+                <li key={p} className="flex gap-2.5 text-[15px] leading-7">
+                  <span aria-hidden className="mt-2.5 inline-block size-2 shrink-0" style={{ backgroundColor: c.color }} />
+                  <span className="text-pretty [word-break:auto-phrase]">{p}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {term.watch && (
+          <div className="border border-line bg-background px-4 py-3">
+            <p className="mb-1 text-[11px] font-extrabold tracking-[1px] text-blue">観戦のときはここを見る</p>
+            <p className="text-pretty text-[15px] leading-7 [word-break:auto-phrase]">{term.watch}</p>
           </div>
         )}
 
         {term.example && (
           <div>
-            <p className="mb-2 text-[11px] font-extrabold tracking-[1px] text-muted">NBAでの実例</p>
-            <p className="text-pretty border-l-2 border-line pl-4 text-[15px] leading-8 text-muted [word-break:auto-phrase]">
-              {term.example}
-            </p>
+            <SectionLabel>NBAでの実例</SectionLabel>
+            <p className="text-pretty border-l-2 border-line pl-4 text-[15px] leading-8 text-muted [word-break:auto-phrase]">{term.example}</p>
           </div>
         )}
 
         {term.category === "injury" && (
-          <p className="text-xs leading-6 text-muted">
-            ※ 一般的な意味の説明です。選手ごとの状態・診断や復帰時期は、チームやNBAの発表を確認してください。
-          </p>
+          <p className="text-xs leading-6 text-muted">※ 一般的な意味の説明です。選手ごとの状態・診断や復帰時期は、チームやNBAの発表を確認してください。</p>
+        )}
+
+        {related.length > 0 && (
+          <div>
+            <SectionLabel>あわせて読みたい用語</SectionLabel>
+            <div className="flex flex-wrap gap-2">
+              {related.map((r) => (
+                <a
+                  key={r.id}
+                  href={`#${r.id}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onOpen(r.id);
+                  }}
+                  className="inline-flex items-center gap-1.5 border border-line bg-surface px-2.5 py-1.5 text-xs font-bold hover:border-foreground"
+                >
+                  <CategoryMark c={CATEGORY_BY_KEY[r.category]} />
+                  {r.term}
+                </a>
+              ))}
+            </div>
+          </div>
         )}
 
         {term.href && (
-          <Link
-            href={term.href}
-            className="inline-block border border-blue px-4 py-2 text-sm font-bold text-blue hover:bg-blue hover:text-white"
-          >
+          <Link href={term.href} className="inline-block border border-blue px-4 py-2 text-sm font-bold text-blue hover:bg-blue hover:text-white">
             詳しく読む：{term.linkLabel} →
           </Link>
         )}
@@ -275,33 +328,84 @@ function TermDialog({
   );
 }
 
+function TermCard({ t, onOpen }: { t: GlossaryTerm; onOpen: (id: string) => void }) {
+  const c = CATEGORY_BY_KEY[t.category];
+  return (
+    <a
+      href={`#${t.id}`}
+      onClick={(e) => {
+        e.preventDefault();
+        onOpen(t.id);
+      }}
+      className="group flex h-full flex-col border border-line border-l-4 bg-surface p-4 transition-shadow hover:shadow-md"
+      style={{ borderLeftColor: c.color }}
+    >
+      <span className="mb-1.5 flex items-center justify-between gap-2">
+        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-muted">
+          <LevelDots level={t.level} />
+          {LEVEL_LABEL[t.level]}
+        </span>
+        {t.figure && <span className="border border-line px-1.5 text-[10px] font-bold text-muted">図解あり</span>}
+      </span>
+      <span className="text-[17px] font-bold leading-snug [word-break:auto-phrase] group-hover:text-blue">{t.term}</span>
+      <span lang="en" className="mt-0.5 text-[11px] font-semibold uppercase tracking-[1px] text-muted">
+        {t.en}
+      </span>
+      <span className="mt-2 line-clamp-2 text-sm leading-6 text-muted">{t.short}</span>
+      <span className="mt-auto pt-3 text-xs font-bold text-blue">解説を見る →</span>
+    </a>
+  );
+}
+
 export function GlossaryDictionary() {
   // レベル: 画面で選んだもの > URL の ?level= > すべて
   const [chosenLevel, setLevel] = useState<LevelFilter | null>(null);
   const urlLevel = useSyncExternalStore(subscribeNoop, readUrlLevel, serverNull);
+  // URL の #用語ID(最初に開く用語)。その用語の図解も描く
+  const urlTerm = useSyncExternalStore(subscribeNoop, readUrlTerm, serverEmpty);
   const level: LevelFilter = chosenLevel ?? urlLevel ?? "all";
-  const [category, setCategory] = useState<GlossaryCategory | "all">("all");
+  const [query, setQuery] = useState("");
+  const [opened, setOpened] = useState<ReadonlySet<string>>(() => new Set());
   const speech = useSpeech();
   const { stop } = speech;
 
-  const open = useCallback((id: string) => {
+  // ポップアップを開く(DOM操作だけ)
+  const showDialog = useCallback((id: string) => {
+    // 開いているポップアップがあれば閉じてから開く(関連用語から移動するとき)
+    document.querySelectorAll<HTMLDialogElement>("dialog[open]").forEach((d) => {
+      if (d.id !== dialogId(id)) d.close();
+    });
     const el = document.getElementById(dialogId(id));
     if (el instanceof HTMLDialogElement && !el.open) {
       el.showModal();
+      // 閉じるボタンではなく見出しにフォーカスを置く(開いた直後に枠線が出ないように)
+      el.querySelector<HTMLElement>("[data-autofocus]")?.focus();
+      el.scrollTop = 0;
       history.replaceState(null, "", `${location.pathname}${location.search}#${id}`);
     }
   }, []);
 
+  const open = useCallback(
+    (id: string) => {
+      stop();
+      setOpened((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
+      showDialog(id);
+    },
+    [stop, showDialog],
+  );
+
   const handleClose = useCallback(() => {
     stop();
-    if (location.hash) history.replaceState(null, "", `${location.pathname}${location.search}`);
+    if (!document.querySelector("dialog[open]") && location.hash) {
+      history.replaceState(null, "", `${location.pathname}${location.search}`);
+    }
   }, [stop]);
 
   // 初回表示: #用語ID があればその用語を開く
   useEffect(() => {
     const hash = decodeURIComponent(location.hash.slice(1));
-    if (TERM_IDS.has(hash)) open(hash);
-  }, [open]);
+    if (TERM_BY_ID[hash]) showDialog(hash);
+  }, [showDialog]);
 
   const selectLevel = (lv: LevelFilter) => {
     setLevel(lv);
@@ -309,22 +413,22 @@ export function GlossaryDictionary() {
     history.replaceState(null, "", url);
   };
 
+  const q = query.trim().toLowerCase();
   const inLevel = GLOSSARY_TERMS.filter((t) => level === "all" || t.level === level);
-  const visible = inLevel.filter((t) => category === "all" || t.category === category);
-  const levelsToShow = level === "all" ? GLOSSARY_LEVELS : GLOSSARY_LEVELS.filter((l) => l.key === level);
+  const visible = inLevel.filter(
+    (t) => !q || t.term.toLowerCase().includes(q) || t.en.toLowerCase().includes(q) || t.short.toLowerCase().includes(q),
+  );
+  const sections = GLOSSARY_CATEGORIES.map((c) => ({ c, terms: visible.filter((t) => t.category === c.key) })).filter((s) => s.terms.length > 0);
+  const showPositionCourt = !q && (level === "all" || level === "beginner");
 
   return (
     <>
       {/* レベル選択 */}
-      <div role="tablist" aria-label="レベル" className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div role="tablist" aria-label="レベル" className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
         {(
           [
             { key: "all", label: "すべて", count: GLOSSARY_TERMS.length },
-            ...GLOSSARY_LEVELS.map((l) => ({
-              key: l.key,
-              label: l.label,
-              count: GLOSSARY_TERMS.filter((t) => t.level === l.key).length,
-            })),
+            ...GLOSSARY_LEVELS.map((l) => ({ key: l.key, label: l.label, count: GLOSSARY_TERMS.filter((t) => t.level === l.key).length })),
           ] as { key: LevelFilter; label: string; count: number }[]
         ).map((tab) => {
           const selected = level === tab.key;
@@ -335,113 +439,128 @@ export function GlossaryDictionary() {
               role="tab"
               aria-selected={selected}
               onClick={() => selectLevel(tab.key)}
-              className={`flex items-center justify-between border px-4 py-3 text-left text-sm font-bold transition-colors ${
+              className={`flex items-center justify-between border px-4 py-3 text-left text-sm font-bold ${
                 selected ? "border-foreground bg-navy text-white" : "border-line bg-surface hover:border-foreground"
               }`}
             >
               <span className="flex items-center gap-2">
-                {tab.key !== "all" && (
-                  <span aria-hidden className="inline-flex gap-0.5">
-                    {[1, 2, 3].map((n) => {
-                      const dots = tab.key === "beginner" ? 1 : tab.key === "intermediate" ? 2 : 3;
-                      return (
-                        <span
-                          key={n}
-                          className={`inline-block size-1.5 ${
-                            n <= dots ? (selected ? "bg-gold" : "bg-foreground") : selected ? "bg-white/30" : "bg-line"
-                          }`}
-                        />
-                      );
-                    })}
-                  </span>
-                )}
+                {tab.key !== "all" && <LevelDots level={tab.key} light={selected} />}
                 {tab.label}
               </span>
-              <span className={`text-xs tabular-nums ${selected ? "text-white/70" : "text-muted"}`}>{tab.count}</span>
+              <span className={`text-xs tabular-nums ${selected ? "text-white/70" : "text-muted"}`}>{tab.count}語</span>
             </button>
           );
         })}
       </div>
+      {level !== "all" && <p className="-mt-1 mb-4 text-sm text-muted">{GLOSSARY_LEVELS.find((l) => l.key === level)?.lead}</p>}
 
-      {/* 分類の絞り込み */}
-      <div aria-label="分類" className="mb-8 flex flex-wrap gap-2">
-        {[{ key: "all" as const, label: "すべての分類", color: "var(--foreground)" }, ...GLOSSARY_CATEGORIES].map((c) => {
-          const count = inLevel.filter((t) => c.key === "all" || t.category === c.key).length;
-          if (count === 0) return null;
-          const selected = category === c.key;
-          return (
-            <button
-              key={c.key}
-              type="button"
-              aria-pressed={selected}
-              onClick={() => setCategory(c.key)}
-              className="border px-3 py-1.5 text-xs font-bold transition-colors"
-              style={
-                selected
-                  ? { backgroundColor: c.color, borderColor: c.color, color: "#fff" }
-                  : { borderColor: "var(--line)", backgroundColor: "var(--surface)" }
-              }
-            >
-              {c.label}
-              <span className="ml-1.5 tabular-nums opacity-70">{count}</span>
-            </button>
-          );
-        })}
+      {/* 検索 */}
+      <div className="mb-4">
+        <label className="flex items-center gap-2 border border-line bg-surface px-3 py-2.5 focus-within:border-foreground">
+          <span aria-hidden className="text-muted">
+            <svg viewBox="0 0 20 20" className="size-4" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="8.5" cy="8.5" r="6" />
+              <path d="M13 13l5 5" />
+            </svg>
+          </span>
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="用語を探す（例：トラベリング、TS%、エプロン）"
+            aria-label="用語を検索"
+            className="w-full bg-transparent text-sm outline-none"
+          />
+        </label>
       </div>
 
-      {visible.length === 0 && <p className="text-sm text-muted">この条件に当てはまる用語はありません。</p>}
+      {/* 分類の目次(押すとその分類の見出しへ移動) */}
+      <nav aria-label="分類" className="sticky top-0 z-10 -mx-4 mb-8 border-y border-line bg-background/95 px-4 py-2.5 backdrop-blur sm:mx-0 sm:border-x sm:px-3">
+        <p className="mb-1.5 text-[11px] font-extrabold tracking-[1px] text-muted">分類から探す</p>
+        <div className="flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible">
+          {GLOSSARY_CATEGORIES.map((c) => {
+            const count = visible.filter((t) => t.category === c.key).length;
+            return (
+              <a
+                key={c.key}
+                href={`#${sectionId(c.key)}`}
+                aria-disabled={count === 0}
+                className={`inline-flex shrink-0 items-center gap-1.5 border bg-surface py-1 pl-1 pr-2.5 text-xs font-bold transition-colors hover:border-foreground ${
+                  count === 0 ? "pointer-events-none opacity-40" : ""
+                }`}
+                style={{ borderColor: c.color }}
+              >
+                <CategoryMark c={c} />
+                {c.label}
+                <span className="tabular-nums text-muted">{count}</span>
+              </a>
+            );
+          })}
+        </div>
+      </nav>
 
-      <div className="space-y-10">
-        {levelsToShow.map((lv) => {
-          const terms = visible.filter((t) => t.level === lv.key);
-          if (terms.length === 0) return null;
-          return (
-            <section key={lv.key} aria-labelledby={`level-${lv.key}`}>
-              <div className="mb-4 border-b-2 border-foreground pb-2">
-                <h2 id={`level-${lv.key}`} className="text-xl font-bold tracking-tight">
-                  {lv.label}
+      {sections.length === 0 && <p className="text-sm text-muted">「{query}」に当てはまる用語はありません。</p>}
+
+      <div className="space-y-12">
+        {sections.map(({ c, terms }) => (
+          <section key={c.key} id={sectionId(c.key)} aria-labelledby={`${sectionId(c.key)}-title`} className="scroll-mt-40">
+            <div className="mb-4 flex items-center gap-3 border-b-2 pb-3" style={{ borderColor: c.color }}>
+              <CategoryMark c={c} size="lg" />
+              <div className="min-w-0">
+                <h2 id={`${sectionId(c.key)}-title`} className="text-xl font-bold tracking-tight sm:text-2xl">
+                  {c.label}
                   <span className="ml-2 text-sm font-semibold text-muted tabular-nums">{terms.length}語</span>
                 </h2>
-                <p className="mt-1 text-sm text-muted">{lv.lead}</p>
+                <p className="mt-0.5 text-sm text-muted">{c.lead}</p>
               </div>
-              <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {terms.map((t) => {
-                  const c = CATEGORY_BY_KEY[t.category];
-                  return (
-                    <li key={t.id}>
-                      <a
-                        href={`#${t.id}`}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          open(t.id);
-                        }}
-                        className="group flex h-full flex-col border border-line border-t-[3px] bg-surface p-4 transition-shadow hover:shadow-md"
-                        style={{ borderTopColor: c.color }}
-                      >
-                        <span className="mb-2 text-[11px] font-extrabold" style={{ color: c.color }}>
-                          {c.label}
-                        </span>
-                        <span className="text-[17px] font-bold leading-snug [word-break:auto-phrase] group-hover:text-blue">
-                          {t.term}
-                        </span>
-                        <span lang="en" className="mt-0.5 text-[11px] font-semibold uppercase tracking-[1px] text-muted">
-                          {t.en}
-                        </span>
-                        <span className="mt-2 line-clamp-2 text-sm leading-6 text-muted">{t.short}</span>
-                        <span className="mt-auto pt-3 text-xs font-bold text-blue">解説を見る →</span>
-                      </a>
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
-          );
-        })}
+            </div>
+
+            {c.key === "position" && showPositionCourt && (
+              <div className="mb-5 grid items-center gap-4 border border-line bg-surface p-4 sm:grid-cols-[minmax(0,420px)_1fr] sm:p-5">
+                <PositionCourt onOpen={open} />
+                <div>
+                  <p className="text-[11px] font-extrabold tracking-[1px]" style={{ color: c.color }}>
+                    まずはここから
+                  </p>
+                  <h3 className="mt-1 text-lg font-bold">5つのポジション</h3>
+                  <p className="mt-2 text-sm leading-7 text-muted">
+                    バスケットボールは1チーム5人。役割に合わせて1番〜5番と呼びます。コート上の番号を押すと、そのポジションの解説が開きます。
+                  </p>
+                  <ul className="mt-3 grid gap-1.5 text-sm">
+                    {[
+                      ["1", "ポイントガード（PG）", "司令塔", "point-guard"],
+                      ["2", "シューティングガード（SG）", "得点役", "shooting-guard"],
+                      ["3", "スモールフォワード（SF）", "万能型", "small-forward"],
+                      ["4", "パワーフォワード（PF）", "体を張る", "power-forward"],
+                      ["5", "センター（C）", "ゴール下の柱", "center"],
+                    ].map(([n, name, role, id]) => (
+                      <li key={id}>
+                        <button type="button" onClick={() => open(id)} className="flex w-full items-center gap-2 text-left hover:text-blue">
+                          <span className="inline-flex size-6 shrink-0 items-center justify-center bg-navy text-xs font-black text-white">{n}</span>
+                          <span className="font-bold">{name}</span>
+                          <span className="text-xs text-muted">{role}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
+
+            <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {terms.map((t) => (
+                <li key={t.id}>
+                  <TermCard t={t} onOpen={open} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
       </div>
 
       {/* 全用語の解説(ポップアップ)。閉じた状態でもHTMLに含まれる */}
       {GLOSSARY_TERMS.map((t) => (
-        <TermDialog key={t.id} term={t} onClose={handleClose} speech={speech} />
+        <TermDialog key={t.id} term={t} onClose={handleClose} onOpen={open} speech={speech} showFigure={opened.has(t.id) || urlTerm === t.id} />
       ))}
     </>
   );
