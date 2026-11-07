@@ -59,6 +59,8 @@ export type Legend = {
   draftTeam?: string | null;
   isActive: boolean;
   hallOfFame?: boolean;
+  /** プレーオフ成績を取り込み済みか(scripts/import-legend-playoffs.py) */
+  playoffsLoaded?: boolean;
   regularSeason: LegendSeasonRow[];
   playoffs: LegendSeasonRow[];
   awards: LegendAwardRow[];

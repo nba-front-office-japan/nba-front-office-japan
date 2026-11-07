@@ -185,7 +185,7 @@ function highlights(l: Legend, summaries: LegendAwardSummary[]): string[] {
     .filter(([, n]) => n > 0)
     .map(([label, n]) => `${label}${n}回`);
   if (titles.length > 0) lines.push(`主なタイトルは${titles.join("、")}。`);
-  if (LEGEND_PLAYOFFS_AVAILABLE && playoffs.length > 0 && po.ppg !== null) {
+  if ((LEGEND_PLAYOFFS_AVAILABLE || l.playoffsLoaded) && playoffs.length > 0 && po.ppg !== null) {
     lines.push(`プレーオフは${playoffs.length}シーズン・通算${po.career.gp}試合に出場し、平均${po.ppg.toFixed(1)}点を記録しました。`);
   }
   return lines;
@@ -303,7 +303,7 @@ export default async function LegendPage({ params, searchParams }: PageProps<"/l
         <section className="mt-4 border border-line bg-surface p-4 sm:p-6">
           <Eyebrow>Career Stats</Eyebrow>
           <h2 className="mb-4 text-lg font-semibold">生涯成績（シーズン別・通算）</h2>
-          <LegendStatsTable regular={regular} playoffs={playoffs} playoffsAvailable={LEGEND_PLAYOFFS_AVAILABLE} />
+          <LegendStatsTable regular={regular} playoffs={playoffs} playoffsAvailable={LEGEND_PLAYOFFS_AVAILABLE || Boolean(l.playoffsLoaded)} />
         </section>
       )}
 
