@@ -5,6 +5,7 @@
       各ブロックは "Season,Age,Team,Lg,..." の見出し行から始まる。通算行("18 Yrs" など)・空行は読み飛ばす。
 
 選手の判定: ブロック内の (シーズン, チーム, 年齢) が、レギュラーシーズンの記録(legends.json)と最も多く一致する選手。
+  シーズン行の合計(試合数・出場時間・得点・リバウンド・アシスト)が表の通算行と一致しないブロックは取り込まない。
   一致が少ない(プレーオフ出場シーズンの8割未満)ブロックは判定できないとして表示し、取り込まない。
   Per Game(1試合平均)の表が貼られた場合(MP に小数がある等)は取り込まない。
 
@@ -44,8 +45,21 @@ def parse_blocks(text: str) -> list[list[dict]]:
     result = []
     for lines in blocks:
         rows = list(csv.DictReader(io.StringIO("\n".join(lines))))
-        result.append([r for r in rows if (r.get("Season") or "")[:4].isdigit() and "-" in r["Season"] and (r.get("G") or "").strip()])
+        seasons = [r for r in rows if (r.get("Season") or "")[:4].isdigit() and "-" in r["Season"] and (r.get("G") or "").strip()]
+        career = next((r for r in rows if (r.get("Season") or "").endswith("Yrs")), None)
+        result.append((seasons, career))
     return result
+
+
+def matches_career(rows: list[dict], career: dict | None) -> bool:
+    # 貼り付け漏れ・途中で切れた貼り付けを見つけるため、シーズン行の合計が通算行("18 Yrs")と一致するか確かめる
+    if career is None:
+        return False
+    for key in ("G", "MP", "PTS", "TRB", "AST"):
+        total = sum(num(r[key]) or 0 for r in rows if not r["Team"].endswith("TM"))
+        if (num(career.get(key, "")) or 0) != total:
+            return False
+    return True
 
 
 def looks_per_game(rows: list[dict]) -> bool:
@@ -67,12 +81,15 @@ def main() -> int:
     }
 
     imported, problems = [], []
-    for i, rows in enumerate(parse_blocks(text), 1):
+    for i, (rows, career) in enumerate(parse_blocks(text), 1):
         if not rows:
             continue
         label = f"{i}番目の表({rows[0]['Season']}〜{rows[-1]['Season']}, {rows[0]['Team']})"
         if looks_per_game(rows):
             problems.append(f"{label}: 1試合平均(Per Game)の表です。Totals の表を貼ってください")
+            continue
+        if not matches_career(rows, career):
+            problems.append(f"{label}: シーズンの合計が通算行と一致しません(貼り付けが途中で切れていないか確認してください)")
             continue
         block_keys = {
             (int(r["Season"][:4]), "TOT" if r["Team"].endswith("TM") else r["Team"], num(r["Age"])) for r in rows
