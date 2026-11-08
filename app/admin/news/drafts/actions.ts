@@ -13,7 +13,7 @@ import type { ActionState } from "@/app/admin/_components/action-ui";
 import { validateRelatedMediaInputs } from "@/lib/news/related-media";
 import { bodyMediaProblem } from "@/lib/news/body-media";
 import { validatePublishedAtInput } from "@/lib/news/jst-datetime";
-import { publishDraft } from "@/lib/news/editorial";
+import { approveDraft, publishDraft } from "@/lib/news/editorial";
 import { parseTargetGame, targetGameColumns, unknownTeamProblem } from "@/lib/news/target-game";
 
 export async function createDraftAction(
@@ -259,19 +259,10 @@ export async function approveDraftAction(
     return { status: "error", message: "下書きIDが不正です。" };
   }
 
-  const supabase = createAdminSupabaseClient();
-  const { data, error } = await supabase
-    .from("article_drafts")
-    .update({ status: "approved", reviewed_at: new Date().toISOString() })
-    .eq("id", draftId)
-    .eq("status", "pending_review")
-    .select("id");
-
-  if (error) {
-    return { status: "error", message: `承認に失敗しました: ${error.message}` };
-  }
-  if ((data ?? []).length === 0) {
-    return { status: "error", message: "承認待ちの下書きではありません。" };
+  // 入稿APIの POST /api/ingest/drafts/:id/approve と同じ処理
+  const result = await approveDraft(createAdminSupabaseClient(), draftId);
+  if (!result.ok) {
+    return { status: "error", message: result.message };
   }
 
   revalidatePath(`/admin/news/drafts/${draftId}`);

@@ -1,5 +1,5 @@
 import type { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import type { EventSourceRelation, NewsEventCategory, VerificationStatus } from "@/lib/supabase/types";
+import type { ArticleDraftStatus, EventSourceRelation, NewsEventCategory, VerificationStatus } from "@/lib/supabase/types";
 import { buildDefaultAttribution } from "@/lib/news/attribution";
 import { guessNewsTopic } from "@/lib/news/topic-guess";
 
@@ -108,6 +108,29 @@ export async function buildEventAttribution(supabase: SupabaseAdmin, eventId: st
       publishedAt: item.published_at,
     }))
   );
+}
+
+/**
+ * 人が内容を確認した印として「承認済み」にする。入稿APIから公開できるのは承認済みの下書きだけ。
+ * 承認待ち(pending_review)の下書きだけを変更する。それ以外は変更せず、現在の状態を返す(存在しなければ status: null)
+ */
+export async function approveDraft(
+  supabase: SupabaseAdmin,
+  draftId: string
+): Promise<EditorialResult<{ id: string; headline: string }> | { ok: false; message: string; notPending: true; status: ArticleDraftStatus | null }> {
+  const { data, error } = await supabase
+    .from("article_drafts")
+    .update({ status: "approved", reviewed_at: new Date().toISOString() })
+    .eq("id", draftId)
+    .eq("status", "pending_review")
+    .select("id, headline_ja");
+  if (error) return { ok: false, message: `承認に失敗しました: ${error.message}` };
+
+  const approved = (data ?? [])[0];
+  if (approved) return { ok: true, id: approved.id, headline: approved.headline_ja };
+
+  const { data: current } = await supabase.from("article_drafts").select("status").eq("id", draftId).maybeSingle();
+  return { ok: false, message: "承認待ちの下書きではありません。", notPending: true, status: current?.status ?? null };
 }
 
 /** 下書きを公開する。本文が空なら公開しない */
