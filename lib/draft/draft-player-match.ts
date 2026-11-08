@@ -91,10 +91,16 @@ export function buildDraftPlayerIndex(players: DraftMatchPlayer[], aliases: Draf
   return { byName, byDraft };
 }
 
+// 指名後に改名した選手(名鑑は改名後の名前で登録されている)。キーは「ドラフト年:指名時の名前」
+const RENAMED: Record<string, string> = {
+  "1990:Chris Jackson": "Mahmoud Abdul-Rauf",
+  "1991:Brian Williams": "Bison Dele",
+};
+
 export function matchDraftPick(index: DraftPlayerIndex, year: number, pick: DraftMatchPick): DraftMatchResult {
   const sameDraft = (p: DraftMatchPlayer) => p.draft_year === year && p.draft_pick === pick.overallPick;
-  const named =
-    index.byName.get(draftNameKey(pick.playerNameEn)) ?? index.byName.get(germanNameKey(pick.playerNameEn)) ?? [];
+  const nameEn = RENAMED[`${year}:${pick.playerNameEn}`] ?? pick.playerNameEn;
+  const named = index.byName.get(draftNameKey(nameEn)) ?? index.byName.get(germanNameKey(nameEn)) ?? [];
 
   if (named.length > 0) {
     const exact = named.filter(sameDraft);
