@@ -222,10 +222,16 @@ main table:not([class*="history-"]):not(.no-row-fx) > tbody > tr > :is(td, th) {
 
 main table:not([class*="history-"]):not(.no-row-fx) > tbody > tr:hover > :is(td, th) {
   background-image: linear-gradient(var(--fx-tint), var(--fx-tint)) !important;
+  /* 行の上下にテーマ色の線を引き、選んだ行が浮き出て見えるようにする */
+  box-shadow: inset 0 2px 0 var(--blue), inset 0 -2px 0 var(--blue);
 }
 
 main table:not([class*="history-"]):not(.no-row-fx) > tbody > tr:hover > :first-child {
-  box-shadow: inset 4px 0 0 var(--blue);
+  box-shadow: inset 6px 0 0 var(--blue), inset 0 2px 0 var(--blue), inset 0 -2px 0 var(--blue);
+}
+
+main table:not([class*="history-"]):not(.no-row-fx) > tbody > tr:hover > :last-child {
+  box-shadow: inset -2px 0 0 var(--blue), inset 0 2px 0 var(--blue), inset 0 -2px 0 var(--blue);
 }
 
 main table:not([class*="history-"]):not(.no-row-fx) > tbody > tr:active > :is(td, th) {
