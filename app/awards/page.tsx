@@ -5,10 +5,12 @@ import { BriefSheet, BriefSide } from "@/components/brief-sheet";
 import { PageShell } from "@/components/page-shell";
 import { seasonLabel } from "@/lib/awards/history";
 import { DETAIL_LABEL, SEASON_MAJOR_AWARDS, SEASON_TEAM_AWARDS, type SeasonAwardKey } from "@/lib/awards/season-master";
+import { legendByPlayerName } from "@/lib/legends/award-links";
 import { SeasonSelect } from "./season-select";
 
 // 年度別アワード。管理画面で取り込んだマスターデータ(nba_season_awards)を年度ごとに表示する。
 // 現役・引退を問わず、NBA全体の受賞者・選出者を表示する。サイトに選手プロフィールがある選手だけリンクを付ける。
+// 引退したレジェンド(75周年チーム)は、レジェンドの個人ページ(/legends/{slug})へリンクする。現役のレジェンドは従来どおり /players/{id}。
 // 年度は URL(?season=2023-24)で指定し、指定がない・データがない年度なら最新の年度を表示する。
 // 選手プロフィールの「個人賞・表彰」(player_award_records)とは別のデータ。
 
@@ -17,7 +19,7 @@ import { SeasonSelect } from "./season-select";
 const SUSPECT_JA_NAMES = new Set(["ジエルエムイアハ・フィアーズ", "コリン・ムウルルエイ＝ブオイルエス"]);
 
 type Rec = { season: number; award_key: string; detail: string; player_name: string; player_id: string | null; team: string | null };
-type Winner = { key: string; name: string; playerId: string | null; ja: string | null; team: string | null; detail: string };
+type Winner = { key: string; name: string; playerId: string | null; ja: string | null; team: string | null; detail: string; legendSlug: string | null };
 
 function parseSeasonParam(value: unknown): number | null {
   if (typeof value !== "string") return null;
@@ -51,11 +53,15 @@ export async function generateMetadata({ searchParams }: PageProps<"/awards">): 
 function WinnerItem({ winner, showDetail = false }: { winner: Winner; showDetail?: boolean }) {
   const ja = winner.ja && !SUSPECT_JA_NAMES.has(winner.ja) ? winner.ja : null;
   const main = ja ?? winner.name;
+  const href = winner.legendSlug ? `/legends/${winner.legendSlug}` : winner.playerId ? `/players/${winner.playerId}` : null;
   return (
     <li className="min-w-0 border-l-[3px] border-gold pl-3">
       {showDetail && winner.detail && <span className="block text-[11px] font-bold text-muted">{DETAIL_LABEL[winner.detail] ?? winner.detail}</span>}
-      {winner.playerId ? (
-        <Link href={`/players/${winner.playerId}`} className="selection-button selection-blue block rounded-lg px-2 py-1.5 break-words text-base font-extrabold leading-snug text-blue underline-offset-2 hover:underline">
+      {winner.legendSlug && (
+        <span className="mb-0.5 inline-block bg-gold px-1.5 py-px text-[10px] font-extrabold uppercase tracking-[1px] text-[#182238]">Legend</span>
+      )}
+      {href ? (
+        <Link href={href} className="selection-button selection-blue block rounded-lg px-2 py-1.5 break-words text-base font-extrabold leading-snug text-blue underline-offset-2 hover:underline">
           {main}
         </Link>
       ) : (
@@ -87,14 +93,20 @@ export default async function AwardsPage({ searchParams }: PageProps<"/awards">)
   const winnersOf = (key: SeasonAwardKey, detail?: string): Winner[] =>
     records
       .filter((r) => r.award_key === key && (detail === undefined || r.detail === detail))
-      .map((r) => ({
-        key: `${r.award_key}-${r.detail}-${r.player_name}`,
-        name: r.player_name,
-        playerId: r.player_id,
-        ja: r.player_id ? (jaById.get(r.player_id) ?? null) : null,
-        team: r.team,
-        detail: r.detail,
-      }))
+      .map((r) => {
+        const legend = legendByPlayerName(r.player_name);
+        // 現役のレジェンドは今季成績のある /players/{id} の方が役に立つので、引退した選手だけレジェンドページへ
+        const retiredLegend = legend && !legend.isActive ? legend : null;
+        return {
+          key: `${r.award_key}-${r.detail}-${r.player_name}`,
+          name: r.player_name,
+          playerId: r.player_id,
+          ja: (r.player_id ? (jaById.get(r.player_id) ?? null) : null) ?? legend?.nameJa ?? null,
+          team: r.team,
+          detail: r.detail,
+          legendSlug: retiredLegend?.slug ?? null,
+        };
+      })
       // カンファレンス・ファイナルMVPはイースト → ウエストの順、それ以外は名前順
       .sort((a, b) => a.detail.localeCompare(b.detail) || a.name.localeCompare(b.name));
 
@@ -136,7 +148,7 @@ export default async function AwardsPage({ searchParams }: PageProps<"/awards">)
             <section>
               <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">Major Awards</p>
               <h3 className="mb-1 text-xl font-semibold">主要賞</h3>
-              <p className="mb-4 text-xs text-muted">所属は受賞時点のチームです。赤い名前の選手は、選手プロフィールへ移動できます。</p>
+              <p className="mb-4 text-xs text-muted">所属は受賞時点のチームです。赤い名前の選手は、選手プロフィールへ移動できます。「LEGEND」の選手は、レジェンドの個人ページへ移動できます。</p>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {majors.map((a) => (
                   <div key={a.key} className="border border-line bg-surface p-5">

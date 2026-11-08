@@ -5,6 +5,7 @@ import { PageShell } from "@/components/page-shell";
 import { LegendStatsTable } from "@/components/legends/legend-stats-table";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { fetchActiveLegendPlayerIds } from "@/lib/legends/active-links";
+import { awardsPageHref } from "@/lib/legends/award-links";
 import { seasonLabel } from "@/lib/awards/history";
 import {
   LEGENDS,
@@ -69,16 +70,27 @@ const Eyebrow = ({ children }: { children: React.ReactNode }) => (
   <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">{children}</p>
 );
 
-function AwardSeasons({ seasons, yearOnly }: { seasons: number[]; yearOnly: boolean }) {
+// 2003-04以降の主要な賞は、年度別アワード(/awards)のその年度へリンクする
+function AwardSeasons({ seasons, yearOnly, awardKey }: { seasons: number[]; yearOnly: boolean; awardKey: string }) {
   if (seasons.length === 0) return <p className="text-sm">選出</p>;
   return (
     <ul className="flex flex-wrap gap-x-1.5 gap-y-1">
-      {seasons.map((s, i) => (
-        <li key={s} className="whitespace-nowrap text-sm tabular-nums">
-          {yearOnly ? `${s}年` : seasonLabel(s)}
-          {i < seasons.length - 1 && <span className="ml-1.5 text-muted">/</span>}
-        </li>
-      ))}
+      {seasons.map((s, i) => {
+        const label = yearOnly ? `${s}年` : seasonLabel(s);
+        const href = yearOnly ? null : awardsPageHref(awardKey, s);
+        return (
+          <li key={s} className="whitespace-nowrap text-sm tabular-nums">
+            {href ? (
+              <Link href={href} className="font-bold text-blue underline underline-offset-2 hover:opacity-80" title={`${label}の年度別アワードを見る`}>
+                {label}
+              </Link>
+            ) : (
+              label
+            )}
+            {i < seasons.length - 1 && <span className="ml-1.5 text-muted">/</span>}
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -114,13 +126,13 @@ function AwardsSection({ summaries, others }: { summaries: LegendAwardSummary[];
                           {TEAM_LABEL[t.team] ?? `${t.team}th Team`}（{t.seasons.length}回）：
                         </dt>
                         <dd className="min-w-0">
-                          <AwardSeasons seasons={t.seasons} yearOnly={false} />
+                          <AwardSeasons seasons={t.seasons} yearOnly={false} awardKey={a.key} />
                         </dd>
                       </div>
                     ))}
                   </dl>
                 ) : (
-                  <AwardSeasons seasons={a.seasons} yearOnly={isYearOnlyAward(a.key)} />
+                  <AwardSeasons seasons={a.seasons} yearOnly={isYearOnlyAward(a.key)} awardKey={a.key} />
                 )}
               </dd>
             </div>
