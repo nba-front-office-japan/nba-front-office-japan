@@ -13,14 +13,14 @@
 /* 記事カードのホバー・クリック演出(サイト共通の動きを紙面の配色で)。
    カーソルを乗せると浮き上がり、黒いずれ影＋反対色の内枠が付く。押すと紙面に沈む。文字色は変えない。 */
 .leadArticle,.railStory,.storyCard{position:relative;transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s ease,outline-color .2s ease;outline:.22rem solid transparent;outline-offset:-.6rem;-webkit-tap-highlight-color:transparent}
-.leadArticle:hover,.railStory:hover,.storyCard:hover,.leadArticle:has(.cardLink:focus-visible),.railStory:has(.cardLink:focus-visible),.storyCard:has(.cardLink:focus-visible){z-index:2;transform:translate(-.3rem,-.4rem);box-shadow:.55rem .6rem 0 var(--ink);outline-color:var(--yellow)}
+.leadArticle:hover,.railStory:hover,.storyCard:hover,.leadArticle:has(.cardLink:focus-visible),.railStory:has(.cardLink:focus-visible),.storyCard:has(.cardLink:focus-visible){z-index:2;transform:translate(-.55rem,-.8rem) rotate(-.6deg) scale(1.02);box-shadow:.9rem 1rem 0 var(--ink);outline-color:var(--yellow)}
 .railStory:not(:nth-of-type(odd)):hover,.storyCard:nth-child(3n + 2):hover,.railStory:not(:nth-of-type(odd)):has(.cardLink:focus-visible),.storyCard:nth-child(3n + 2):has(.cardLink:focus-visible){outline-color:var(--red)}
 .leadArticle:hover h2 a,.railStory:hover h3 a,.storyCard:hover h2 a{text-decoration:underline;text-decoration-thickness:.08em;text-underline-offset:.12em}
 .leadArticle:active,.railStory:active,.storyCard:active{transform:translate(.15rem,.15rem) scale(.98);box-shadow:.12rem .12rem 0 var(--ink);transition-duration:.08s}
 .cardLink::after{position:absolute;inset:0;z-index:1;content:""}
 .leadArticle .readButton,.railStory>a:last-child,.storyCard footer a{position:relative;z-index:2}
 .categoryNav a{transition:transform .15s ease,background-color .15s ease,color .15s ease}
-.categoryNav a:hover{transform:translateY(-.15rem)}
+.categoryNav a:hover{transform:translateY(-.35rem) scale(1.08)}
 .categoryNav a:active{transform:translateY(.1rem) scale(.94)}
 /* 見出しリンクの当たり判定を記事全体に広げるため、見出しは static に。黄色い円は記事の背景のすぐ上に置く */
 .leadArticle{z-index:0}
