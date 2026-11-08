@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { GameMatchup, GamePreviewLink, GameSummary, GamesResponse } from "@/lib/games/types";
@@ -150,8 +150,9 @@ export function GamesCenter({
   return (
     <ul className="grid grid-cols-1 gap-3">
       {result.games.map((game) => (
-        <li key={game.id} className="game-card min-w-0 overflow-hidden border-2 border-foreground bg-surface">
-          <Link href={`/games/${game.id}?date=${date}&view=all`} onClick={() => markGameRevealed(game.id)} className="selection-button selection-game-card block p-4 transition-all duration-200">
+        <li key={game.id} className="min-w-0 overflow-hidden border-2 border-foreground bg-surface">
+          {/* チーム名・ロゴはチームページへ、下のボタンは試合詳細へ(カード全体はリンクにしない) */}
+          <div className="p-4">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2">
               <StatusBadge game={game} />
               <TipoffTime game={game} />
@@ -160,12 +161,29 @@ export function GamesCenter({
             <div className="mt-4">
               <ScoreTable game={game} />
             </div>
-            <p className="np-serif mt-3 text-right text-sm font-extrabold text-[var(--np-red)]">試合詳細・ボックススコア →</p>
-          </Link>
+            <div className="mt-3 text-right">
+              <GameDetailLink href={`/games/${game.id}?date=${date}&view=all`} onClick={() => markGameRevealed(game.id)}>
+                試合詳細・ボックススコア →
+              </GameDetailLink>
+            </div>
+          </div>
           {previews[game.id] && <PreviewLink preview={previews[game.id]} className="border-t border-line px-4 py-3" />}
         </li>
       ))}
     </ul>
+  );
+}
+
+// 試合詳細(ボックススコア)ページへのボタン。押せることが分かるよう枠付きのボタンにする
+function GameDetailLink({ href, onClick, children }: { href: string; onClick: () => void; children: ReactNode }) {
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      className="selection-button selection-gold np-serif inline-flex min-h-10 items-center border-2 border-[var(--np-red)] px-4 py-1.5 text-sm font-extrabold text-[var(--np-red)]"
+    >
+      {children}
+    </Link>
   );
 }
 
@@ -199,13 +217,17 @@ function IndividualGamesList({
 
 function IndividualGameCard({ game, date, preview }: { game: GameSummary; date: string; preview?: GamePreviewLink }) {
   return (
-    <li className="game-card overflow-hidden border-2 border-foreground bg-surface">
-      <Link href={`/games/${game.id}?date=${date}&view=individual`} onClick={() => markGameRevealed(game.id)} className="selection-button selection-game-card block p-4 transition-all duration-200">
+    <li className="overflow-hidden border-2 border-foreground bg-surface">
+      <div className="p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2"><StatusBadge game={game} /><TipoffTime game={game} /></div>
-        {/* 得点・勝敗は描画しない */}
+        {/* 得点・勝敗は描画しない。チーム名・ロゴはチームページへ */}
         <Scoreboard game={game} hideScore />
-        <p className="np-serif mt-4 text-right text-sm font-extrabold text-[var(--np-red)]">試合詳細を見る →</p>
-      </Link>
+        <div className="mt-4 text-right">
+          <GameDetailLink href={`/games/${game.id}?date=${date}&view=individual`} onClick={() => markGameRevealed(game.id)}>
+            試合詳細を見る →
+          </GameDetailLink>
+        </div>
+      </div>
       {preview && <PreviewLink preview={preview} className="border-t border-line px-4 py-3" />}
     </li>
   );

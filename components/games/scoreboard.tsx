@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { GAME_STATUS_LABEL, type GameSummary, type GameTeamLine } from "@/lib/games/types";
+import { teamHref } from "./names";
 
 // 新聞紙風のスコアボード。アウェーを左(紺)、ホームを右(赤)に置き、得点を大きな数字で出す。
 // hideScore のとき(個別にみるの対戦カード)は得点・勝敗を一切描画しない(ネタバレ防止)。
@@ -16,18 +18,24 @@ function TeamBlock({ team, side, score, faded }: { team: GameTeamLine; side: "aw
   const ink = away ? "np-ink-navy" : "np-ink-red";
   const text = away ? "text-[var(--np-navy,var(--navy))]" : "text-[var(--np-red,#a8262b)]";
   return (
-    <div className={`flex min-w-0 flex-col items-center gap-1.5 text-center sm:flex-row sm:gap-3 sm:text-left ${away ? "" : "sm:flex-row-reverse sm:text-right"}`}>
-      <span aria-hidden className={`${ink} np-numeral flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-bold tracking-wide sm:h-16 sm:w-16 sm:text-lg`}>
-        {team.abbreviation}
-      </span>
-      <div className="min-w-0">
-        <span className={`block text-[10px] font-extrabold tracking-[1.5px] ${text}`}>{away ? "アウェー" : "ホーム"}</span>
-        <span className="np-serif block text-[13px] font-extrabold leading-tight sm:text-base">{team.nameJa ?? team.name}</span>
-        {team.nameJa && <span className="hidden text-[10px] leading-tight text-muted sm:block">{team.name}</span>}
-        {score !== undefined && (
-          <span className={`np-numeral mt-1 block text-[40px] font-bold leading-none sm:text-[56px] ${text} ${faded ? "opacity-45" : ""}`}>{score ?? "–"}</span>
-        )}
-      </div>
+    <div className={`flex min-w-0 flex-col items-center gap-1 ${away ? "sm:items-start" : "sm:items-end"}`}>
+      {/* ロゴとチーム名はチームページへのリンク(得点は押せない) */}
+      <Link
+        href={teamHref(team)}
+        className={`team-link flex min-w-0 flex-col items-center gap-1.5 p-1 text-center sm:flex-row sm:gap-3 sm:text-left ${away ? "" : "sm:flex-row-reverse sm:text-right"}`}
+      >
+        <span aria-hidden className={`${ink} np-numeral flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-bold tracking-wide sm:h-16 sm:w-16 sm:text-lg`}>
+          {team.abbreviation}
+        </span>
+        <span className="block min-w-0">
+          <span className={`block text-[10px] font-extrabold tracking-[1.5px] ${text}`}>{away ? "アウェー" : "ホーム"}</span>
+          <span className="team-link-name np-serif block text-[13px] font-extrabold leading-tight sm:text-base">{team.nameJa ?? team.name}</span>
+          {team.nameJa && <span className="hidden text-[10px] leading-tight text-muted sm:block">{team.name}</span>}
+        </span>
+      </Link>
+      {score !== undefined && (
+        <span className={`np-numeral block px-1 text-[40px] font-bold leading-none sm:text-[56px] ${away ? "sm:pl-[5.25rem]" : "sm:pr-[5.25rem]"} ${text} ${faded ? "opacity-45" : ""}`}>{score ?? "–"}</span>
+      )}
     </div>
   );
 }

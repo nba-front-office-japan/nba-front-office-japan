@@ -1,15 +1,18 @@
+import Link from "next/link";
 import type { GameTeamLine } from "@/lib/games/types";
+import { teamHref } from "./names";
 
 // ボックススコア表の見出し帯。アウェーは紺、ホームは赤のベタ面に、チーム名(カタカナ・英語)を白抜きで出す。
 // 表(BOX_TABLE_FRAME)は帯の真下に、同じ色の枠でつなげる。新聞紙風ページ以外では既定の紺・赤を使う。
 export function BoxScoreHeading({ side, team }: { side: "アウェー" | "ホーム"; team: GameTeamLine }) {
   return (
     <h3 className={`${side === "アウェー" ? "np-ink-navy bg-[var(--navy)]" : "np-ink-red bg-[#a8262b]"} flex items-end justify-between gap-3 px-3 py-2 text-white`}>
-      <span className="min-w-0">
+      {/* チーム名はチームページへのリンク */}
+      <Link href={teamHref(team)} className="team-link team-link-on-ink -mx-1.5 -my-1 block min-w-0 px-1.5 py-1">
         <span className="block text-[10px] font-bold tracking-[1.5px] opacity-85">{side}</span>
-        <span className="np-serif block text-base font-extrabold leading-snug sm:text-lg">{team.nameJa ?? team.name}</span>
+        <span className="team-link-name np-serif block text-base font-extrabold leading-snug sm:text-lg">{team.nameJa ?? team.name}</span>
         {team.nameJa && <span className="block text-[10px] font-normal leading-tight opacity-80 sm:text-xs">{team.name}</span>}
-      </span>
+      </Link>
       <span aria-hidden className="np-blackletter shrink-0 text-lg leading-none opacity-90 sm:text-2xl">
         Box Score
       </span>

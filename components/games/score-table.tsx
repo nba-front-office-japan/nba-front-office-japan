@@ -15,7 +15,7 @@ function Row({ side, line }: { side: "アウェー" | "ホーム"; line: GameTea
         {/* 新聞紙風ページでは、アウェー=紺・ホーム=赤の帯を添える(他のページでは既定の色) */}
         <span className={`mb-0.5 block w-fit px-1.5 text-[10px] font-bold text-white ${side === "アウェー" ? "bg-[var(--np-navy,var(--navy))]" : "bg-[var(--np-red,#c03221)]"}`}>{side}</span>
         {/* 上段にカタカナの正式チーム名、下段に英語の正式名(teams.name)。略称は出さない */}
-        <TeamName team={line} size="sm" />
+        <TeamName team={line} size="sm" link />
       </th>
       {cells(line).map((v, i) => (
         <td
@@ -31,7 +31,7 @@ function Row({ side, line }: { side: "アウェー" | "ホーム"; line: GameTea
 
 export function ScoreTable({ game }: { game: GameSummary }) {
   return (
-    <table className="w-full table-fixed border-collapse">
+    <table className="no-row-fx w-full table-fixed border-collapse">
       <thead>
         <tr className="border-b-2 border-foreground text-[11px] font-extrabold text-muted">
           <th scope="col" className="w-[38%] pb-1 text-left sm:w-[42%]">

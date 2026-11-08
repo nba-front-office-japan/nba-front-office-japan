@@ -180,20 +180,55 @@ main .selection-card:active {
   content: "";
 }
 
-/* 表の行。歴史ページ(独自デザイン)の表は除く */
-main table:not([class*="history-"]) > tbody > tr > :is(td, th) {
+/* チーム名・ロゴのリンク(試合結果・ボックススコア)。押せる場所だけに色と動きを付ける */
+.team-link {
+  border-radius: 0.5rem;
+  transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+main .team-link:hover,
+main .team-link:focus-visible {
+  background-image: linear-gradient(var(--fx-tint), var(--fx-tint));
+  box-shadow: 0 0 0 2px var(--blue), 0 8px 16px rgba(16, 24, 39, 0.16);
+  transform: translateY(-2px);
+}
+main .team-link:hover .team-link-name,
+main .team-link:focus-visible .team-link-name {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+main .team-link:active {
+  background-image: linear-gradient(var(--fx-tint-strong), var(--fx-tint-strong));
+  box-shadow: 0 0 0 2px var(--blue);
+  transform: translateY(1px) scale(0.97);
+  transition-duration: 80ms;
+}
+/* 紺・赤のベタ面の上(ボックススコアの見出し帯)では白で縁取る */
+main .team-link-on-ink:hover,
+main .team-link-on-ink:focus-visible {
+  background-image: linear-gradient(rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.16));
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85);
+}
+main .team-link-on-ink:active {
+  background-image: linear-gradient(rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.28));
+  box-shadow: 0 0 0 2px #fff;
+}
+
+/* 表の行。歴史ページ(独自デザイン)の表は除く */（押せない表は .no-row-fx で除く）
+main table:not([class*="history-"]):not(.no-row-fx) > tbody > tr > :is(td, th) {
   transition: background-color 150ms ease, background-image 150ms ease, box-shadow 150ms ease;
 }
 
-main table:not([class*="history-"]) > tbody > tr:hover > :is(td, th) {
+main table:not([class*="history-"]):not(.no-row-fx) > tbody > tr:hover > :is(td, th) {
   background-image: linear-gradient(var(--fx-tint), var(--fx-tint)) !important;
 }
 
-main table:not([class*="history-"]) > tbody > tr:hover > :first-child {
+main table:not([class*="history-"]):not(.no-row-fx) > tbody > tr:hover > :first-child {
   box-shadow: inset 4px 0 0 var(--blue);
 }
 
-main table:not([class*="history-"]) > tbody > tr:active > :is(td, th) {
+main table:not([class*="history-"]):not(.no-row-fx) > tbody > tr:active > :is(td, th) {
   background-image: linear-gradient(var(--fx-tint-strong), var(--fx-tint-strong)) !important;
 }
 
@@ -1250,32 +1285,6 @@ body:has(.home-cinema) {
 
 .newspaper main .selection-button.selection-blue:hover {
   box-shadow: 4px 4px 0 rgba(29, 34, 48, 0.25) !important;
-}
-
-/* 試合カード: 外枠(li.game-card)ごと浮き上がらせる(中のリンクだけ動かすと外枠の overflow で切れて弱く見えるため)。
-   乗せると赤枠＋紺のずれ影、押すと紙面に沈む。 */
-.newspaper main .game-card {
-  transition: transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 200ms ease, border-color 200ms ease;
-}
-.newspaper main .game-card:hover,
-.newspaper main .game-card:has(.selection-game-card:focus-visible) {
-  position: relative;
-  z-index: 2;
-  transform: translate(-3px, -6px) rotate(-0.3deg);
-  border-color: var(--np-red) !important;
-  box-shadow: 9px 10px 0 rgba(31, 58, 104, 0.4);
-}
-.newspaper main .game-card:has(.selection-game-card:active) {
-  transform: translate(2px, 2px) scale(0.985);
-  box-shadow: 2px 2px 0 rgba(31, 58, 104, 0.4);
-  transition-duration: 80ms;
-}
-.newspaper main .game-card .selection-button.selection-game-card:hover,
-.newspaper main .game-card .selection-button.selection-game-card:active {
-  transform: none !important;
-  border-color: transparent !important;
-  background-color: #fff7df !important;
-  box-shadow: none !important;
 }
 
 /* ボックススコアの固定見出し(下へスクロールしたとき画面上端に出す見出し行の複製。components/games/box-table-scroller.tsx) */
