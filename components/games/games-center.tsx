@@ -150,7 +150,7 @@ export function GamesCenter({
   return (
     <ul className="grid grid-cols-1 gap-3">
       {result.games.map((game) => (
-        <li key={game.id} className="min-w-0 overflow-hidden border-2 border-foreground bg-surface">
+        <li key={game.id} className="game-card min-w-0 overflow-hidden border-2 border-foreground bg-surface">
           <Link href={`/games/${game.id}?date=${date}&view=all`} onClick={() => markGameRevealed(game.id)} className="selection-button selection-game-card block p-4 transition-all duration-200">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2">
               <StatusBadge game={game} />
@@ -199,7 +199,7 @@ function IndividualGamesList({
 
 function IndividualGameCard({ game, date, preview }: { game: GameSummary; date: string; preview?: GamePreviewLink }) {
   return (
-    <li className="overflow-hidden border-2 border-foreground bg-surface">
+    <li className="game-card overflow-hidden border-2 border-foreground bg-surface">
       <Link href={`/games/${game.id}?date=${date}&view=individual`} onClick={() => markGameRevealed(game.id)} className="selection-button selection-game-card block p-4 transition-all duration-200">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2"><StatusBadge game={game} /><TipoffTime game={game} /></div>
         {/* 得点・勝敗は描画しない */}
@@ -223,12 +223,12 @@ function NoGamesNotice({ date, today, adjacent }: { date: string; today: string;
       {(adjacent.prev || adjacent.next) && (
         <div className="mt-4 flex flex-wrap justify-center gap-2 text-sm font-extrabold">
           {adjacent.prev && (
-            <Link href={gamesDateHref(adjacent.prev, today)} className="border border-line px-4 py-2 text-blue hover:border-blue">
+            <Link href={gamesDateHref(adjacent.prev, today)} className="selection-button selection-blue border border-line px-4 py-2 text-blue">
               ← 直前の試合日（{formatJstDateLabel(adjacent.prev)}）
             </Link>
           )}
           {adjacent.next && (
-            <Link href={gamesDateHref(adjacent.next, today)} className="border border-line px-4 py-2 text-blue hover:border-blue">
+            <Link href={gamesDateHref(adjacent.next, today)} className="selection-button selection-blue border border-line px-4 py-2 text-blue">
               次の試合日（{formatJstDateLabel(adjacent.next)}）→
             </Link>
           )}

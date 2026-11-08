@@ -11,6 +11,8 @@
   --muted: #5d625f;
   --brief-serif: Georgia, "Times New Roman", "Yu Mincho", "Hiragino Mincho ProN", "Noto Serif JP", serif;
   --brief-label: ui-sans-serif, system-ui, sans-serif;
+  --fx-tint: rgba(138, 28, 44, 0.12);
+  --fx-tint-strong: rgba(138, 28, 44, 0.22);
 
   /* hidden だと表の sticky が効かなくなるため clip */
   overflow: clip;
@@ -30,10 +32,6 @@
 .sheet h3,
 .sheet h4 {
   font-family: var(--brief-serif);
-}
-
-.sheet tbody tr:hover {
-  background-color: #efe7d6;
 }
 
 .sheet :global(.selection-button.selection-blue:hover) {

@@ -52,7 +52,7 @@ function Pagination({ query, latestSeason, result }: { query: StatsQuery; latest
   const href = (p: number) => `/stats${statsQueryToSearch(query, latestSeason, { page: p })}`;
   // 表示する範囲のリンク: 最初・最後と、今のページの前後2ページ
   const pages = [...new Set([1, page - 2, page - 1, page, page + 1, page + 2, lastPage])].filter((p) => p >= 1 && p <= lastPage).sort((a, b) => a - b);
-  const linkClass = "border border-line bg-surface px-3 py-2 text-sm font-bold tabular-nums hover:border-blue";
+  const linkClass = "selection-button selection-blue border border-line bg-surface px-3 py-2 text-sm font-bold tabular-nums";
   return (
     <nav aria-label="ページ切り替え" className="mt-4 flex flex-wrap items-center gap-2">
       {page > 1 ? (

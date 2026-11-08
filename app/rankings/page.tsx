@@ -113,10 +113,10 @@ const PREVIEW_LOADERS: Record<string, (supabase: ServerClient) => Promise<Rankin
 function RankingCard({ entry, preview }: { entry: RankingEntry; preview: RankingPreview | null }) {
   const href = rankingHref(entry.slug);
   return (
-    <article className="flex flex-col border border-line bg-surface p-4 sm:p-6">
+    <article className="selection-card flex flex-col border border-line bg-surface p-4 sm:p-6">
       <div className="mb-1 flex flex-wrap items-center gap-2">
         <h2 className="text-lg font-semibold">
-          <Link href={href} className="hover:text-blue [word-break:keep-all]">
+          <Link href={href} className="card-link hover:text-blue [word-break:keep-all]">
             {entry.title}
           </Link>
         </h2>

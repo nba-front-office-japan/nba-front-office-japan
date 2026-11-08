@@ -65,7 +65,7 @@ function FilterLinks<T extends string>({ options, current, link }: { options: { 
           key={o.value}
           href={link(o.value)}
           aria-current={current === o.value ? "page" : undefined}
-          className={`rounded-full px-3.5 py-1.5 text-[13px] font-bold transition-colors ${
+          className={`selection-button selection-blue rounded-full px-3.5 py-1.5 text-[13px] font-bold ${
             current === o.value ? "bg-blue text-white" : "border border-line text-muted hover:text-foreground"
           }`}
         >
@@ -141,7 +141,7 @@ export default async function LegendsPage({ searchParams }: PageProps<"/legends"
                   <li key={l.slug}>
                     <Link
                       href={playerId ? `/players/${playerId}` : `/legends/${l.slug}`}
-                      className="flex h-full flex-col border border-line border-t-2 border-t-gold bg-surface p-4 hover:border-blue"
+                      className="selection-card flex h-full flex-col border border-line border-t-2 border-t-gold bg-surface p-4"
                     >
                       <span className="flex flex-wrap items-center gap-1.5">
                         {l.greatest50 && (

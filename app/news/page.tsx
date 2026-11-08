@@ -110,7 +110,7 @@ export default async function NewsPage({ searchParams }: PageProps<"/news">) {
               <article className={styles.leadArticle}>
                 <div className={styles.tape}>FEATURED STORY</div>
                 <p className={styles.meta}>{articleLabels(leadArticle)}{" ／ "}{formatDate(leadArticle.publishedAt)}</p>
-                <h2><Link href={`/news/${leadArticle.id}`}>{leadArticle.headlineJa}</Link></h2>
+                <h2><Link className={styles.cardLink} href={`/news/${leadArticle.id}`}>{leadArticle.headlineJa}</Link></h2>
                 {leadArticle.dekJa && <p className={styles.leadDek}>{leadArticle.dekJa}</p>}
                 <Link className={styles.readButton} href={`/news/${leadArticle.id}`}>READ THE STORY <span>→</span></Link>
               </article>
@@ -119,7 +119,7 @@ export default async function NewsPage({ searchParams }: PageProps<"/news">) {
                 {remainingArticles.slice(0, 3).map((article) => (
                   <article key={article.id} className={styles.railStory}>
                     <p>{articleLabels(article)}</p>
-                    <h3><Link href={`/news/${article.id}`}>{article.headlineJa}</Link></h3>
+                    <h3><Link className={styles.cardLink} href={`/news/${article.id}`}>{article.headlineJa}</Link></h3>
                     <Link href={`/news/${article.id}`}>READ →</Link>
                   </article>
                 ))}
@@ -130,7 +130,7 @@ export default async function NewsPage({ searchParams }: PageProps<"/news">) {
                 {remainingArticles.slice(3).map((article, index) => (
                   <article key={article.id} className={styles.storyCard}>
                     <div className={styles.cardTop}><span>STORY {String(index + 4).padStart(2, "0")}</span><span>{articleLabels(article)}</span></div>
-                    <h2><Link href={`/news/${article.id}`}>{article.headlineJa}</Link></h2>
+                    <h2><Link className={styles.cardLink} href={`/news/${article.id}`}>{article.headlineJa}</Link></h2>
                     {article.dekJa && <p>{article.dekJa}</p>}
                     <footer><time>{formatDate(article.publishedAt)}</time><Link href={`/news/${article.id}`}>OPEN ↗</Link></footer>
                   </article>

@@ -17,6 +17,10 @@
   --card-muted: #647184;
   --card-line: #dce2ea;
   --card-blue: #1f63e9;
+
+  /* ホバー時に重ねる淡い色(テーマ色の半透明)。下の背景色はそのまま残るので文字は読める */
+  --fx-tint: rgba(31, 99, 233, 0.14);
+  --fx-tint-strong: rgba(31, 99, 233, 0.26);
 }
 
 @theme inline {
@@ -137,6 +141,60 @@ main .selection-blue:hover .selection-blue-action {
 main .selection-button:active:not(:disabled) {
   transform: translateY(4px) scale(0.92) !important;
   box-shadow: none !important;
+}
+
+/*
+  サイト共通のホバー・クリック演出(2026-11)。
+  ・カード(.selection-card): カーソルを乗せると浮き上がり、テーマ色の枠と淡い色が付く。押すと沈む。
+    文字色は変えない(淡い背景にするので、どのページでも文字が読める)。
+    カード全体を押せるようにするときは、中の主リンクに .card-link を付ける。
+  ・小さなボタン・絞り込み(.selection-button.selection-blue など)は上の既存ルールを使う。
+  ・表の行: 全ページの表で、カーソルを乗せた行に色と左端の帯を付ける(押したときは少し濃く)。
+  スマホはホバーが無いので、押した瞬間(:active)の反応で同じ動きを見せる(components/touch-active.tsx)。
+*/
+.selection-card {
+  position: relative;
+  transition: transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 200ms ease, border-color 200ms ease, background-color 200ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+main .selection-card:hover,
+main .selection-card:has(.card-link:focus-visible) {
+  z-index: 2;
+  transform: translateY(-6px) scale(1.02);
+  background-image: linear-gradient(var(--fx-tint), var(--fx-tint)) !important;
+  box-shadow: 0 0 0 2px var(--blue), 0 16px 30px rgba(16, 24, 39, 0.2);
+}
+
+main .selection-card:active {
+  transform: translateY(1px) scale(0.97);
+  box-shadow: 0 0 0 2px var(--blue), 0 3px 8px rgba(16, 24, 39, 0.18);
+  transition-duration: 80ms;
+}
+
+/* カード内の主リンクの当たり判定をカード全体に広げる */
+.card-link::after {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  content: "";
+}
+
+/* 表の行。歴史ページ(独自デザイン)の表は除く */
+main table:not([class*="history-"]) > tbody > tr > :is(td, th) {
+  transition: background-color 150ms ease, background-image 150ms ease, box-shadow 150ms ease;
+}
+
+main table:not([class*="history-"]) > tbody > tr:hover > :is(td, th) {
+  background-image: linear-gradient(var(--fx-tint), var(--fx-tint)) !important;
+}
+
+main table:not([class*="history-"]) > tbody > tr:hover > :first-child {
+  box-shadow: inset 4px 0 0 var(--blue);
+}
+
+main table:not([class*="history-"]) > tbody > tr:active > :is(td, th) {
+  background-image: linear-gradient(var(--fx-tint-strong), var(--fx-tint-strong)) !important;
 }
 
 /* NBAの歴史ページ：ペイントエリアを6ft → 12ft → 16ftへ見せる資料モーション */
@@ -1072,6 +1130,8 @@ body:has(.home-cinema) {
   --np-ink: #1d2230;
   --np-paper: #f5ecd6;
   --np-desk: #e9e7e3;
+  --fx-tint: rgba(31, 58, 104, 0.15);
+  --fx-tint-strong: rgba(31, 58, 104, 0.26);
   color: var(--foreground);
   /* 紙を置いている机(白っぽい面) */
   background-color: var(--np-desk);
@@ -1190,6 +1250,32 @@ body:has(.home-cinema) {
 
 .newspaper main .selection-button.selection-blue:hover {
   box-shadow: 4px 4px 0 rgba(29, 34, 48, 0.25) !important;
+}
+
+/* 試合カード: 外枠(li.game-card)ごと浮き上がらせる(中のリンクだけ動かすと外枠の overflow で切れて弱く見えるため)。
+   乗せると赤枠＋紺のずれ影、押すと紙面に沈む。 */
+.newspaper main .game-card {
+  transition: transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 200ms ease, border-color 200ms ease;
+}
+.newspaper main .game-card:hover,
+.newspaper main .game-card:has(.selection-game-card:focus-visible) {
+  position: relative;
+  z-index: 2;
+  transform: translate(-3px, -6px) rotate(-0.3deg);
+  border-color: var(--np-red) !important;
+  box-shadow: 9px 10px 0 rgba(31, 58, 104, 0.4);
+}
+.newspaper main .game-card:has(.selection-game-card:active) {
+  transform: translate(2px, 2px) scale(0.985);
+  box-shadow: 2px 2px 0 rgba(31, 58, 104, 0.4);
+  transition-duration: 80ms;
+}
+.newspaper main .game-card .selection-button.selection-game-card:hover,
+.newspaper main .game-card .selection-button.selection-game-card:active {
+  transform: none !important;
+  border-color: transparent !important;
+  background-color: #fff7df !important;
+  box-shadow: none !important;
 }
 
 /* ボックススコアの固定見出し(下へスクロールしたとき画面上端に出す見出し行の複製。components/games/box-table-scroller.tsx) */

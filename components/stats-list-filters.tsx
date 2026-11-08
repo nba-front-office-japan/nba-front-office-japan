@@ -38,7 +38,7 @@ export function StatsListFilters({
             type="button"
             onClick={() => go({ seasonType: type, minGames: defaultMinGames(query.season, type) })}
             aria-pressed={query.seasonType === type}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${query.seasonType === type ? "bg-blue text-white" : "border border-line text-muted"}`}
+            className={`selection-button selection-blue rounded-full px-4 py-1.5 text-sm font-medium ${query.seasonType === type ? "bg-blue text-white" : "border border-line text-muted"}`}
           >
             {type === "regular_season" ? "Regular Season" : "Playoffs"}
           </button>
@@ -129,7 +129,7 @@ export function StatsListFilters({
             maxLength={40}
             className="min-h-9 w-full min-w-0 border border-line bg-surface px-2.5 py-2 text-sm font-normal text-foreground sm:max-w-[260px]"
           />
-          <button type="submit" className="min-h-9 shrink-0 border border-line px-3 text-sm font-bold text-blue hover:border-blue">
+          <button type="submit" className="selection-button selection-blue min-h-9 shrink-0 border border-line px-3 text-sm font-bold text-blue">
             検索
           </button>
           {query.q && (

@@ -214,7 +214,7 @@ function SpeechControls({ term, speech }: { term: GlossaryTerm; speech: Speech }
       type="button"
       onClick={() => (active === speed ? speech.stop() : speech.speak(term, speed))}
       aria-pressed={active === speed}
-      className={`inline-flex items-center gap-1.5 border px-3 py-1.5 text-xs font-bold transition-colors ${
+      className={`selection-button inline-flex items-center gap-1.5 border px-3 py-1.5 text-xs font-bold ${
         active === speed ? "border-foreground bg-foreground text-surface" : "border-line bg-surface hover:border-foreground"
       }`}
     >
@@ -386,7 +386,7 @@ function TermDialog({
         )}
 
         {term.href && (
-          <Link href={term.href} className="inline-block border border-blue px-4 py-2 text-sm font-bold text-blue hover:bg-blue hover:text-white">
+          <Link href={term.href} className="selection-button selection-blue inline-block border border-blue px-4 py-2 text-sm font-bold text-blue">
             詳しく読む：{term.linkLabel} →
           </Link>
         )}
@@ -404,7 +404,7 @@ function TermCard({ t, onOpen }: { t: GlossaryTerm; onOpen: (id: string) => void
         e.preventDefault();
         onOpen(t.id);
       }}
-      className="group flex h-full flex-col border border-line border-l-4 bg-surface p-4 transition-shadow hover:shadow-md"
+      className="selection-card group flex h-full flex-col border border-line border-l-4 bg-surface p-4"
       style={{ borderLeftColor: c.color }}
     >
       <span className="mb-1.5 flex items-center justify-between gap-2">
@@ -506,15 +506,15 @@ export function GlossaryDictionary() {
               role="tab"
               aria-selected={selected}
               onClick={() => selectLevel(tab.key)}
-              className={`flex items-center justify-between border px-4 py-3 text-left text-sm font-bold ${
-                selected ? "border-foreground bg-navy text-white" : "border-line bg-surface hover:border-foreground"
+              className={`selection-button selection-blue flex items-center justify-between border px-4 py-3 text-left text-sm font-bold ${
+                selected ? "border-foreground bg-navy text-white" : "border-line bg-surface"
               }`}
             >
               <span className="flex items-center gap-2">
                 {tab.key !== "all" && <LevelDots level={tab.key} light={selected} />}
                 {tab.label}
               </span>
-              <span className={`text-xs tabular-nums ${selected ? "text-white/70" : "text-muted"}`}>{tab.count}語</span>
+              <span className={`text-xs tabular-nums ${selected ? "text-white/70" : "selection-blue-muted text-muted"}`}>{tab.count}語</span>
             </button>
           );
         })}

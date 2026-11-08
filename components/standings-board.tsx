@@ -68,7 +68,7 @@ function StandingTable({ rows, label }: { rows: StandingRow[]; label: string }) 
           </thead>
           <tbody>
             {ranked.map((row, index) => (
-              <tr key={row.teamId} className="border-t border-line transition-colors hover:bg-[#f5f8ff] dark:hover:bg-white/[.04]">
+              <tr key={row.teamId} className="border-t border-line">
                 <td className="sticky left-0 z-10 bg-surface px-1 py-3 text-right font-bold tabular-nums text-muted sm:px-3">{index + 1}</td>
                 <td className="sticky left-9 z-10 bg-surface px-2 py-3 sm:left-12 sm:px-3">
                   <Link href={`/teams/${row.teamId}`} className="selection-button selection-blue group flex items-center gap-1.5 rounded-lg px-1.5 py-1 sm:gap-2.5">
@@ -79,8 +79,8 @@ function StandingTable({ rows, label }: { rows: StandingRow[]; label: string }) 
                       {row.abbreviation}
                     </span>
                     <span className="min-w-0">
-                      <span className="block break-words font-bold leading-[1.35] group-hover:text-blue">{row.nameJa}</span>
-                      <span className="hidden text-[10px] font-semibold tracking-wide text-muted sm:block">{row.name}</span>
+                      <span className="selection-blue-text block break-words font-bold leading-[1.35]">{row.nameJa}</span>
+                      <span className="selection-blue-muted hidden text-[10px] font-semibold tracking-wide text-muted sm:block">{row.name}</span>
                     </span>
                   </Link>
                 </td>

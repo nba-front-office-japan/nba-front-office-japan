@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SiteAnalytics } from "@/components/site-analytics";
 import { SiteFooter } from "@/components/site-footer";
+import { TouchActive } from "@/components/touch-active";
 import { SITE_NAME, SITE_URL, SOCIAL_LINKS } from "@/lib/site";
 
 const geistSans = Geist({
@@ -68,6 +69,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {children}
         <SiteFooter />
         <SiteAnalytics />
+        <TouchActive />
       </body>
     </html>
   );

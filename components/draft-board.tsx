@@ -20,7 +20,7 @@ export function DraftBoard({ picks, rounds }: { picks: DraftPick[]; rounds: numb
             key={r}
             type="button"
             onClick={() => setRound(r)}
-            className={`px-4 py-2 text-sm font-bold transition-colors ${
+            className={`selection-button selection-blue px-4 py-2 text-sm font-bold ${
               round === r
                 ? "bg-blue text-white"
                 : "border border-line text-muted hover:text-foreground"
