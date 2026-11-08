@@ -2,9 +2,12 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { DraftYearView } from "@/components/draft-year-view";
 import { PAST_DRAFT_YEARS, draftPicksForYear } from "@/lib/draft/draft-history";
+import { fetchDraftPlayerIds } from "@/lib/draft/draft-player-links";
 
 // 過去の年だけを事前に生成する。2026年は /draft で表示する
 export const dynamicParams = false;
+// 選手ページへのリンク(選手名鑑との照合)を1日ごとに更新する
+export const revalidate = 86400;
 
 export function generateStaticParams() {
   return PAST_DRAFT_YEARS.map((year) => ({ year: String(year) }));
@@ -23,5 +26,6 @@ export default async function DraftYearPage({ params }: PageProps<"/draft/[year]
   const { year } = await params;
   const picks = draftPicksForYear(Number(year));
   if (!picks) notFound();
-  return <DraftYearView year={Number(year)} picks={picks} />;
+  const playerIds = await fetchDraftPlayerIds(Number(year), picks);
+  return <DraftYearView year={Number(year)} picks={picks} playerIds={playerIds} />;
 }

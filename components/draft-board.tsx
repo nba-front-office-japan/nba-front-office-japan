@@ -1,11 +1,20 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import type { DraftPick } from "@/lib/draft/draft-2026-picks";
 
 const COLUMNS = ["Pick", "Overall", "Player", "Team", "POS", "Pre-Draft Team", "Height", "Weight", "Nationality"];
 
-export function DraftBoard({ picks, rounds }: { picks: DraftPick[]; rounds: number[] }) {
+export function DraftBoard({
+  picks,
+  rounds,
+  playerIds,
+}: {
+  picks: DraftPick[];
+  rounds: number[];
+  playerIds: Record<number, string>;
+}) {
   const [round, setRound] = useState(rounds[0]);
 
   const rows = picks
@@ -57,10 +66,7 @@ export function DraftBoard({ picks, rounds }: { picks: DraftPick[]; rounds: numb
                 </td>
                 <td className="whitespace-nowrap px-2 py-3 text-muted">{row.overallPick}</td>
                 <td className="whitespace-nowrap px-2 py-3 font-semibold">
-                  <div>{row.playerNameJa ?? row.playerNameEn}</div>
-                  {row.playerNameJa && (
-                    <div className="text-xs font-normal text-muted">{row.playerNameEn}</div>
-                  )}
+                  <PlayerName row={row} playerId={playerIds[row.overallPick]} />
                 </td>
                 <td className="px-2 py-3">
                   {row.teamDisplay}
@@ -80,6 +86,36 @@ export function DraftBoard({ picks, rounds }: { picks: DraftPick[]; rounds: numb
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+// 選手名鑑で見つかった選手は、名前をプロフィール(/players/{id})へのリンクにし、横に Stats(シーズン別成績)へのリンクを付ける。
+// 見つからない選手は今までどおり文字だけ表示する。
+function PlayerName({ row, playerId }: { row: DraftPick; playerId: string | undefined }) {
+  const main = row.playerNameJa ?? row.playerNameEn;
+  const sub = row.playerNameJa ? <div className="text-xs font-normal text-muted">{row.playerNameEn}</div> : null;
+  if (!playerId) {
+    return (
+      <>
+        <div>{main}</div>
+        {sub}
+      </>
+    );
+  }
+  return (
+    <div className="flex items-start gap-3">
+      <Link href={`/players/${playerId}`} className="block text-blue underline-offset-2 hover:underline">
+        <div>{main}</div>
+        {sub}
+      </Link>
+      <Link
+        href={`/players/${playerId}?view=stats`}
+        className="mt-0.5 shrink-0 border border-line px-1.5 py-0.5 text-[11px] font-bold text-muted hover:text-foreground"
+        aria-label={`${main}のシーズン別成績`}
+      >
+        Stats
+      </Link>
     </div>
   );
 }

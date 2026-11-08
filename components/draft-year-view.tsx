@@ -8,7 +8,16 @@ import type { DraftPick } from "@/lib/draft/draft-2026-picks";
 import { DRAFT_YEARS, draftRounds } from "@/lib/draft/draft-history";
 
 // /draft(2026年)と /draft/[year](過去の年)の共通表示
-export function DraftYearView({ year, picks }: { year: number; picks: DraftPick[] }) {
+export function DraftYearView({
+  year,
+  picks,
+  playerIds,
+}: {
+  year: number;
+  picks: DraftPick[];
+  // 全体指名順位 → 選手ページの選手ID(選手名鑑で見つかった選手だけ)
+  playerIds: Record<number, string>;
+}) {
   const rounds = draftRounds(picks);
   const newer = DRAFT_YEARS.includes(year + 1) ? year + 1 : null;
   const older = DRAFT_YEARS.includes(year - 1) ? year - 1 : null;
@@ -22,7 +31,7 @@ export function DraftYearView({ year, picks }: { year: number; picks: DraftPick[
         report="SELECTION RECORD"
         kicker={`Draft Database · ${year}`}
         title={`${year} NBA Draft`}
-        lead={`${rounds.length}巡目までの指名順一覧です。トレード対象ピックは指名先・トレード情報として表示しています。`}
+        lead={`${rounds.length}巡目までの指名順一覧です。選手名を押すとプロフィール、「Stats」でシーズン別成績を見られます。トレード対象ピックは指名先・トレード情報として表示しています。`}
         side={
           <BriefSide label="Draft year">
             <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
@@ -43,7 +52,7 @@ export function DraftYearView({ year, picks }: { year: number; picks: DraftPick[
           </BriefSide>
         }
       >
-        <DraftBoard key={year} picks={picks} rounds={rounds} />
+        <DraftBoard key={year} picks={picks} rounds={rounds} playerIds={playerIds} />
         {year !== DEFAULT_DRAFT_YEAR && (
           <p className="mt-4 text-xs leading-6 text-muted">
             指名データはWikipedia(CC BY-SA)の各年のNBAドラフト記事をもとに作成しています。身長・体重が分からない選手は「—」、日本語表記を確認中の選手は英語名で表示しています。
