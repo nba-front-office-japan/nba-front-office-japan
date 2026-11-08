@@ -34,6 +34,7 @@ export type DraftMatchResult =
 /** 照合用に名前をそろえる(例: "Luka Dončić" → "luka doncic"、"Gary Trent Jr." → "gary trent") */
 export function draftNameKey(name: string): string {
   return name
+    .replace(/[Đđ]/g, "dj")
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
     .toLowerCase()
@@ -42,7 +43,19 @@ export function draftNameKey(name: string): string {
     .replace(/\s+/g, " ")
     .trim()
     .replace(/\s+(jr|sr|ii|iii|iv|v)$/, "")
-    .trim();
+    .trim()
+    // 頭文字の書き方をそろえる(例: "R. J. Hampton" → "r j hampton" → "rj hampton"。"RJ Hampton"と同じ)
+    .replace(/\b([a-z]) ([a-z])\b(?= )/g, "$1$2");
+}
+
+/** ドイツ語式のつづり(ö → oe など)でも照合するための別の照合キー。例: "Jakob Pöltl" → "jakob poeltl" */
+function germanNameKey(name: string): string {
+  return draftNameKey(name.replace(/[öÖ]/g, "oe").replace(/[üÜ]/g, "ue").replace(/[äÄ]/g, "ae"));
+}
+
+/** アクセント記号・Jr. なども含めて完全に同じ表記か(同じ名前の候補が複数いるときの決め手) */
+function sameSpelling(a: string, b: string): boolean {
+  return a.normalize("NFC").replace(/\s+/g, " ").trim().toLowerCase() === b.normalize("NFC").replace(/\s+/g, " ").trim().toLowerCase();
 }
 
 function lastNameKey(name: string): string {
@@ -80,7 +93,8 @@ export function buildDraftPlayerIndex(players: DraftMatchPlayer[], aliases: Draf
 
 export function matchDraftPick(index: DraftPlayerIndex, year: number, pick: DraftMatchPick): DraftMatchResult {
   const sameDraft = (p: DraftMatchPlayer) => p.draft_year === year && p.draft_pick === pick.overallPick;
-  const named = index.byName.get(draftNameKey(pick.playerNameEn)) ?? [];
+  const named =
+    index.byName.get(draftNameKey(pick.playerNameEn)) ?? index.byName.get(germanNameKey(pick.playerNameEn)) ?? [];
 
   if (named.length > 0) {
     const exact = named.filter(sameDraft);
@@ -90,6 +104,11 @@ export function matchDraftPick(index: DraftPlayerIndex, year: number, pick: Draf
     // 名鑑にドラフト年が入っていない選手(今季のルーキーなど)は、同じ名前が1人だけなら同じ選手とみなす
     const noDraft = named.filter((p) => p.draft_year === null);
     if (named.length === 1 && noDraft.length === 1) return { status: "matched", playerId: named[0].id, by: "name" };
+    // 名鑑に同じ選手が重複して登録されている場合(例: "Morez Johnson" と "Morez Johnson Jr.")は、表記が完全に同じ方を採用
+    const spelled = (sameYear.length > 1 ? sameYear : named).filter((p) => sameSpelling(p.full_name, pick.playerNameEn));
+    if (spelled.length === 1 && (spelled[0].draft_year === year || spelled[0].draft_year === null)) {
+      return { status: "matched", playerId: spelled[0].id, by: "name" };
+    }
     if (named.length === 1) {
       return { status: "draft-year-differs", playerId: named[0].id, dbDraftYear: named[0].draft_year };
     }
