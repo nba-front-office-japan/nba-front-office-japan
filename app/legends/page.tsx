@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageShell } from "@/components/page-shell";
+import { LegendsTabs } from "@/components/legends/legends-tabs";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { fetchActiveLegendPlayerIds } from "@/lib/legends/active-links";
 import {
@@ -111,6 +112,8 @@ export default async function LegendsPage({ searchParams }: PageProps<"/legends"
         <strong>75周年記念チーム（75th Anniversary Team）</strong>
         に選ばれた全{LEGENDS.length}人のプロフィール・受賞歴・通算成績をまとめています。50周年の50人は全員が75周年にも選ばれています。
       </p>
+
+      <LegendsTabs current="list" />
 
       <div className="mb-8 space-y-3">
         <FilterLinks options={LIST_OPTIONS} current={list} link={(v) => href(v, pos)} />
