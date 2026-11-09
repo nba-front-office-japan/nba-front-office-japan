@@ -229,10 +229,12 @@ def main() -> int:
         "stl": lambda r: per_game(r, "stl") if per_game_qualified(r, "stl", tg(r)) else None,
         "blk": lambda r: per_game(r, "blk") if per_game_qualified(r, "blk", tg(r)) else None,
         "x3p": lambda r: per_game(r, "x3p") if (recorded("x3p", r["lg"], r["season"]) and per_game_qualified(r, "x3p", tg(r))) else None,
+        # 3P成功の合計(規定なし。ステフィン・カリーの402本など)
+        "x3p_total": lambda r: r["x3p"] if recorded("x3p", r["lg"], r["season"]) else None,
         "fg_pct": lambda r: pct(r["fg"], r["fga"]) if fg_pct_qualified(r, tg(r)) else None,
         "x3p_pct": lambda r: pct(r["x3p"], r["x3pa"]) if recorded("x3p", r["lg"], r["season"]) and fg3_pct_qualified(r, tg(r)) else None,
     }
-    digits = {"fg_pct": 3, "x3p_pct": 3}
+    digits = {"fg_pct": 3, "x3p_pct": 3, "x3p_total": 0}
 
     def entry(r: dict, value: float, stat: str) -> dict:
         return {"id": r["id"], "team": r["team"], "g": int(r["g"] or 0), "value": round(value, digits.get(stat, 1))}
@@ -255,7 +257,7 @@ def main() -> int:
 
     # シーズン最高(規定到達のみ、NBA・ABA 合わせて上位)
     season_best: dict[str, list[dict]] = {}
-    for stat in ["pts", "trb", "ast", "stl", "blk", "x3p", "fg_pct", "x3p_pct"]:
+    for stat in ["pts", "trb", "ast", "stl", "blk", "x3p", "x3p_total", "fg_pct", "x3p_pct"]:
         vals = [(yearly_stats[stat](r), r) for r in seasons]
         vals = sorted(((v, r) for v, r in vals if v is not None), key=lambda x: -x[0])
         season_best[stat] = [

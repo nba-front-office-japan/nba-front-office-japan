@@ -35,14 +35,14 @@ export const LEADERS_LAST_SEASON = FILE.lastSeason;
 export const LEADER_PLAYERS = FILE.players;
 
 export type LeaderView = "yearly" | "total" | "average" | "best";
-export type LeaderStat = "g" | "pts" | "trb" | "ast" | "stl" | "blk" | "x3p" | "fg_pct" | "x3p_pct";
+export type LeaderStat = "g" | "pts" | "trb" | "ast" | "stl" | "blk" | "x3p" | "x3p_total" | "fg_pct" | "x3p_pct";
 
 export const VIEW_OPTIONS: { value: LeaderView; label: string; title: string; description: string }[] = [
   {
     value: "yearly",
     label: "年度別リーダー",
-    title: "年度別リーダー（1試合平均）",
-    description: "各シーズンの1位（タイトル獲得者）。規定の試合数などを満たした選手が対象です。",
+    title: "年度別リーダー",
+    description: "各シーズンの1位（タイトル獲得者）。平均・成功率は、規定の試合数などを満たした選手が対象です。",
   },
   { value: "total", label: "通算記録", title: "通算記録ランキング", description: "NBAとABAの通算合計の歴代上位50人です。" },
   {
@@ -54,8 +54,8 @@ export const VIEW_OPTIONS: { value: LeaderView; label: string; title: string; de
   {
     value: "best",
     label: "シーズン最高",
-    title: "シーズン平均の歴代最高",
-    description: "1シーズンの1試合平均（成功率）の歴代上位50シーズンです。そのシーズンの規定を満たした成績が対象です。",
+    title: "シーズン歴代最高",
+    description: "1シーズンの記録（平均・成功率・合計）の歴代上位50シーズンです。平均・成功率は、そのシーズンの規定を満たした成績が対象です。",
   },
 ];
 
@@ -67,15 +67,16 @@ export const STAT_LABELS: Record<LeaderStat, { label: string; short: string; uni
   stl: { label: "スティール", short: "STL", unit: "本" },
   blk: { label: "ブロック", short: "BLK", unit: "本" },
   x3p: { label: "3P成功", short: "3PM", unit: "本" },
+  x3p_total: { label: "3P成功（合計）", short: "3PM", unit: "本" },
   fg_pct: { label: "FG%", short: "FG%", unit: "" },
   x3p_pct: { label: "3P%", short: "3P%", unit: "" },
 };
 
 export const STATS_BY_VIEW: Record<LeaderView, LeaderStat[]> = {
-  yearly: ["pts", "trb", "ast", "stl", "blk", "x3p", "fg_pct", "x3p_pct"],
+  yearly: ["pts", "trb", "ast", "stl", "blk", "x3p", "x3p_total", "fg_pct", "x3p_pct"],
   total: ["g", "pts", "ast", "trb", "stl", "blk", "x3p"],
   average: ["pts", "ast", "trb", "stl", "blk", "x3p"],
-  best: ["pts", "ast", "trb", "stl", "blk", "x3p", "fg_pct", "x3p_pct"],
+  best: ["pts", "ast", "trb", "stl", "blk", "x3p", "x3p_total", "fg_pct", "x3p_pct"],
 };
 
 export function yearlyLeaders(stat: LeaderStat): YearlyLeaders[] {
@@ -84,6 +85,16 @@ export function yearlyLeaders(stat: LeaderStat): YearlyLeaders[] {
 export function rankingFor(view: Exclude<LeaderView, "yearly">, stat: LeaderStat): LeaderEntry[] {
   const src = view === "total" ? FILE.careerTotal : view === "average" ? FILE.careerAvg : FILE.seasonBest;
   return src[stat] ?? [];
+}
+
+/** 切り替えボタン・見出しの項目名。通算記録・通算平均の「3P成功」はそのまま、年度別・シーズン最高では平均と合計を区別する */
+export function statLabel(view: LeaderView, stat: LeaderStat): string {
+  if (stat === "x3p" && (view === "yearly" || view === "best")) return "3P成功（平均）";
+  return STAT_LABELS[stat].label;
+}
+
+export function isTotal(stat: LeaderStat): boolean {
+  return stat === "g" || stat === "x3p_total";
 }
 
 export function isPct(stat: LeaderStat): boolean {

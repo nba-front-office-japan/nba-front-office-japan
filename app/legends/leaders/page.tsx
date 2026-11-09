@@ -12,6 +12,8 @@ import {
   STAT_LABELS,
   VIEW_OPTIONS,
   isPct,
+  isTotal,
+  statLabel,
   leaderName,
   rankingFor,
   yearlyLeaders,
@@ -44,22 +46,22 @@ export async function generateMetadata({ searchParams }: PageProps<"/legends/lea
   const { view, stat } = parseParams(await searchParams);
   const v = VIEW_OPTIONS.find((o) => o.value === view)!;
   const isDefault = view === "yearly" && stat === "pts";
-  const statLabel = STAT_LABELS[stat].label;
+  const label = statLabel(view, stat);
   const title = isDefault
     ? "NBA歴代記録・オールタイムリーダーズ｜年度別リーダーと通算ランキング（NBA＆ABA） | NBA Front Office Japan"
-    : `NBA歴代記録 ${v.title}：${statLabel}（NBA＆ABA） | NBA Front Office Japan`;
+    : `NBA歴代記録 ${v.title}：${label}（NBA＆ABA） | NBA Front Office Japan`;
   return {
     title,
     description: isDefault
       ? "NBA・ABAの歴代記録を日本語でまとめました。得点・リバウンド・アシスト・スティール・ブロック・3P・FG%の年度別リーダー（タイトル獲得者）と、通算記録・通算平均・シーズン最高の歴代ランキング。"
-      : `NBA・ABAの歴代記録「${v.title}：${statLabel}」。${v.description}`,
+      : `NBA・ABAの歴代記録「${v.title}：${label}」。${v.description}`,
     alternates: { canonical: href(view, stat) },
   };
 }
 
 function fmt(stat: LeaderStat, value: number, view: LeaderView): string {
   if (isPct(stat)) return `${(value * 100).toFixed(1)}%`;
-  if (view === "total") return value.toLocaleString("en-US");
+  if (view === "total" || isTotal(stat)) return value.toLocaleString("en-US");
   return value.toFixed(view === "average" ? 2 : 1);
 }
 
@@ -231,14 +233,14 @@ export default async function LegendLeadersPage({ searchParams }: PageProps<"/le
           link={(nv) => href(nv, STATS_BY_VIEW[nv].includes(stat) ? stat : "pts")}
         />
         <ChipLinks
-          options={STATS_BY_VIEW[view].map((s) => ({ value: s, label: STAT_LABELS[s].label }))}
+          options={STATS_BY_VIEW[view].map((s) => ({ value: s, label: statLabel(view, s) }))}
           current={stat}
           link={(ns) => href(view, ns)}
         />
       </div>
 
       <h2 className="mb-1 text-xl font-semibold tracking-tight">
-        {v.title}：{STAT_LABELS[stat].label}
+        {v.title}：{statLabel(view, stat)}
       </h2>
       <p className="mb-3 text-[13px] text-muted">{v.description}</p>
 
