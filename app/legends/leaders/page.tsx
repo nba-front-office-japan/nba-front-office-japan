@@ -80,7 +80,7 @@ function PlayerName({ id, links }: { id: string; links: LeaderPlayerInfo }) {
   return (
     <span className="inline-flex flex-wrap items-center gap-x-1.5">
       {target ? (
-        <Link href={target} className="text-foreground underline-offset-2 hover:text-blue hover:underline">
+        <Link href={target} className="text-foreground underline-offset-2 hover:text-[#a87a1e] hover:underline">
           {body}
         </Link>
       ) : (
@@ -91,7 +91,7 @@ function PlayerName({ id, links }: { id: string; links: LeaderPlayerInfo }) {
           LEGEND
         </span>
       )}
-      {LEADER_PLAYERS[id]?.active && <span className="bg-blue px-1 text-[9px] font-extrabold tracking-wide text-white">現役</span>}
+      {LEADER_PLAYERS[id]?.active && <span className="bg-navy px-1 text-[9px] font-extrabold tracking-wide text-white">現役</span>}
     </span>
   );
 }
@@ -104,8 +104,8 @@ function ChipLinks<T extends string>({ options, current, link }: { options: { va
           key={o.value}
           href={link(o.value)}
           aria-current={current === o.value ? "page" : undefined}
-          className={`selection-button selection-blue rounded-full px-3.5 py-1.5 text-[13px] font-bold ${
-            current === o.value ? "bg-blue text-white" : "border border-line text-muted hover:text-foreground"
+          className={`selection-button selection-legend rounded-full border px-3.5 py-1.5 text-[13px] font-bold ${
+            current === o.value ? "border-navy bg-navy text-gold" : "border-line bg-surface text-muted"
           }`}
         >
           {o.label}
@@ -182,7 +182,7 @@ function RankingTable({ view, stat, links }: { view: Exclude<LeaderView, "yearly
       <tbody>
         {ranked.map(({ e, rank }, i) => (
           <tr key={`${e.id}-${e.season ?? i}`} className="border-b border-line/60">
-            <td className={`${td} font-bold tabular-nums ${rank <= 3 ? "text-gold" : "text-muted"}`}>{rank}</td>
+            <td className={`${td} font-bold tabular-nums ${rank <= 3 ? "text-[#a87a1e]" : "text-muted"}`}>{rank}</td>
             <td className={`${td} whitespace-normal sm:whitespace-nowrap`}>
               <PlayerName id={e.id} links={links} />
               {view === "best" && <span className="block text-[11px] text-muted sm:hidden">{e.team?.replaceAll("/", "・")}</span>}
@@ -218,7 +218,7 @@ export default async function LegendLeadersPage({ searchParams }: PageProps<"/le
 
   return (
     <PageShell>
-      <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">All-Time Leaders</p>
+      <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-[#a87a1e]">All-Time Leaders</p>
       <h1 className="mb-2 text-[28px] font-semibold leading-tight tracking-tight sm:text-[36px]">オールタイムリーダーズ</h1>
       <p className="mb-5 max-w-3xl text-[15px] leading-7">
         NBA（前身のBAAを含む）とABAの歴代記録です。シーズンごとのタイトル獲得者と、通算・シーズンの歴代ランキングをまとめています。

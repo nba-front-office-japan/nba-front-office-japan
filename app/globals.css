@@ -108,6 +108,15 @@ main .selection-button.selection-blue:hover {
     box-shadow: 0 16px 26px rgba(31, 99, 233, 0.34) !important;
 }
 
+/* レジェンド枠(/legends)のボタン。紺地に金の文字・金の縁で、高級感を出す */
+main .selection-button.selection-legend:hover {
+    transform: translateY(-6px) scale(1.05) !important;
+    border-color: var(--gold) !important;
+    background-color: var(--navy) !important;
+    color: var(--gold) !important;
+    box-shadow: 0 14px 24px rgba(8, 24, 47, 0.32) !important;
+}
+
 main .selection-button.selection-gold:hover {
     transform: translateY(-8px) scale(1.08) !important;
     border-color: var(--gold) !important;

@@ -66,8 +66,8 @@ function FilterLinks<T extends string>({ options, current, link }: { options: { 
           key={o.value}
           href={link(o.value)}
           aria-current={current === o.value ? "page" : undefined}
-          className={`selection-button selection-blue rounded-full px-3.5 py-1.5 text-[13px] font-bold ${
-            current === o.value ? "bg-blue text-white" : "border border-line text-muted hover:text-foreground"
+          className={`selection-button selection-legend rounded-full border px-3.5 py-1.5 text-[13px] font-bold ${
+            current === o.value ? "border-navy bg-navy text-gold" : "border-line bg-surface text-muted"
           }`}
         >
           {o.label}
@@ -103,7 +103,7 @@ export default async function LegendsPage({ searchParams }: PageProps<"/legends"
 
   return (
     <PageShell>
-      <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">Legends</p>
+      <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[1.3px] text-[#a87a1e]">Legends</p>
       <h1 className="mb-2 text-[28px] font-semibold leading-tight tracking-tight sm:text-[36px]">NBAレジェンド</h1>
       <p className="mb-6 max-w-3xl text-[15px] leading-7">
         NBAが選んだ歴代の偉大な選手たち。1996年の
@@ -150,8 +150,8 @@ export default async function LegendsPage({ searchParams }: PageProps<"/legends"
                         {l.greatest50 && (
                           <span className="border border-gold px-1.5 text-[10px] font-extrabold tracking-wide text-gold">50周年</span>
                         )}
-                        <span className="border border-blue px-1.5 text-[10px] font-extrabold tracking-wide text-blue">75周年</span>
-                        {l.isActive && <span className="bg-blue px-1.5 text-[10px] font-extrabold tracking-wide text-white">現役</span>}
+                        <span className="border border-navy px-1.5 text-[10px] font-extrabold tracking-wide text-navy">75周年</span>
+                        {l.isActive && <span className="bg-navy px-1.5 text-[10px] font-extrabold tracking-wide text-white">現役</span>}
                       </span>
                       <span className="mt-2 text-[15px] font-bold">{l.nameJa}</span>
                       <span className="mt-0.5 text-[11px] font-bold tracking-wide text-muted">{l.name}</span>
@@ -160,7 +160,7 @@ export default async function LegendsPage({ searchParams }: PageProps<"/legends"
                         {avg.ppg !== null && ` ・ 通算平均${avg.ppg.toFixed(1)}点`}
                       </span>
                       {titles.length > 0 && <span className="mt-1 text-[13px] font-bold">{titles.join("・")}</span>}
-                      <span className="mt-auto pt-3 text-xs font-bold text-blue">
+                      <span className="mt-auto pt-3 text-xs font-bold text-[#a87a1e]">
                         {playerId ? "選手ページを見る ›" : "プロフィールを見る ›"}
                       </span>
                     </Link>
