@@ -51,7 +51,7 @@ export default async function GamesPage({ searchParams }: PageProps<"/games">) {
   const adjacent = gameCount === 0 ? await fetchAdjacentGameDates(supabase, selected).catch(() => ({ prev: null, next: null })) : { prev: null, next: null };
   // 結果を隠している画面に出す対戦カード(チーム名だけ)。取得に失敗しても、対戦カードなしでページは表示する
   const matchups = gameCount === 0 ? [] : await fetchMatchupsForJstDate(supabase, selected).catch(() => []);
-  // 試合プレビュー記事(対象試合が一致する公開記事の最新1本)。試合開始前の試合だけ。取得に失敗しても、リンクなしでページは表示する
+  // 試合プレビュー記事(対象試合が一致する公開記事の最新1本)。試合当日(日本時間)の終わりまで。取得に失敗しても、リンクなしでページは表示する
   const previews = await fetchGamePreviewLinks(selected, matchups).catch(() => ({}));
 
   const dayLabel = formatJstDateLabel(selected);

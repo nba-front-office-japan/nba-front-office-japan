@@ -58,7 +58,7 @@ export function GamesCenter({
   dayStatus?: GameDayStatus | null;
   // その日の対戦カード(チーム名だけ。得点・勝敗・開始時刻は含まない)
   matchups: GameMatchup[];
-  // 試合プレビュー記事へのリンク(試合ID → 記事)。試合開始前の試合だけ
+  // 試合プレビュー記事へのリンク(試合ID → 記事)。試合当日(日本時間)の終わりまで
   previews?: Record<string, GamePreviewLink>;
   adjacent: { prev: string | null; next: string | null };
   initialView: "all" | "individual" | null;

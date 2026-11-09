@@ -23,8 +23,8 @@ export type GameTeamLine = {
 /** gameId と awayAbbr / homeAbbr は「プレビューを読む」の紐づけに使う(チームの略称。teams.abbreviation) */
 export type GameMatchup = { gameId: string; away: string; home: string; awayAbbr: string; homeAbbr: string; tipoffAt: string | null };
 
-/** 試合プレビュー記事へのリンク(試合開始前だけ表示する)。tipoffAt は試合開始日時(UTC) */
-export type GamePreviewLink = { articleId: string; headline: string; tipoffAt: string };
+/** 試合プレビュー記事へのリンク(試合当日の終わりまで表示する)。expiresAt は表示をやめる日時(試合日の翌日0:00 日本時間) */
+export type GamePreviewLink = { articleId: string; headline: string; expiresAt: string };
 
 export type GameSummary = {
   id: string;

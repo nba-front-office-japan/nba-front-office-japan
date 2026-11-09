@@ -6,7 +6,7 @@ import { PreviewLink } from "./preview-link";
 // 左右の列を同じ幅にして、複数行でも「vs」が縦にそろうようにする。
 // PCでは時刻の列と同じ幅の空き列を右にも置き、「vs」を中央にそろえる(スマホは幅を優先して空き列なし)。
 // 開始時刻が分かる試合が1つもない日(プレシーズン等)は、時刻の列ごと出さない。
-// 試合プレビュー記事がある試合(試合開始前だけ)は、その対戦の下に「プレビューを読む」と見出しを出す。ない試合は何も足さない。
+// 試合プレビュー記事がある試合(試合当日の終わりまで。日本時間)は、その対戦の下に「プレビューを読む」と見出しを出す。ない試合は何も足さない。
 export function MatchupLines({ matchups, previews = {} }: { matchups: GameMatchup[]; previews?: Record<string, GamePreviewLink> }) {
   const showTime = matchups.some((m) => m.tipoffAt);
   return (
