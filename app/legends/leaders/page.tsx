@@ -3,7 +3,7 @@ import Link from "next/link";
 import { PageShell } from "@/components/page-shell";
 import { LegendsTabs } from "@/components/legends/legends-tabs";
 import { formatSeasonLabel } from "@/lib/stats";
-import { fetchActiveLeaderPlayerIds } from "@/lib/legends/leader-links";
+import { fetchLeaderPlayerInfo, type LeaderPlayerInfo } from "@/lib/legends/leader-links";
 import {
   LEADERS_LAST_SEASON,
   LEADER_PLAYERS,
@@ -65,10 +65,11 @@ function fmt(stat: LeaderStat, value: number, view: LeaderView): string {
   return value.toFixed(view === "average" ? 2 : 1);
 }
 
-function PlayerName({ id, links }: { id: string; links: Record<string, string> }) {
-  const { ja, en } = leaderName(id);
+function PlayerName({ id, links }: { id: string; links: LeaderPlayerInfo }) {
+  const { ja: legendJa, en } = leaderName(id);
+  const ja = legendJa ?? links.namesJa[id] ?? null;
   const legend = LEGEND_BY_BREF_ID.get(id);
-  const playerId = links[id];
+  const playerId = links.links[id];
   const target = playerId ? `/players/${playerId}` : legend ? `/legends/${legend.slug}` : null;
   const body = (
     <>
@@ -122,7 +123,7 @@ function LgBadge({ lg }: { lg?: string }) {
   return <span className="ml-1.5 border border-line px-1 text-[9px] font-extrabold tracking-wide text-muted">ABA</span>;
 }
 
-function YearlyTable({ stat, links }: { stat: LeaderStat; links: Record<string, string> }) {
+function YearlyTable({ stat, links }: { stat: LeaderStat; links: LeaderPlayerInfo }) {
   const rows = yearlyLeaders(stat);
   return (
     <table className="w-full sm:min-w-[560px] border-collapse text-[13px]">
@@ -162,7 +163,7 @@ function YearlyTable({ stat, links }: { stat: LeaderStat; links: Record<string, 
   );
 }
 
-function RankingTable({ view, stat, links }: { view: Exclude<LeaderView, "yearly">; stat: LeaderStat; links: Record<string, string> }) {
+function RankingTable({ view, stat, links }: { view: Exclude<LeaderView, "yearly">; stat: LeaderStat; links: LeaderPlayerInfo }) {
   const rows = rankingFor(view, stat);
   // 同じ値は同じ順位(上から見て最初に同じ値が出た位置)
   const ranked = rows.map((e: LeaderEntry) => ({ e, rank: rows.findIndex((x) => x.value === e.value) + 1 }));
@@ -212,7 +213,7 @@ function RankingTable({ view, stat, links }: { view: Exclude<LeaderView, "yearly
 export default async function LegendLeadersPage({ searchParams }: PageProps<"/legends/leaders">) {
   const { view, stat } = parseParams(await searchParams);
   const v = VIEW_OPTIONS.find((o) => o.value === view)!;
-  const links = await fetchActiveLeaderPlayerIds().catch(() => ({}) as Record<string, string>);
+  const links = await fetchLeaderPlayerInfo().catch((): LeaderPlayerInfo => ({ links: {}, namesJa: {} }));
   const lastLabel = formatSeasonLabel(LEADERS_LAST_SEASON);
 
   return (

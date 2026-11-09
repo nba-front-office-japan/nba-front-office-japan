@@ -73,10 +73,10 @@ export const STAT_LABELS: Record<LeaderStat, { label: string; short: string; uni
 };
 
 export const STATS_BY_VIEW: Record<LeaderView, LeaderStat[]> = {
-  yearly: ["pts", "trb", "ast", "stl", "blk", "x3p", "x3p_total", "fg_pct", "x3p_pct"],
+  yearly: ["pts", "fg_pct", "trb", "ast", "stl", "blk", "x3p", "x3p_total", "x3p_pct"],
   total: ["g", "pts", "ast", "trb", "stl", "blk", "x3p"],
   average: ["pts", "ast", "trb", "stl", "blk", "x3p"],
-  best: ["pts", "ast", "trb", "stl", "blk", "x3p", "x3p_total", "fg_pct", "x3p_pct"],
+  best: ["pts", "fg_pct", "ast", "trb", "stl", "blk", "x3p", "x3p_total", "x3p_pct"],
 };
 
 export function yearlyLeaders(stat: LeaderStat): YearlyLeaders[] {
