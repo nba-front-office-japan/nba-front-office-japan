@@ -1290,6 +1290,12 @@ body:has(.home-cinema) {
   font-family: "Shippori Mincho", "Yu Mincho", "YuMincho", "Hiragino Mincho ProN", "Noto Serif JP", "Noto Serif CJK JP", Georgia, serif;
 }
 
+/* /games の対戦カードのチーム名。明朝(Yu Mincho等)は太字でも線が細く見出しとして弱いため、この行だけゴシック体の太字にする */
+.np-serif .np-matchup-team {
+  font-family: "Noto Sans JP", "Hiragino Sans", "Yu Gothic", "Meiryo", Arial, Helvetica, sans-serif;
+  font-weight: 800;
+}
+
 .np-numeral {
   font-family: var(--font-np-numeral), "Arial Narrow", sans-serif;
   font-variant-numeric: tabular-nums;
