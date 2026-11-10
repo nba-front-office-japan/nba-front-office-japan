@@ -7,7 +7,7 @@ import { PreviewLink } from "./preview-link";
 // PCでは時刻の列と同じ幅の空き列を右にも置き、「vs」を中央にそろえる(スマホは幅を優先して空き列なし)。
 // 開始時刻が分かる試合が1つもない日(プレシーズン等)は、時刻の列ごと出さない。
 // 試合プレビュー記事がある試合(試合当日の終わりまで。日本時間)は、その対戦の下に「プレビューを読む」と見出しを出す。
-// 対戦カードのチーム名は各試合ブロックの見出しとして、「Spoiler Free」ロゴと同じ赤・太字で大きめに出す(開始時刻は元のサイズ・色)。
+// 対戦カードのチーム名は各試合ブロックの見出しとして、濃い深紅・太字で大きめに出す(開始時刻は元のサイズ・色)。
 // 1試合を1ブロックとし、プレビューの有無にかかわらず同じ上下の余白と下の区切り線を付ける(どのプレビューがどの試合のものか分かるように)。
 export function MatchupLines({ matchups, previews = {} }: { matchups: GameMatchup[]; previews?: Record<string, GamePreviewLink> }) {
   const showTime = matchups.some((m) => m.tipoffAt);
@@ -41,6 +41,6 @@ export function MatchupLines({ matchups, previews = {} }: { matchups: GameMatchu
 // チーム名の文字(紺・太字・元の約1.25倍)。スマホでは列が狭いため、長い名前(ティンバーウルブズ等)は少し小さくして1行に収める。
 function teamNameClass(name: string): string {
   const mobileSize = name.length >= 10 ? "text-[11.5px]" : name.length >= 8 ? "text-[13px]" : "text-[15px]";
-  // 色は上の「Spoiler Free」ロゴ(game-parts.tsx)と同じ値。青はボタン類だけに残す
-  return `${mobileSize} font-extrabold text-[var(--np-red,var(--blue))] sm:text-[17px]`;
+  // 色は「今日」ボタンの赤と同系で、それより濃い深紅(ベージュの紙の上で見出しとしてはっきり読める濃さ)。青はボタン類だけに残す
+  return `${mobileSize} font-extrabold text-[#8f2420] sm:text-[17px]`;
 }
