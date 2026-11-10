@@ -6,7 +6,8 @@ import { PreviewLink } from "./preview-link";
 // 左右の列を同じ幅にして、複数行でも「vs」が縦にそろうようにする。
 // PCでは時刻の列と同じ幅の空き列を右にも置き、「vs」を中央にそろえる(スマホは幅を優先して空き列なし)。
 // 開始時刻が分かる試合が1つもない日(プレシーズン等)は、時刻の列ごと出さない。
-// 試合プレビュー記事がある試合(試合当日の終わりまで。日本時間)は、その対戦の下に「プレビューを読む」と見出しを出す。ない試合は何も足さない。
+// 試合プレビュー記事がある試合(試合当日の終わりまで。日本時間)は、その対戦の下に「プレビューを読む」と見出しを出す。
+// 1試合を1ブロックとし、プレビューの有無にかかわらず同じ上下の余白と下の区切り線を付ける(どのプレビューがどの試合のものか分かるように)。
 export function MatchupLines({ matchups, previews = {} }: { matchups: GameMatchup[]; previews?: Record<string, GamePreviewLink> }) {
   const showTime = matchups.some((m) => m.tipoffAt);
   return (
@@ -18,7 +19,7 @@ export function MatchupLines({ matchups, previews = {} }: { matchups: GameMatchu
         {matchups.map((m) => (
           <li
             key={m.gameId}
-            className={`grid ${showTime ? "grid-cols-[2.5rem_minmax(0,1fr)_auto_minmax(0,1fr)] gap-x-1.5 sm:grid-cols-[3rem_minmax(0,1fr)_auto_minmax(0,1fr)_3rem] sm:gap-x-2" : "grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-x-2"}`}
+            className={`grid border-b border-line py-2 ${showTime ? "grid-cols-[2.5rem_minmax(0,1fr)_auto_minmax(0,1fr)] gap-x-1.5 sm:grid-cols-[3rem_minmax(0,1fr)_auto_minmax(0,1fr)_3rem] sm:gap-x-2" : "grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-x-2"}`}
           >
             {showTime && (
               <span className="text-left tabular-nums font-normal text-muted">{m.tipoffAt ? formatJstTime(m.tipoffAt) : "未定"}</span>
@@ -27,7 +28,7 @@ export function MatchupLines({ matchups, previews = {} }: { matchups: GameMatchu
             <span className="text-xs font-normal text-muted">vs</span>
             <span className="text-left">{m.home}</span>
             {showTime && <span aria-hidden="true" className="hidden sm:block" />}
-            {previews[m.gameId] && <PreviewLink preview={previews[m.gameId]} className="col-span-full mb-2 mt-1 font-normal" />}
+            {previews[m.gameId] && <PreviewLink preview={previews[m.gameId]} className="col-span-full mt-1.5 font-normal" />}
           </li>
         ))}
       </ul>

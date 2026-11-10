@@ -12,7 +12,7 @@ import { addDays } from "@/lib/games/date";
 // status='published' の記事の id と見出しだけを返す。
 export async function fetchGamePreviewLinks(
   date: string,
-  games: { gameId: string; awayAbbr: string; homeAbbr: string; tipoffAt: string | null }[],
+  games: { gameId: string; away: string; home: string; awayAbbr: string; homeAbbr: string; tipoffAt: string | null }[],
   now: Date = new Date()
 ): Promise<Record<string, GamePreviewLink>> {
   // 日本時間で date の翌日 0:00 になったら表示しない
@@ -34,8 +34,29 @@ export async function fetchGamePreviewLinks(
     // 投稿日の新しい順に並んでいるため、最初に一致した記事が最新
     const article = data.find((a) => a.target_away_team === game.awayAbbr && a.target_home_team === game.homeAbbr);
     if (article) {
-      links[game.gameId] = { articleId: article.id, headline: article.headline_ja, expiresAt };
+      links[game.gameId] = {
+        articleId: article.id,
+        headline: article.headline_ja,
+        displayHeadline: shortenPreviewHeadline(article.headline_ja, game.away, game.home),
+        expiresAt,
+      };
     }
   }
   return links;
+}
+
+// /games 用に見出しを短くする(記事の見出しデータは変えず、表示用の文字列を別に作るだけ)。
+// すぐ上に対戦カード(アウェイ vs ホーム)が出ているため、先頭の「プレビュー：」と、その試合の「アウェイ対ホーム」を除く。
+// 例: 「プレビュー：レイカーズ対ホークス 〇〇」→「〇〇」。
+// 接頭辞や対戦カード名で始まらない見出しはそのまま。除いた結果が空になる場合も元の見出しを返す。
+export function shortenPreviewHeadline(headline: string, away: string, home: string): string {
+  let rest = headline.trim().replace(/^プレビュー\s*[：:]\s*/, "");
+  rest = rest.replace(new RegExp(`^${escapeRegExp(away)}\\s*対\\s*${escapeRegExp(home)}`), "");
+  // 除いた後の先頭に残る区切り(空白・読点・コロン・ダッシュ等)を落とす
+  rest = rest.replace(/^[\s、，,：:・\-–—―|｜/／]+/, "").trim();
+  return rest === "" ? headline : rest;
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

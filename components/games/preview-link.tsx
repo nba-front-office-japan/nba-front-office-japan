@@ -33,7 +33,7 @@ export function PreviewLink({ preview, className = "" }: { preview: GamePreviewL
         プレビューを読む
       </Link>
       <Link href={`/news/${preview.articleId}`} className="min-w-0 text-[12px] font-bold leading-snug text-foreground hover:text-blue hover:underline sm:text-[13px]">
-        {preview.headline}
+        {preview.displayHeadline}
       </Link>
     </div>
   );
