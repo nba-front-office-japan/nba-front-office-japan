@@ -24,15 +24,18 @@ export type PlayerPageBase = {
 /** 選手と現在所属。選手が見つからなければ null */
 export const fetchPlayerPageBase = cache(async (playerId: string): Promise<PlayerPageBase | null> => {
   const supabase = createServerSupabaseClient();
-  const { data: player, error } = await supabase.from("players").select("*").eq("id", playerId).single();
+  // 選手と現在所属は同時に問い合わせる(順番に待つと往復1回ぶん遅くなる)
+  const [{ data: player, error }, { data: currentRoster }] = await Promise.all([
+    supabase.from("players").select("*").eq("id", playerId).single(),
+    supabase
+      .from("player_season_rosters")
+      .select("team_id")
+      .eq("player_id", playerId)
+      .eq("season", ROSTER_SEASON)
+      .maybeSingle(),
+  ]);
   if (error || !player) return null;
 
-  const { data: currentRoster } = await supabase
-    .from("player_season_rosters")
-    .select("team_id")
-    .eq("player_id", playerId)
-    .eq("season", ROSTER_SEASON)
-    .maybeSingle();
   const { data: currentTeam } = currentRoster
     ? await supabase.from("teams").select("*").eq("id", currentRoster.team_id).single()
     : { data: null };

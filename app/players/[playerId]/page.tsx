@@ -81,25 +81,36 @@ export default async function PlayerDetailPage({
   const selectedView = parseView(viewParam);
   const supabase = createServerSupabaseClient();
 
-  // 選手と2026-27の現在所属（player_team_historyの日付範囲モデルとは別の、
-  // シーズン単位の単純な所属テーブル）。所属の行が無ければ「ロスター準備中」。
-  // generateMetadata と同じ取得(lib/player-page.ts の cache())なので、DBへの問い合わせは1回だけ
-  const base = await fetchPlayerPageBase(playerId);
+  // DBへの問い合わせは、選手IDだけで取れるものをまとめて同時に送る(1つずつ順番に待つと、往復の回数ぶん表示が遅くなる)。
+  // ・選手と2026-27の現在所属(所属の行が無ければ「ロスター準備中」)。generateMetadata と同じ取得(lib/player-page.ts の cache())なので、DBへの問い合わせは1回だけ
+  // ・今季(2026-27)のレギュラーシーズン成績。ボックススコアを取り込むたびに自動で最新になる(generateMetadata と共通の取得)
+  // ・過去のシーズン別成績、2025-26 アワード、個人賞・表彰の履歴(Profile のみ)、Game Log(Game Log のみ)
+  const [base, current, { data: stats, error: statsError }, { data: awards }, { data: awardHistory }, gameLog] =
+    await Promise.all([
+      fetchPlayerPageBase(playerId),
+      fetchPlayerCurrentSeasonStats(playerId, ROSTER_SEASON),
+      supabase.from("player_stats").select("*").eq("player_id", playerId),
+      // 2025-26 アワード（受賞・選出がある場合のみ表示）。
+      supabase
+        .from("season_player_awards")
+        .select("*")
+        .eq("player_id", playerId)
+        .eq("season", AWARDS_SEASON)
+        .order("display_order"),
+      // 個人賞・表彰の履歴(管理画面のExcelから取り込んだもの)。表彰歴がない選手には表示しない。
+      // テーブルが未作成・取得に失敗した場合も、プロフィールのほかの表示は変えない
+      selectedView === "profile"
+        ? supabase.from("player_award_records").select("award_key, season, selection_team").eq("player_id", playerId)
+        : Promise.resolve({ data: null }),
+      // Game Log: 今季の出場試合ごとの成績(今季成績と同じ試合データ)
+      selectedView === "gamelog" ? fetchPlayerGameLog(playerId, ROSTER_SEASON) : Promise.resolve([]),
+    ]);
   if (!base) {
     notFound();
   }
   const { player, currentTeam } = base;
-
-  // 今季(2026-27)のレギュラーシーズン成績。ボックススコアを取り込むたびに自動で最新になる(generateMetadata と共通の取得)
-  const current = await fetchPlayerCurrentSeasonStats(playerId, ROSTER_SEASON);
   const currentDerived = current ? deriveStats(current.totals) : null;
 
-  const { data: stats, error: statsError } = await supabase
-    .from("player_stats")
-    .select("*")
-    .eq("player_id", playerId);
-
-  // 今季のレギュラーシーズンは試合データの集計(current)だけを使い、player_stats に同じシーズンの行があっても読まない
   const pastStats = (stats ?? []).filter(
     (s) => !(s.season === ROSTER_SEASON && s.season_type === "regular_season")
   );
@@ -111,10 +122,15 @@ export default async function PlayerDetailPage({
     ),
   ];
 
-  const { data: statTeams } =
+  // 成績表のチーム略称と、関連ニュース(公開記事のタイトル・本文に日本語名が出てくるもの。lib/news/player-articles.ts)を同時に取る
+  const [{ data: statTeams }, relatedArticles] = await Promise.all([
     teamIds.length > 0
-      ? await supabase.from("teams").select("id, abbreviation").in("id", teamIds)
-      : { data: [] as { id: string; abbreviation: string }[] };
+      ? supabase.from("teams").select("id, abbreviation").in("id", teamIds)
+      : Promise.resolve({ data: [] as { id: string; abbreviation: string }[] }),
+    selectedView === "profile"
+      ? fetchPlayerRelatedArticles(createAdminSupabaseClient(), player.full_name_ja)
+      : Promise.resolve([]),
+  ]);
 
   const teamAbbrById = new Map(
     (statTeams ?? []).map((t) => [t.id, t.abbreviation])
@@ -157,24 +173,10 @@ export default async function PlayerDetailPage({
     });
   }
 
-  // 2025-26 アワード（受賞・選出がある場合のみ表示）。
-  const { data: awards } = await supabase
-    .from("season_player_awards")
-    .select("*")
-    .eq("player_id", playerId)
-    .eq("season", AWARDS_SEASON)
-    .order("display_order");
-
   const awardLabels = (awards ?? []).map((a) =>
     getAwardLabel(a.award_key, a.selection_team)
   );
 
-  // 個人賞・表彰の履歴(管理画面のExcelから取り込んだもの)。表彰歴がない選手には表示しない。
-  // テーブルが未作成・取得に失敗した場合も、プロフィールのほかの表示は変えない
-  const { data: awardHistory } =
-    selectedView === "profile"
-      ? await supabase.from("player_award_records").select("award_key, season, selection_team").eq("player_id", playerId)
-      : { data: null };
   const awardSummaries = summarizeAwards(awardHistory ?? []);
 
   // 有名選手(lib/featured-players.ts)は、Profile に日本語の解説(経歴・プレースタイル・年俸など)を出す
@@ -191,13 +193,6 @@ export default async function PlayerDetailPage({
           salary: salaryRows.length === 1 ? salaryRows[0] : null,
         })
       : [];
-
-  // 関連ニュース: 公開記事のタイトル・本文に日本語名が出てくるもの(lib/news/player-articles.ts)
-  // Game Log: 今季の出場試合ごとの成績(今季成績と同じ試合データ)
-  const gameLog = selectedView === "gamelog" ? await fetchPlayerGameLog(playerId, ROSTER_SEASON) : [];
-
-  const relatedArticles =
-    selectedView === "profile" ? await fetchPlayerRelatedArticles(createAdminSupabaseClient(), player.full_name_ja) : [];
 
   return (
     <PageShell>

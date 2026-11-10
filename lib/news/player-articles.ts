@@ -32,11 +32,17 @@ export async function fetchPlayerRelatedArticles(
 ): Promise<PlayerRelatedArticle[]> {
   const name = usableName(nameJa);
   if (!name) return [];
+  // 名前を含む記事だけをDB側で絞り込んで受け取る(公開記事を本文ごと全件受け取ると数百KBになり、選手ページが遅くなるため)。
+  // 値はダブルクォートで囲み、PostgREST の区切り文字(, . ( ) など)が名前に入っていても壊れないようにする。
+  // 表記ゆれ(全角・半角など)の最終判定は下の normalize() で行う
+  const pattern = `"%${name.replace(/["\\%_]/g, "")}%"`;
   const { data } = await supabase
     .from("article_drafts")
     .select("id, headline_ja, body_markdown, published_at")
     .eq("status", "published")
-    .order("published_at", { ascending: false });
+    .or(`headline_ja.ilike.${pattern},body_markdown.ilike.${pattern}`)
+    .order("published_at", { ascending: false })
+    .limit(limit * 4);
   return (data ?? [])
     .filter((a) => normalize(`${a.headline_ja}\n${a.body_markdown ?? ""}`).includes(name))
     .slice(0, limit)
