@@ -3,9 +3,9 @@ import type { GameTeamLine } from "@/lib/games/types";
 
 // 試合結果・ボックススコアのチーム名・選手名の表示(チーム名はカタカナを主に英語名を補助に、選手名はカタカナのみ)。
 
-/** チームページ(チームプロフィール)へのリンク先 */
+/** チームページの Stats タブ(チームスタッツ)へのリンク先。試合結果・ボックススコアのチーム名(スコア表・見出し帯・スコアボード)が使う */
 export function teamHref(team: GameTeamLine): string {
-  return `/teams/${team.teamId}`;
+  return `/teams/${team.teamId}?tab=stats`;
 }
 
 /** チーム名: 上段にカタカナの正式名、下段に英語の正式名。カタカナが無いチームは英語名だけ。
