@@ -6,6 +6,8 @@ import { getLatestSeason } from "@/lib/supabase/current-season";
 import { fetchPublishedArticles } from "@/lib/news/public-articles";
 import { SiteHeader } from "@/components/site-header";
 import { HomeStage } from "@/components/home-stage";
+import { fetchIndexablePlayerIds } from "@/lib/player-indexable";
+import { SITE_INTRO } from "@/lib/site-intro";
 import { announcementExcerpt, fetchPublishedAnnouncements, formatAnnouncementDate } from "@/lib/announcements";
 
 // トップページに出すお知らせの件数(公開中のものを新しい順に)
@@ -29,15 +31,18 @@ export const metadata: Metadata = {
 export default async function Home() {
   const supabase = createServerSupabaseClient();
 
-  const [{ count: playerCount }, latestSeason, articles, announcements] =
+  // 選手数は players の全件(歴代の全選手)ではなく、公開して検索に載せている選手ページの数(sitemap と同じ条件)。
+  // 取得できなかったときは人数を出さない。
+  const [indexablePlayerIds, latestSeason, articles, announcements] =
     await Promise.all([
-      supabase.from("players").select("*", { count: "exact", head: true }),
+      fetchIndexablePlayerIds().catch(() => [] as string[]),
       getLatestSeason(supabase),
       fetchPublishedArticles(createAdminSupabaseClient()),
       fetchPublishedAnnouncements(supabase, HOME_ANNOUNCEMENT_LIMIT),
     ]);
 
   const featured = articles[0] ?? null;
+  const playerCount = indexablePlayerIds.length > 0 ? indexablePlayerIds.length : null;
 
   return (
     <div className="home-cinema flex min-h-screen w-full flex-1 flex-col">
@@ -56,8 +61,10 @@ export default async function Home() {
         </div>
       </HomeStage>
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-20 pt-3 sm:px-7 sm:pt-4">
-        <p className="text-[12px] leading-6 text-[#eee3d0]/80">
-          DATA UPDATE ― {latestSeason ?? "最新"}シーズンのロスターと基本スタッツを収録（{playerCount ?? "-"}選手）
+        <p className="max-w-3xl text-[14px] leading-7 text-[#f5efe1]/90 sm:text-[15px] sm:leading-8">{SITE_INTRO}</p>
+        <p className="mt-3 text-[12px] leading-6 text-[#eee3d0]/80">
+          DATA UPDATE ― {latestSeason ?? "最新"}シーズンのロスターと基本スタッツを収録
+          {playerCount !== null && `（${playerCount}選手）`}
         </p>
         <div className="mt-10 grid grid-cols-1 gap-x-10 gap-y-10 lg:grid-cols-2">
           <section aria-labelledby="home-featured" className="home-cinema__panel">

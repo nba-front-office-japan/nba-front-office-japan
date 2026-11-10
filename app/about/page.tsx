@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalPage, LegalSection } from "@/components/legal/legal-page";
 import { OPERATOR_NAME, SITE_NAME, SITE_URL, SOCIAL_LINKS } from "@/lib/site";
+import { SITE_INTRO } from "@/lib/site-intro";
 
 export const metadata: Metadata = {
   title: `運営者情報 | ${SITE_NAME}`,
@@ -13,6 +14,7 @@ export default function AboutPage() {
   return (
     <LegalPage title="運営者情報">
       <LegalSection heading="サイトについて">
+        <p>{SITE_INTRO}</p>
         <p>
           {SITE_NAME}は、NBAの試合結果・選手スタッツ・年俸・トレードや移籍のニュースを日本語で届けるNBAファンサイトです。
           勝敗だけでなく、契約・ドラフト・ロスター構築といった「フロントオフィスの意思決定」の視点からNBAを深く楽しめる情報を目指しています。
