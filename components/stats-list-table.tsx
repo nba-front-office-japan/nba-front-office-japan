@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { formatPct, formatStat } from "@/lib/stats";
 import { STATS_PAGE_SIZE, statsQueryToSearch, type StatsListRow, type StatsPage, type StatsQuery, type StatsSortKey } from "@/lib/stats-list";
+import { StickyTableFrame } from "@/components/sticky-table-frame";
 
 // 選手スタッツ一覧の表(100人分)とページ切り替え。並べ替えは見出しのリンクで URL を変えて、DBで並べ替え直す。
 // 列: 順位・選手名・チーム・POS・G・MP・PTS・ORB・DRB・TRB・AST・STL・BLK・FG%・3P%・FT%・TS%・TOV・PF
@@ -113,7 +114,7 @@ export function StatsListTable({ query, latestSeason, result }: { query: StatsQu
       </div>
       <p className="mb-2 text-xs text-muted sm:hidden">→ 横にスクロールできます</p>
 
-      <div className="overflow-x-auto border border-line bg-surface">
+      <StickyTableFrame className="overflow-x-auto border border-line bg-surface">
         <table className="w-full min-w-[940px] border-collapse text-[13px]">
           <thead>
             <tr className="border-b border-line">
@@ -151,7 +152,7 @@ export function StatsListTable({ query, latestSeason, result }: { query: StatsQu
             )}
           </tbody>
         </table>
-      </div>
+      </StickyTableFrame>
 
       <Pagination query={query} latestSeason={latestSeason} result={result} />
     </div>

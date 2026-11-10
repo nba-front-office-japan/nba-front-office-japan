@@ -9,6 +9,7 @@ import {
   perGame,
   type LegendDisplaySeason,
 } from "@/lib/legends/calc";
+import { StickyTableFrame } from "@/components/sticky-table-frame";
 
 // レジェンドのシーズン別成績(レギュラーシーズン / プレーオフ切替)。最下部に通算平均・通算合計。
 // 記録が無い項目(古い年代のスティール・ブロック・3Pなど)は「—」。
@@ -115,7 +116,7 @@ export function LegendStatsTable({
       </div>
 
       <p className="mb-2 text-xs text-muted sm:hidden">→ 横にスクロールできます</p>
-      <div className="overflow-x-auto border border-line bg-surface">
+      <StickyTableFrame className="overflow-x-auto border border-line bg-surface">
         <table className="w-full min-w-[900px] border-collapse text-[13px]">
           <thead>
             <tr className="border-b border-line">
@@ -147,7 +148,7 @@ export function LegendStatsTable({
             )}
           </tbody>
         </table>
-      </div>
+      </StickyTableFrame>
 
       <ul className="mt-3 space-y-1 text-xs leading-relaxed text-muted">
         <li>・MIN〜BLK・TOVは1試合平均。移籍したシーズンは合計を1行で表示し、在籍チームを並べています。</li>

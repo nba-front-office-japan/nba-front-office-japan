@@ -1,11 +1,13 @@
 // スマホ(sm 未満)のスタッツ表で、ヘッダー行と先頭の「選手名」列を固定するためのクラス。PC(sm 以上)の見た目は変えない。
-// ・表の枠を縦にもスクロールする箱にする(ヘッダー行の固定は、スクロールする箱の上端に対して効くため)
+// ・ヘッダー行を画面上端に固定するのは components/sticky-table-frame.tsx(PC・スマホ共通)。
+//   以前はスマホだけ表の枠を縦スクロールの箱(高さ75dvh)にしてその中で固定していたが、
+//   PCでは固定されず、スマホでも枠の中と画面の二重スクロールになるためやめた(STICKY_TABLE_SCROLL は空)
 // ・固定したセルには背景(bg-surface)を付け、下の文字が透けないようにする。罫線は border-collapse だと
 //   固定セルに付いて動かないため、内側の影(inset)で引く
 // ・重なり順: 選手名のヘッダー(z-30) > ほかのヘッダー(z-20) > 選手名の列(z-10)
 
 // 表の枠(overflow-x-auto の div)に足す
-export const STICKY_TABLE_SCROLL = "max-sm:max-h-[75dvh] max-sm:overflow-y-auto";
+export const STICKY_TABLE_SCROLL = "";
 
 // ヘッダー行のセル(先頭列以外)
 export const STICKY_HEAD_CELL =

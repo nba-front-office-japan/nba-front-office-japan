@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { PlayerGameLogRow } from "@/lib/player-box-score-stats";
 import { teamNameJa } from "@/lib/team-names-ja";
+import { StickyTableFrame } from "@/components/sticky-table-frame";
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 
@@ -93,6 +94,8 @@ export function PlayerGameLog({ rows, seasonLabel }: { rows: PlayerGameLogRow[];
   const lastDate = rows.length > 0 ? rows[0].gameDate : "";
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  // 表の並び順(日付・対戦の見出しで切り替え)。desc=新しい試合が上、asc=古い試合が上
+  const [order, setOrder] = useState<"desc" | "asc">("desc");
 
   const filtered = useMemo(
     () => rows.filter((r) => (from === "" || r.gameDate >= from) && (to === "" || r.gameDate <= to)),
@@ -145,6 +148,7 @@ export function PlayerGameLog({ rows, seasonLabel }: { rows: PlayerGameLogRow[];
   }
 
   const n = filtered.length;
+  const displayed = order === "desc" ? filtered : [...filtered].reverse();
   const cell = "whitespace-nowrap px-2 py-2.5 text-right tabular-nums";
 
   return (
@@ -209,12 +213,23 @@ export function PlayerGameLog({ rows, seasonLabel }: { rows: PlayerGameLogRow[];
 
       <p className="mb-2 text-xs text-muted sm:hidden">→ 横にスクロールできます</p>
 
-      <div className="overflow-x-auto border border-line bg-surface">
+      <StickyTableFrame className="overflow-x-auto border border-line bg-surface">
         <table className="w-full min-w-[980px] border-collapse text-[13px]">
           <thead>
             <tr className="border-b border-line">
-              <th className={`${STICKY_CELL} bg-surface whitespace-nowrap px-2 py-2.5 text-left text-[11px] font-bold text-muted`}>
-                日付・対戦
+              <th
+                aria-sort={order === "desc" ? "descending" : "ascending"}
+                className={`${STICKY_CELL} bg-surface whitespace-nowrap p-0 text-left text-[11px] font-bold text-muted`}
+              >
+                <button
+                  type="button"
+                  onClick={() => setOrder((o) => (o === "desc" ? "asc" : "desc"))}
+                  title="クリックで新しい順・古い順を切り替え"
+                  className="block w-full px-2 py-2.5 text-left hover:text-foreground"
+                >
+                  日付・対戦
+                  <span className="ml-1 text-blue">{order === "desc" ? "▼ 新しい順" : "▲ 古い順"}</span>
+                </button>
               </th>
               <th className="whitespace-nowrap px-2 py-2.5 text-left text-[11px] font-bold text-muted">結果</th>
               {HEADERS.map((h) => (
@@ -236,7 +251,7 @@ export function PlayerGameLog({ rows, seasonLabel }: { rows: PlayerGameLogRow[];
                 </td>
               </tr>
             ) : (
-              filtered.map((r) => {
+              displayed.map((r) => {
                 const win = r.teamScore > r.opponentScore;
                 const opponent = `${r.isHome ? "vs" : "@"} ${r.opponentAbbr}`;
                 return (
@@ -314,7 +329,7 @@ export function PlayerGameLog({ rows, seasonLabel }: { rows: PlayerGameLogRow[];
             </tfoot>
           )}
         </table>
-      </div>
+      </StickyTableFrame>
 
       <p className="mt-2 text-xs leading-6 text-muted">
         {seasonLabel}レギュラーシーズンの出場試合です（出場しなかった試合は含みません）。日付は現地（米国）の試合日です。

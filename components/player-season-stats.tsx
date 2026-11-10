@@ -12,6 +12,7 @@ import {
   type DerivedStats,
   type RawStatTotals,
 } from "@/lib/stats";
+import { StickyTableFrame } from "@/components/sticky-table-frame";
 
 type SeasonType =
   Database["public"]["Tables"]["player_stats"]["Row"]["season_type"];
@@ -35,21 +36,61 @@ const TOTAL_LABEL = "TOT";
 
 // 項目名と並び順は選手名鑑のStatsタブ(team-roster-stats-table.tsx)に合わせる。
 // ただしPOSはシーズン別のデータがDBに無いため列を作らない。
-const COLUMNS: { key: keyof DerivedStats; label: string; format: "stat" | "pct" }[] = [
-  { key: "mpg", label: "MPG", format: "stat" },
-  { key: "ppg", label: "PTS/G", format: "stat" },
-  { key: "orbPg", label: "ORB/G", format: "stat" },
-  { key: "drbPg", label: "DRB/G", format: "stat" },
-  { key: "rpg", label: "TRB/G", format: "stat" },
-  { key: "apg", label: "AST/G", format: "stat" },
-  { key: "stlPg", label: "STL/G", format: "stat" },
-  { key: "blkPg", label: "BLK/G", format: "stat" },
+// total: 「通算合計」行に出す合計値の項目(成功率の列は合計が無いので空欄)
+const COLUMNS: {
+  key: keyof DerivedStats;
+  label: string;
+  format: "stat" | "pct";
+  total?: keyof RawStatTotals;
+}[] = [
+  { key: "mpg", label: "MPG", format: "stat", total: "minutesPlayed" },
+  { key: "ppg", label: "PTS/G", format: "stat", total: "points" },
+  { key: "orbPg", label: "ORB/G", format: "stat", total: "reboundsOffensive" },
+  { key: "drbPg", label: "DRB/G", format: "stat", total: "reboundsDefensive" },
+  { key: "rpg", label: "TRB/G", format: "stat", total: "reboundsTotal" },
+  { key: "apg", label: "AST/G", format: "stat", total: "assists" },
+  { key: "stlPg", label: "STL/G", format: "stat", total: "steals" },
+  { key: "blkPg", label: "BLK/G", format: "stat", total: "blocks" },
   { key: "fgPct", label: "FG%", format: "pct" },
   { key: "threePct", label: "3P%", format: "pct" },
   { key: "ftPct", label: "FT%", format: "pct" },
-  { key: "tovPg", label: "TOV/G", format: "stat" },
-  { key: "pfPg", label: "PF/G", format: "stat" },
+  { key: "tovPg", label: "TOV/G", format: "stat", total: "turnovers" },
+  { key: "pfPg", label: "PF/G", format: "stat", total: "personalFouls" },
 ];
+
+const formatTotal = (value: number) => Math.round(value).toLocaleString("en-US");
+
+// 表の最下部の「通算平均」「通算合計」(レジェンドのシーズン別成績と同じ形)。
+// 表示中のシーズン(1シーズン1行に畳んだもの)を全部足し、平均は通算の合計÷通算の試合数、成功率は通算の成功数÷試投数。
+function CareerRows({ rows }: { rows: DisplayRow[] }) {
+  const totals = aggregateRawStatTotals(rows);
+  const averages = deriveStats(totals);
+  const cell = "whitespace-nowrap px-2 py-3 tabular-nums";
+  return (
+    <>
+      <tr className="border-t-2 border-line bg-[#f6f9ff] font-bold dark:bg-white/[.04]">
+        <td className={cell}>通算平均</td>
+        <td className={`${cell} text-muted`}>{rows.length}シーズン</td>
+        <td className={cell}>{formatTotal(totals.gamesPlayed)}</td>
+        {COLUMNS.map((col) => (
+          <td key={col.key} className={cell}>
+            {col.format === "pct" ? formatPct(averages[col.key]) : formatStat(averages[col.key])}
+          </td>
+        ))}
+      </tr>
+      <tr className="bg-[#f6f9ff] font-bold dark:bg-white/[.04]">
+        <td className={cell}>通算合計</td>
+        <td className={cell} />
+        <td className={cell}>{formatTotal(totals.gamesPlayed)}</td>
+        {COLUMNS.map((col) => (
+          <td key={col.key} className={cell}>
+            {col.total ? formatTotal(totals[col.total]) : ""}
+          </td>
+        ))}
+      </tr>
+    </>
+  );
+}
 
 // 1シーズン＝1行に畳む。移籍シーズンは合計だけを見せ、チーム別の内訳は出さない。
 // ・合計行(team_id=NULL)があればそれを採用する
@@ -119,7 +160,7 @@ export function PlayerSeasonStats({ rows }: { rows: PlayerStatRow[] }) {
 
       <p className="mb-2 text-xs text-muted sm:hidden">→ 横にスクロールできます</p>
 
-      <div className="overflow-x-auto border border-line bg-surface">
+      <StickyTableFrame className="overflow-x-auto border border-line bg-surface">
         <table className="w-full min-w-[900px] border-collapse text-[13px]">
           <thead>
             <tr className="border-b border-line">
@@ -175,14 +216,15 @@ export function PlayerSeasonStats({ rows }: { rows: PlayerStatRow[] }) {
                 );
               })
             )}
+            {displayRows.length > 0 && <CareerRows rows={displayRows} />}
           </tbody>
         </table>
-      </div>
+      </StickyTableFrame>
 
       <p className="mt-2 text-xs text-muted">
         各シーズンの合計値から算出した1試合平均と成功率です。同一シーズンに複数チームでプレーした場合は、チーム別の内訳ではなく合計のみを
         <span className="font-semibold"> TOT </span>
-        として表示します。
+        として表示します。最下部の「通算平均」「通算合計」は、この表に載っているシーズンの合計から計算しています。
       </p>
       <p className="mt-2 text-xs text-muted">
         PTS・TRB・TS%などの項目の意味と目安は

@@ -21,6 +21,7 @@ import {
   type LeaderStat,
   type LeaderView,
 } from "@/lib/legends/leaders";
+import { StickyTableFrame } from "@/components/sticky-table-frame";
 
 // 選手ページへのリンク(現役選手)は1日キャッシュ。?view=&stat= で表示を切り替える
 export const revalidate = 86400;
@@ -245,9 +246,9 @@ export default async function LegendLeadersPage({ searchParams }: PageProps<"/le
       </h2>
       <p className="mb-3 text-[13px] text-muted">{v.description}</p>
 
-      <div className="overflow-x-auto border border-line bg-surface">
+      <StickyTableFrame className="overflow-x-auto border border-line bg-surface">
         {view === "yearly" ? <YearlyTable stat={stat} links={links} /> : <RankingTable view={view} stat={stat} links={links} />}
-      </div>
+      </StickyTableFrame>
 
       <ul className="mt-3 space-y-1 text-xs leading-relaxed text-muted">
         <li>・「LEGEND」はNBA75周年記念チームの選手で、名前からプロフィールへ移動できます。現役選手は選手ページへ移動できます。</li>

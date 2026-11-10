@@ -4,6 +4,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import type { Database } from "@/lib/supabase/types";
 import { deriveStats, formatStat, formatPct } from "@/lib/stats";
 import { STICKY_BODY_FIRST_CELL, STICKY_HEAD_CELL, STICKY_HEAD_FIRST_CELL, STICKY_TABLE_SCROLL } from "@/lib/sticky-table";
+import { StickyTableFrame } from "@/components/sticky-table-frame";
 
 type SeasonType =
   Database["public"]["Tables"]["player_stats"]["Row"]["season_type"];
@@ -269,7 +270,7 @@ export function StatsTable({
       <p className="mb-2 text-xs text-muted sm:hidden">→ 横にスクロールできます</p>
 
       {/* スマホではヘッダー行と選手名の列を固定する(lib/sticky-table.ts) */}
-      <div className={`overflow-x-auto border border-line bg-surface ${STICKY_TABLE_SCROLL}`}>
+      <StickyTableFrame className={`overflow-x-auto border border-line bg-surface ${STICKY_TABLE_SCROLL}`}>
         <table className="w-full min-w-[900px] border-collapse text-[13px]">
           <thead>
             <tr className="border-b border-line">
@@ -315,7 +316,7 @@ export function StatsTable({
             )}
           </tbody>
         </table>
-      </div>
+      </StickyTableFrame>
     </div>
   );
 }
