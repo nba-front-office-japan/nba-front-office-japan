@@ -28,35 +28,46 @@ export const revalidate = 86400;
 
 const VIEWS = VIEW_OPTIONS.map((v) => v.value);
 
-function parseParams(sp: Record<string, string | string[] | undefined>): { view: LeaderView; stat: LeaderStat } {
+// 年度別リーダーのリーグ絞り込み(すべて / NBA / ABA)
+type LeagueFilter = "all" | "nba" | "aba";
+const LEAGUE_OPTIONS: { value: LeagueFilter; label: string }[] = [
+  { value: "all", label: "すべて" },
+  { value: "nba", label: "NBA" },
+  { value: "aba", label: "ABA" },
+];
+
+function parseParams(sp: Record<string, string | string[] | undefined>): { view: LeaderView; stat: LeaderStat; lg: LeagueFilter } {
   const view = (typeof sp.view === "string" && (VIEWS as string[]).includes(sp.view) ? sp.view : "yearly") as LeaderView;
   const stats = STATS_BY_VIEW[view];
   const stat = (typeof sp.stat === "string" && (stats as string[]).includes(sp.stat) ? sp.stat : stats.includes("pts") ? "pts" : stats[0]) as LeaderStat;
-  return { view, stat };
+  const lg = (view === "yearly" && (sp.lg === "nba" || sp.lg === "aba") ? sp.lg : "all") as LeagueFilter;
+  return { view, stat, lg };
 }
 
-function href(view: LeaderView, stat: LeaderStat): string {
+function href(view: LeaderView, stat: LeaderStat, lg: LeagueFilter = "all"): string {
   const params = new URLSearchParams();
   if (view !== "yearly") params.set("view", view);
   if (stat !== "pts") params.set("stat", stat);
+  if (view === "yearly" && lg !== "all") params.set("lg", lg);
   const q = params.toString();
   return q ? `/legends/leaders?${q}` : "/legends/leaders";
 }
 
 export async function generateMetadata({ searchParams }: PageProps<"/legends/leaders">): Promise<Metadata> {
-  const { view, stat } = parseParams(await searchParams);
+  const { view, stat, lg } = parseParams(await searchParams);
   const v = VIEW_OPTIONS.find((o) => o.value === view)!;
-  const isDefault = view === "yearly" && stat === "pts";
+  const isDefault = view === "yearly" && stat === "pts" && lg === "all";
+  const lgLabel = lg === "nba" ? "NBA" : lg === "aba" ? "ABA" : "NBA＆ABA";
   const label = statLabel(view, stat);
   const title = isDefault
     ? "NBA歴代記録・オールタイムリーダーズ｜年度別リーダーと通算ランキング（NBA＆ABA） | NBA Front Office Japan"
-    : `NBA歴代記録 ${v.title}：${label}（NBA＆ABA） | NBA Front Office Japan`;
+    : `NBA歴代記録 ${v.title}：${label}（${lgLabel}） | NBA Front Office Japan`;
   return {
     title,
     description: isDefault
       ? "NBA・ABAの歴代記録を日本語でまとめました。得点・リバウンド・アシスト・スティール・ブロック・3P・FG%の年度別リーダー（タイトル獲得者）と、通算記録・通算平均・シーズン最高の歴代ランキング。"
       : `NBA・ABAの歴代記録「${v.title}：${label}」。${v.description}`,
-    alternates: { canonical: href(view, stat) },
+    alternates: { canonical: href(view, stat, lg) },
   };
 }
 
@@ -124,8 +135,8 @@ function LgBadge({ lg }: { lg?: string }) {
   return <span className="ml-1.5 border border-line px-1 text-[9px] font-extrabold tracking-wide text-muted">ABA</span>;
 }
 
-function YearlyTable({ stat, links }: { stat: LeaderStat; links: LeaderPlayerInfo }) {
-  const rows = yearlyLeaders(stat);
+function YearlyTable({ stat, lg, links }: { stat: LeaderStat; lg: LeagueFilter; links: LeaderPlayerInfo }) {
+  const rows = yearlyLeaders(stat).filter((r) => lg === "all" || r.lg === lg.toUpperCase());
   return (
     <table className="w-full sm:min-w-[560px] border-collapse text-[13px]">
       <thead>
@@ -212,7 +223,7 @@ function RankingTable({ view, stat, links }: { view: Exclude<LeaderView, "yearly
 }
 
 export default async function LegendLeadersPage({ searchParams }: PageProps<"/legends/leaders">) {
-  const { view, stat } = parseParams(await searchParams);
+  const { view, stat, lg } = parseParams(await searchParams);
   const v = VIEW_OPTIONS.find((o) => o.value === view)!;
   const links = await fetchLeaderPlayerInfo().catch((): LeaderPlayerInfo => ({ links: {}, namesJa: {} }));
   const lastLabel = formatSeasonLabel(LEADERS_LAST_SEASON);
@@ -237,22 +248,30 @@ export default async function LegendLeadersPage({ searchParams }: PageProps<"/le
         <ChipLinks
           options={STATS_BY_VIEW[view].map((s) => ({ value: s, label: statLabel(view, s) }))}
           current={stat}
-          link={(ns) => href(view, ns)}
+          link={(ns) => href(view, ns, lg)}
         />
+        {view === "yearly" && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[12px] font-bold text-muted">リーグ</span>
+            <ChipLinks options={LEAGUE_OPTIONS} current={lg} link={(nl) => href(view, stat, nl)} />
+          </div>
+        )}
       </div>
 
       <h2 className="mb-1 text-xl font-semibold tracking-tight">
         {v.title}：{statLabel(view, stat)}
+        {lg !== "all" && `（${lg.toUpperCase()}）`}
       </h2>
       <p className="mb-3 text-[13px] text-muted">{v.description}</p>
 
       <StickyTableFrame className="overflow-x-auto border border-line bg-surface">
-        {view === "yearly" ? <YearlyTable stat={stat} links={links} /> : <RankingTable view={view} stat={stat} links={links} />}
+        {view === "yearly" ? <YearlyTable stat={stat} lg={lg} links={links} /> : <RankingTable view={view} stat={stat} links={links} />}
       </StickyTableFrame>
 
       <ul className="mt-3 space-y-1 text-xs leading-relaxed text-muted">
         <li>・「LEGEND」はNBA75周年記念チームの選手で、名前からプロフィールへ移動できます。現役選手は選手ページへ移動できます。</li>
         <li>・通算記録・通算平均はNBAとABAの合計です。ABAの成績を含むシーズン・選手には「ABA」と表示しています。</li>
+        <li>・年度別リーダーは「リーグ」でNBAだけ・ABAだけに絞り込めます（ABAは1967-68〜1975-76の9シーズン）。</li>
         <li>・スティール・ブロックは1973-74（ABAは1972-73）以降、3PはNBAが1979-80以降に記録開始。記録の無い年の試合は平均の計算に入れていません。</li>
         <li>・規定（試合数・成功数など）は年代により異なり、Basketball-Referenceの基準に合わせています。途中移籍したシーズンは合計で表示しています。</li>
         <li>・出典: Basketball-Reference（公開データセット sumitrodatta/bball-reference-datasets）</li>
