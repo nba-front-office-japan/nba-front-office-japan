@@ -146,7 +146,7 @@ export function StickyTableFrame({ className, children }: { className: string; c
   return (
     <>
       {/* overflow-anchor: none … 並べ替えで行が入れ替わったとき、ブラウザが「見ていた行」を追ってページを勝手にスクロールしないようにする */}
-      <div ref={frameRef} className={className} style={{ overflowAnchor: "none" }}>
+      <div ref={frameRef} className={`sticky-table-frame ${className}`} style={{ overflowAnchor: "none" }}>
         {children}
       </div>
       <div ref={floatRef} aria-hidden className="box-float-head" style={{ display: "none" }} />

@@ -1344,16 +1344,19 @@ body:has(.home-cinema) {
 .newspaper .box-float-head {
   background-color: #f1e3c2;
 }
-/* 固定見出しはスタッツの行(白)と見分けやすいよう、チャコールグレーの地に白文字にする(新聞風の Box Score ページは除く)。
-   見出しセル自身の背景色・文字色(固定列の bg-surface、並べ替え中の列の色など)も上書きする */
+/* スタッツ表の見出し行は、スタッツの行(白)と見分けやすいよう、チャコールグレーの地に白文字にする。
+   表の中の本来の見出し(components/sticky-table-frame.tsx の .sticky-table-frame)と、スクロール時に画面上端へ出す固定見出し(.box-float-head)の両方で同じ色。
+   新聞風の Box Score ページは除く。見出しセル自身の背景色・文字色(固定列の bg-surface、並べ替え中の列の色など)も上書きする */
 body:not(:has(.newspaper)) .box-float-head {
   background-color: #3f4652;
 }
-body:not(:has(.newspaper)) .box-float-head th {
+body:not(:has(.newspaper)) .box-float-head th,
+.sticky-table-frame thead th {
   background-color: #3f4652 !important;
   color: #ffffff !important;
   box-shadow: none !important;
 }
-body:not(:has(.newspaper)) .box-float-head th * {
+body:not(:has(.newspaper)) .box-float-head th *,
+.sticky-table-frame thead th * {
   color: #ffffff !important;
 }
