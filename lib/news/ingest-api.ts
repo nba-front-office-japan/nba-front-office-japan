@@ -11,6 +11,7 @@ import {
 import { validatePublishedAtInput } from "@/lib/news/jst-datetime";
 import { validateRelatedMediaInputs } from "@/lib/news/related-media";
 import { parseTargetGame, targetGameFromRow, type TargetGame } from "@/lib/news/target-game";
+import { parseGameKind, type GameKind } from "@/lib/news/game-kind";
 import { SITE_URL } from "@/lib/site";
 import type { ArticleDraftStatus, ArticleKind, ArticleType, Database, NewsEventCategory, NewsTopic } from "@/lib/supabase/types";
 
@@ -114,6 +115,8 @@ export type DraftInput = {
   editorNote: string | null;
   /** 対象試合(任意)。チーム略称が teams にあるかは、DBを読む呼び出し側で確かめる */
   targetGame: TargetGame | null;
+  /** 試合区分(任意)。"result"=試合結果 / "preview"=プレビュー / null=指定なし */
+  gameKind: GameKind | null;
 };
 
 /** 任意の文字列項目。未指定は null、文字列以外は undefined(エラー) */
@@ -177,6 +180,10 @@ export function parseDraftInput(body: Record<string, unknown>): DraftInput | { e
     targetGame = parsed;
   }
 
+  // 試合区分(任意): "result"(試合結果)/ "preview"(プレビュー)。null か省略は指定なし
+  const gameKind = parseGameKind(body.gameKind);
+  if (gameKind && typeof gameKind === "object") return { error: gameKind.error };
+
   const bodyText = texts.body ?? "";
   // 本文中のメディア([[media:URL]])の URL と、本文中・本文末を合わせた件数を確かめる
   const bodyMediaError = bodyMediaProblem(bodyText, media.urls);
@@ -196,15 +203,16 @@ export function parseDraftInput(body: Record<string, unknown>): DraftInput | { e
     sources: texts.sources ?? null,
     editorNote: texts.editorNote?.trim() || null,
     targetGame,
+    gameKind,
   };
 }
 
 type DraftSummaryRow = Pick<
   DraftRow,
-  "id" | "event_id" | "status" | "headline_ja" | "dek_ja" | "article_kind" | "article_type" | "topic" | "published_at" | "created_at" | "updated_at"
+  "id" | "event_id" | "status" | "headline_ja" | "dek_ja" | "article_kind" | "article_type" | "topic" | "game_kind" | "published_at" | "created_at" | "updated_at"
 >;
 
-export const DRAFT_SUMMARY_COLUMNS = "id, event_id, status, headline_ja, dek_ja, article_kind, article_type, topic, published_at, created_at, updated_at";
+export const DRAFT_SUMMARY_COLUMNS = "id, event_id, status, headline_ja, dek_ja, article_kind, article_type, topic, game_kind, published_at, created_at, updated_at";
 
 /** 下書き1件の応答(一覧用) */
 export function draftSummary(d: DraftSummaryRow) {
@@ -218,6 +226,8 @@ export function draftSummary(d: DraftSummaryRow) {
     type: ARTICLE_KIND_OPTIONS.find((o) => o.value === d.article_kind)?.label ?? d.article_kind,
     category: d.topic ? NEWS_TOPIC_LABEL[d.topic] : null,
     format: ARTICLE_TYPE_OPTIONS.find((o) => o.value === d.article_type)?.label ?? d.article_type,
+    // 試合区分: "result"(試合結果)/ "preview"(プレビュー)/ null(指定なし)
+    gameKind: d.game_kind,
     publishDate: d.published_at,
     createdAt: d.created_at,
     updatedAt: d.updated_at,

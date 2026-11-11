@@ -15,6 +15,7 @@ import { bodyMediaProblem } from "@/lib/news/body-media";
 import { validatePublishedAtInput } from "@/lib/news/jst-datetime";
 import { approveDraft, publishDraft } from "@/lib/news/editorial";
 import { parseTargetGame, targetGameColumns, unknownTeamProblem } from "@/lib/news/target-game";
+import { isGameKind } from "@/lib/news/game-kind";
 
 export async function createDraftAction(
   _prevState: ActionState,
@@ -185,6 +186,12 @@ export async function updateDraftAction(
     return { status: "error", message: targetGame.error };
   }
 
+  // 試合区分(任意。NEWS 一覧の「試合結果」「プレビュー」タブ)。編集画面が送ったときだけ更新する。"" は指定なし
+  const gameKindValue = formData.get("gameKind");
+  if (gameKindValue !== null && gameKindValue !== "" && !isGameKind(String(gameKindValue))) {
+    return { status: "error", message: "試合区分を選び直してください。" };
+  }
+
   const supabase = createAdminSupabaseClient();
   if (targetGame) {
     const { data: teams } = await supabase.from("teams").select("abbreviation");
@@ -212,6 +219,7 @@ export async function updateDraftAction(
       editor_notes: editorNotes || null,
       related_media_urls: media.urls,
       ...(sendsTargetGame ? targetGameColumns(targetGame) : {}),
+      ...(gameKindValue !== null ? { game_kind: isGameKind(String(gameKindValue)) ? (String(gameKindValue) as "result" | "preview") : null } : {}),
       ...publishedAtUpdate,
     })
     .eq("id", draftId);

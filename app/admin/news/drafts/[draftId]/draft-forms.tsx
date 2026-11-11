@@ -17,6 +17,7 @@ import { trailingRelatedMedia } from "@/lib/news/body-media";
 import { ARTICLE_PAGE_FRAME_CLASS, NewsArticleView, formatArticleDate, type ArticleViewSource } from "@/components/news/article-view";
 import { toJstInputValue, validatePublishedAtInput } from "@/lib/news/jst-datetime";
 import { guessNewsTopic } from "@/lib/news/topic-guess";
+import { GAME_KIND_OPTIONS } from "@/lib/news/game-kind";
 
 type ArticleDraft = Database["public"]["Tables"]["article_drafts"]["Row"];
 
@@ -250,6 +251,25 @@ export function DraftEditForm({
               投稿日：<span className="font-normal">未公開（公開した時点の日時が投稿日になります）</span>
             </p>
           )}
+          {/* 試合区分(任意): NEWS 一覧の「試合結果」「プレビュー」タブに振り分ける。結果・プレビューの記事は「NEWS」タブには出ない */}
+          <label className="grid min-w-0 gap-1.5 text-[11px] font-bold text-muted">
+            試合区分（任意）
+            <select
+              name="gameKind"
+              defaultValue={draft.game_kind ?? ""}
+              className="border border-line bg-surface px-3 py-2 text-sm font-normal text-foreground disabled:opacity-60"
+            >
+              <option value="">指定なし</option>
+              {GAME_KIND_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            <span className="text-xs font-normal">
+              「試合結果」にすると、NEWS一覧では「試合結果」タブだけに出ます（結果を知りたくない読者のため「NEWS」タブには出しません）。特定の試合の結果・活躍を伝える記事（「○○が43得点」「○○連勝」など）もこちらにします。下の対象試合を設定した記事は、指定なしでも「プレビュー」タブに出ます。
+            </span>
+          </label>
           {/* 対象試合(任意): 試合プレビュー記事を /games の試合カードに紐づける。公開済みの記事も後から設定・変更できる */}
           <fieldset className="grid min-w-0 gap-1.5">
             <legend className="mb-1 text-[11px] font-bold text-muted">対象試合（任意・試合プレビュー記事用）</legend>

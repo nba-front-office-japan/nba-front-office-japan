@@ -4,6 +4,8 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { fetchPublishedArticles, type PublicArticleSummary } from "@/lib/news/public-articles";
 import { NEWS_TOPIC_LABEL, NEWS_TOPIC_OPTIONS, isRumorOrUnverified, isSingleSource } from "@/lib/news/constants";
 import { PageShell } from "@/components/page-shell";
+import { GAME_KIND_OPTIONS, type GameKind } from "@/lib/news/game-kind";
+import { todayJst } from "@/lib/games/date";
 import styles from "./news.module.css";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +13,10 @@ export const dynamic = "force-dynamic";
 // 検索語の上限(長すぎる入力は切り詰める)
 const MAX_QUERY_LENGTH = 100;
 
-// NEWS の記事一覧。検索欄から ?q= で公開記事のタイトル・本文を部分一致で絞り込み、?category= で公開カテゴリ(タブ)を絞り込む。
+// NEWS の記事一覧。検索欄から ?q= で公開記事のタイトル・本文を部分一致で絞り込み、?category= でタブを絞り込む。
+// タブ: NEWS(初期表示。試合結果でもプレビューでもない記事すべて)/ 試合結果(?category=result)/ プレビュー(?category=preview)/
+// 公開カテゴリ(契約・移籍など。「試合・記録」はタブにしない)。試合結果・プレビューの記事は、その2つのタブにだけ出す
+// (結果を知りたくない読者のため、また1日で価値が落ちる情報を残る情報の流れと分けるため)。
 // 検索の対象は NEWS の記事だけ(選手・チーム・ガイドなどほかのページは対象にしない)。空欄のときは通常の一覧。
 export const metadata: Metadata = {
   title: "NBAニュース・トレード速報 | NBA Front Office Japan",
@@ -31,6 +36,36 @@ function formatDate(value: string | null) {
     month: "2-digit",
     day: "2-digit",
   });
+}
+
+// タブに出す公開カテゴリ。「試合・記録」はタブにしない(その記事のうち試合結果・プレビューでないものは NEWS タブにだけ出る)
+const TOPIC_TABS = NEWS_TOPIC_OPTIONS.filter((item) => item.value !== "game");
+
+type TabKey = GameKind | (typeof TOPIC_TABS)[number]["value"];
+
+function isTabKey(value: string | undefined): value is TabKey {
+  return GAME_KIND_OPTIONS.some((o) => o.value === value) || TOPIC_TABS.some((o) => o.value === value);
+}
+
+// プレビュータブの並び順: 対象試合日(日本時間)が今日に近い順。今日以降の試合を日付の早い順に、その後に過去の試合を新しい順に並べる。
+// 同じ日の中は公開日時の新しい順(取得時の並びを保つ)。対象試合日のない記事は最後
+function sortPreviews(articles: PublicArticleSummary[], today: string): PublicArticleSummary[] {
+  const rank = (a: PublicArticleSummary): [number, string] => {
+    const date = a.targetGameDate;
+    if (!date) return [2, ""];
+    return date >= today ? [0, date] : [1, date];
+  };
+  return articles
+    .map((article, index) => ({ article, index, rank: rank(article) }))
+    .sort((x, y) => {
+      if (x.rank[0] !== y.rank[0]) return x.rank[0] - y.rank[0];
+      if (x.rank[1] !== y.rank[1]) {
+        const asc = x.rank[1] < y.rank[1] ? -1 : 1;
+        return x.rank[0] === 0 ? asc : -asc;
+      }
+      return x.index - y.index;
+    })
+    .map((x) => x.article);
 }
 
 function newsHref(query: string, category?: string) {
@@ -64,13 +99,19 @@ export default async function NewsPage({ searchParams }: PageProps<"/news">) {
   const params = await searchParams;
   const query = (getSingle(params.q) ?? "").trim().slice(0, MAX_QUERY_LENGTH);
   const requestedCategory = getSingle(params.category);
-  const category = NEWS_TOPIC_OPTIONS.some((item) => item.value === requestedCategory) ? requestedCategory : undefined;
+  // 旧タブ(ALL・試合・記録)など、ない値は NEWS タブにする
+  const category = isTabKey(requestedCategory) ? requestedCategory : undefined;
   const supabase = createAdminSupabaseClient();
   const allArticles = await fetchPublishedArticles(supabase);
   const articles = query ? await fetchPublishedArticles(supabase, { query }) : allArticles;
-  // 公開記事が一件でもあるカテゴリだけをタブに出す。空の分類を並べない。
-  const activeCategories = NEWS_TOPIC_OPTIONS.filter((item) => allArticles.some((article) => article.topic === item.value));
-  const filteredArticles = category ? articles.filter((article) => article.topic === category) : articles;
+  // 公開記事が一件でもあるカテゴリだけをタブに出す。空の分類を並べない(NEWS・試合結果・プレビューは常に出す)。
+  const activeCategories = TOPIC_TABS.filter((item) => allArticles.some((article) => !article.gameKind && article.topic === item.value));
+  const filteredArticles =
+    category === "result"
+      ? articles.filter((article) => article.gameKind === "result")
+      : category === "preview"
+        ? sortPreviews(articles.filter((article) => article.gameKind === "preview"), todayJst())
+        : articles.filter((article) => !article.gameKind && (!category || article.topic === category));
   const [leadArticle, ...remainingArticles] = filteredArticles;
 
   return (
@@ -88,7 +129,12 @@ export default async function NewsPage({ searchParams }: PageProps<"/news">) {
             <div><input id="news-search" name="q" type="search" defaultValue={query} maxLength={MAX_QUERY_LENGTH} placeholder="記事タイトル・本文を検索" /><button type="submit">SEARCH →</button></div>
           </form>
           <nav className={styles.categoryNav} aria-label="記事カテゴリ">
-            <Link className={!category ? styles.categoryActive : undefined} href={newsHref(query)}>ALL</Link>
+            <Link className={!category ? styles.categoryActive : undefined} href={newsHref(query)}>NEWS</Link>
+            {GAME_KIND_OPTIONS.map((item) => (
+              <Link key={item.value} className={category === item.value ? styles.categoryActive : undefined} href={newsHref(query, item.value)}>
+                {item.label}
+              </Link>
+            ))}
             {activeCategories.map((item) => (
               <Link key={item.value} className={category === item.value ? styles.categoryActive : undefined} href={newsHref(query, item.value)}>
                 {item.label}
@@ -142,7 +188,7 @@ export default async function NewsPage({ searchParams }: PageProps<"/news">) {
           <section className={styles.emptyState}>
             <p>NO STORIES FOUND</p>
             <h2>{query || category ? "条件に一致する公開記事がありません。" : "まだ公開されている記事がありません。"}</h2>
-            {(query || category) && <Link href="/news">すべての記事を表示 →</Link>}
+            {(query || category) && <Link href="/news">NEWSの記事を表示 →</Link>}
           </section>
         )}
         <footer className={styles.zineFooter}>AN INDEPENDENT BASKETBALL MAGAZINE ／ ALL NEWS SEARCHABLE</footer>

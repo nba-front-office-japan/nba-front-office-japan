@@ -82,6 +82,8 @@ export async function POST(request: Request) {
       editor_notes: input.editorNote,
       related_media_urls: input.mediaUrls,
       published_at: input.publishedAt,
+      // 試合区分は指定したときだけ書く(未指定の入稿は従来と同じ列だけを書く)
+      ...(input.gameKind ? { game_kind: input.gameKind } : {}),
       // 対象試合は指定したときだけ書く(未指定の入稿は従来と同じ列だけを書く)
       ...(input.targetGame ? targetGameColumns(input.targetGame) : {}),
     })

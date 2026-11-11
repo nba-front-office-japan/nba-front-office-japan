@@ -1219,6 +1219,8 @@ export interface Database {
           target_game_date: string | null;
           target_away_team: string | null;
           target_home_team: string | null;
+          /** 試合区分(NEWS 一覧の「試合結果」「プレビュー」タブ)。null は指定なし */
+          game_kind: "result" | "preview" | null;
           created_at: string;
           updated_at: string;
         };
@@ -1243,6 +1245,7 @@ export interface Database {
           target_game_date?: string | null;
           target_away_team?: string | null;
           target_home_team?: string | null;
+          game_kind?: "result" | "preview" | null;
         };
         Update: Partial<
           Database["public"]["Tables"]["article_drafts"]["Insert"]

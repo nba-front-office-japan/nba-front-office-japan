@@ -7,6 +7,7 @@ import type {
   VerificationStatus,
 } from "@/lib/supabase/types";
 import { resolveNewsTopic } from "@/lib/news/constants";
+import { effectiveGameKind, type GameKind } from "@/lib/news/game-kind";
 
 type SupabaseAdmin = ReturnType<typeof createAdminSupabaseClient>;
 
@@ -29,6 +30,10 @@ export interface PublicArticleSummary {
   /** 独自コラム(イベントなし)は確認状況の対象外のため null(未確定情報などのラベルを出さない) */
   verificationStatus: VerificationStatus | null;
   publishedAt: string | null;
+  /** NEWS 一覧での試合区分。試合結果 / プレビュー(対象試合ありの記事を含む)/ それ以外は null */
+  gameKind: GameKind | null;
+  /** 対象試合の試合日(日本時間 YYYY-MM-DD)。プレビュータブの並び順に使う */
+  targetGameDate: string | null;
 }
 
 export interface PublicArticleDetail extends PublicArticleSummary {
@@ -61,7 +66,7 @@ export async function fetchPublishedArticles(
 ): Promise<PublicArticleSummary[]> {
   const { data: rows } = await supabase
     .from("article_drafts")
-    .select("id, headline_ja, dek_ja, article_type, article_kind, published_at, event_id, category, topic")
+    .select("id, headline_ja, dek_ja, article_type, article_kind, published_at, event_id, category, topic, game_kind, target_game_date")
     .eq("status", "published")
     .order("published_at", { ascending: false });
 
@@ -107,6 +112,8 @@ export async function fetchPublishedArticles(
         topic: resolveNewsTopic(d.topic, d.category ?? "other", d.article_kind, d.headline_ja),
         verificationStatus: null,
         publishedAt: d.published_at,
+        gameKind: effectiveGameKind(d.game_kind, d.target_game_date),
+        targetGameDate: d.target_game_date,
       };
     }
     const event = eventById.get(d.event_id);
@@ -120,6 +127,8 @@ export async function fetchPublishedArticles(
       topic: resolveNewsTopic(d.topic, event?.category ?? "other", d.article_kind, d.headline_ja),
       verificationStatus: event?.verification_status ?? "unverified",
       publishedAt: d.published_at,
+      gameKind: effectiveGameKind(d.game_kind, d.target_game_date),
+      targetGameDate: d.target_game_date,
     };
   });
 }
@@ -151,6 +160,8 @@ export async function fetchPublishedArticleById(
       topic: resolveNewsTopic(draft.topic, draft.category ?? "other", draft.article_kind, draft.headline_ja),
       verificationStatus: null,
       publishedAt: draft.published_at,
+      gameKind: effectiveGameKind(draft.game_kind, draft.target_game_date),
+      targetGameDate: draft.target_game_date,
       sources: [],
     };
   }
@@ -201,6 +212,8 @@ export async function fetchPublishedArticleById(
     topic: resolveNewsTopic(draft.topic, event?.category ?? "other", draft.article_kind, draft.headline_ja),
     verificationStatus: event?.verification_status ?? "unverified",
     publishedAt: draft.published_at,
+    gameKind: effectiveGameKind(draft.game_kind, draft.target_game_date),
+    targetGameDate: draft.target_game_date,
     sources,
   };
 }
