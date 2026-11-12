@@ -1845,7 +1845,7 @@ export const SLANG_TERMS: GlossaryTerm[] = [
       "本名はロナルド・ウィリアム・アーテストJr.。2011年に法的に「Metta World Peace」へ改名しました。「Metta」は仏教の言葉で「慈しみ」を意味します。さらに2020年には「Metta Sandiford-Artest」へ改めています。激しい守備で知られ、2010年にはレイカーズで優勝しました。",
     related: ["man-to-man", "enforcer"],
     players: [
-      p("メッタ・ワールド・ピース（ロン・アーテスト）", ["Metta World Peace", "Metta Sandiford-Artest", "Ron Artest"], 2000, 16),
+      p("メッタ・ワールド・ピース（ロン・アーテスト）", ["Metta World Peace", "Metta Sandiford-Artest", "Ron Artest"], 1999, 16),
     ],
   },
 ];

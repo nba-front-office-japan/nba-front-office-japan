@@ -10,6 +10,7 @@ import {
   type DraftMatchPlayer,
 } from "@/lib/draft/draft-player-match";
 
+// キャッシュのキーは、名鑑の別名(player_name_aliases)を直したときにすぐ反映させるために付け替える(2026-11-12 v2)。
 // 選手名鑑の全選手(照合に使う列だけ)。全ドラフト年のページと用語辞典(lib/glossary-player-links.ts)で共有するため1日キャッシュする
 export const loadDraftMatchData = unstable_cache(
   async (): Promise<{ players: DraftMatchPlayer[]; aliases: DraftMatchAlias[] } | null> => {
@@ -25,7 +26,7 @@ export const loadDraftMatchData = unstable_cache(
     if (players.error || aliases.error) return null;
     return { players: players.data, aliases: aliases.data };
   },
-  ["draft-player-match-data"],
+  ["draft-player-match-data-v2"],
   { revalidate: 86400 },
 );
 
