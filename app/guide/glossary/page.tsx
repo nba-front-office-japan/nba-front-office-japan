@@ -6,6 +6,7 @@ import { GlossaryDictionary } from "@/components/glossary-dictionary";
 import { GUIDE_PAGES } from "@/lib/guide-official";
 import { GLOSSARY_TERMS } from "@/lib/glossary-terms";
 import { fetchGlossaryPlayerIds } from "@/lib/glossary-player-links";
+import { buildGlossaryIndex } from "@/lib/glossary-index";
 
 export const metadata: Metadata = {
   title: "NBA用語辞典（初心者・中級者・上級者） | NBAガイド | NBA Front Office Japan",
@@ -24,16 +25,15 @@ export default async function GlossaryGuidePage() {
     <PageShell>
       <GuideHeader category="NBA用語辞典" />
       <GuideTitle subject="NBA用語辞典" suffix="" />
-      <p className="mb-6 max-w-3xl text-sm leading-7 text-muted">
-        NBAの試合やニュースで出てくる{GLOSSARY_TERMS.length}語を、レベル別にまとめました。実況やSNSで見かけるスラング、選手のニックネームとその由来も載せています。用語をクリックすると解説が開き、
-        「ゆっくり」「ふつう」の2つの速さで読み上げも聞けます。契約の細かい用語は
+      <p className="mb-4 max-w-3xl text-sm leading-7 text-muted">
+        NBAの試合やニュースで出てくる{GLOSSARY_TERMS.length}語を、流し読みできるカードにしました。<span className="hidden sm:inline">押すとその場で解説が開き、音声でも聞けます。</span>契約の細かい用語は
         <Link href={GUIDE_PAGES["契約用語"]} className="font-bold text-blue underline underline-offset-4 hover:no-underline">
           契約用語
         </Link>
-        にもまとめています。
+        へ。
       </p>
 
-      <GlossaryDictionary playerIds={playerIds} />
+      <GlossaryDictionary playerIds={playerIds} termIndex={buildGlossaryIndex()} />
 
       <div className="mt-10">
         <BackToGuide />
