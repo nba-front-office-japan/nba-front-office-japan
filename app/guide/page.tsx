@@ -16,6 +16,8 @@ export const metadata: Metadata = {
 const GUIDE_CATEGORIES: { category: string; examples: string[] }[] = [
   // 最初に読む導入ページ
   { category: "はじめに", examples: ["NBAを試合結果だけで終わらせない"] },
+  // 用語辞典は入口として使われやすいので「はじめに」の直後に置く
+  { category: "NBA用語辞典", examples: ["初心者向け", "中級者向け", "上級者向け"] },
   { category: "NBAの歴史", examples: ["NBAの歴史"] },
   {
     category: "NBA制度",
@@ -33,7 +35,6 @@ const GUIDE_CATEGORIES: { category: string; examples: string[] }[] = [
     examples: ["ジョー・スミス事件", "タンパリング", "サラリーキャップ迂回に関する処分"],
   },
   { category: "スタッツの見方", examples: ["スタッツ表の見方", "ネットレーティング", "PER"] },
-  { category: "NBA用語辞典", examples: ["初心者向け", "中級者向け", "上級者向け"] },
 ];
 
 // 例を「、」区切りで並べる。1項目(例:「1st Apron / 2nd Apron」)が行の途中で折り返さないよう、
