@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
 import {
   GLOSSARY_CATEGORIES,
+  GLOSSARY_CATEGORY_GROUPS,
   GLOSSARY_LEVELS,
   GLOSSARY_TERMS,
   type GlossaryCategory,
@@ -16,6 +17,9 @@ import GLOSSARY_AUDIO from "@/lib/glossary-audio.json";
 
 // NBA用語辞典の本体。
 // ・用語は「分類」ごとの見出しの下に並べる(分類は色だけでなく、1文字のマークと名前で区別する)。
+//   分類は「基本の用語」と「スラング・ニックネーム」の2つのまとまりに分けて、目次と見出しを出す。
+//   分類の中に小見出し(term.group)がある用語は、小見出しごとに並べる(選手のニックネームの「レジェンド」など)。
+// ・ニックネームなどの選手は、選手名鑑と照合できた場合だけ「選手名鑑」へのリンクを出す(playerIds。照合はサーバー側)。
 // ・上部の分類ボタンで、その分類の見出しへ移動する。レベル(初心者/中級者/上級者)と検索で絞り込める。
 // ・用語カードをクリックすると、その用語の解説をポップアップ(<dialog>)で開く。
 // ・全用語の解説はサーバー側でHTMLに含める(閉じた<dialog>の中身として出力するので、検索エンジンも読める)。
@@ -29,6 +33,19 @@ const TERM_BY_ID = Object.fromEntries(GLOSSARY_TERMS.map((t) => [t.id, t])) as R
 const dialogId = (id: string) => `term-${id}`;
 const sectionId = (c: GlossaryCategory) => `cat-${c}`;
 const LEVEL_DOTS: Record<GlossaryLevel, number> = { beginner: 1, intermediate: 2, advanced: 3 };
+const groupId = (g: string) => `group-${g}`;
+const GROUP_LABEL = Object.fromEntries(GLOSSARY_CATEGORY_GROUPS.map((g) => [g.key, g.label])) as Record<string, string>;
+// 分類の中の小見出し(term.group)ごとに分ける。小見出しのない用語はそのまま1つにまとめる(並び順はデータの順)
+function subgroups(terms: GlossaryTerm[]): { group: string | undefined; terms: GlossaryTerm[] }[] {
+  const out: { group: string | undefined; terms: GlossaryTerm[] }[] = [];
+  for (const t of terms) {
+    const last = out[out.length - 1];
+    if (last && last.group === t.group) last.terms.push(t);
+    else out.push({ group: t.group, terms: [t] });
+  }
+  return out;
+}
+const playerKey = (draft: [number, number]) => `${draft[0]}-${draft[1]}`;
 
 type LevelFilter = GlossaryLevel | "all";
 type Speed = "slow" | "normal";
@@ -260,14 +277,19 @@ function TermDialog({
   onOpen,
   speech,
   showFigure,
+  playerIds,
 }: {
   term: GlossaryTerm;
   onClose: () => void;
   onOpen: (id: string) => void;
   speech: Speech;
   showFigure: boolean;
+  playerIds: Record<string, string>;
 }) {
   const c = CATEGORY_BY_KEY[term.category];
+  const players = (term.players ?? [])
+    .map((pl) => ({ ja: pl.ja, id: playerIds[playerKey(pl.draft)] }))
+    .filter((pl): pl is { ja: string; id: string } => !!pl.id);
   const related = (term.related ?? []).map((id) => TERM_BY_ID[id]).filter(Boolean);
   return (
     <dialog
@@ -328,6 +350,19 @@ function TermDialog({
           <div>
             <SectionLabel>詳しい解説</SectionLabel>
             <p className="text-pretty text-[15px] leading-8 [word-break:auto-phrase]">{term.detail}</p>
+            {players.length > 0 && (
+              <p className="mt-3 flex flex-wrap gap-2">
+                {players.map((pl) => (
+                  <Link
+                    key={pl.id}
+                    href={`/players/${pl.id}`}
+                    className="selection-button selection-blue inline-flex items-center gap-1 border border-blue px-3 py-1.5 text-xs font-bold text-blue"
+                  >
+                    選手名鑑：{pl.ja} →
+                  </Link>
+                ))}
+              </p>
+            )}
           </div>
         )}
 
@@ -424,7 +459,7 @@ function TermCard({ t, onOpen }: { t: GlossaryTerm; onOpen: (id: string) => void
   );
 }
 
-export function GlossaryDictionary() {
+export function GlossaryDictionary({ playerIds = {} }: { playerIds?: Record<string, string> }) {
   // レベル: 画面で選んだもの > URL の ?level= > すべて
   const [chosenLevel, setLevel] = useState<LevelFilter | null>(null);
   const urlLevel = useSyncExternalStore(subscribeNoop, readUrlLevel, serverNull);
@@ -544,8 +579,14 @@ export function GlossaryDictionary() {
       {/* 分類の目次(押すとその分類の見出しへ移動) */}
       <nav aria-label="分類" className="sticky top-0 z-10 -mx-4 mb-8 border-y border-line bg-background/95 px-4 py-2.5 backdrop-blur sm:mx-0 sm:border-x sm:px-3">
         <p className="mb-1.5 text-[11px] font-extrabold tracking-[1px] text-muted">分類から探す</p>
-        <div className="flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible">
-          {GLOSSARY_CATEGORIES.map((c) => {
+        {GLOSSARY_CATEGORY_GROUPS.map((g) => (
+        // 分類が多いので、まとまりごとに1行で横にスクロールさせる(見出しに固定する目次の高さを抑えるため)
+        <div key={g.key} className="flex items-center gap-2 overflow-x-auto pb-1">
+          <span className="sticky left-0 z-[1] shrink-0 bg-background/95 pr-1 text-[11px] font-extrabold text-muted">
+            <span className="sm:hidden">{g.short}</span>
+            <span className="hidden sm:inline">{g.label}</span>
+          </span>
+          {GLOSSARY_CATEGORIES.filter((c) => c.group === g.key).map((c) => {
             const count = visible.filter((t) => t.category === c.key).length;
             return (
               <a
@@ -564,13 +605,24 @@ export function GlossaryDictionary() {
             );
           })}
         </div>
+        ))}
       </nav>
 
       {sections.length === 0 && <p className="text-sm text-muted">「{query}」に当てはまる用語はありません。</p>}
 
       <div className="space-y-12">
-        {sections.map(({ c, terms }) => (
-          <section key={c.key} id={sectionId(c.key)} aria-labelledby={`${sectionId(c.key)}-title`} className="scroll-mt-40">
+        {sections.map(({ c, terms }, i) => (
+          <Fragment key={c.key}>
+          {(i === 0 || sections[i - 1].c.group !== c.group) && (
+            <div id={groupId(c.group)} className="scroll-mt-40 border-t-4 border-foreground pt-3">
+              <p className="text-[11px] font-extrabold tracking-[2px] text-muted">CATEGORY</p>
+              <h2 className="text-2xl font-black tracking-tight sm:text-3xl">{GROUP_LABEL[c.group]}</h2>
+              {c.group === "slang" && (
+                <p className="mt-1 text-sm text-muted">実況やSNSで見かけるスラング、決めポーズ、選手のニックネームの由来など。</p>
+              )}
+            </div>
+          )}
+          <section id={sectionId(c.key)} aria-labelledby={`${sectionId(c.key)}-title`} className="scroll-mt-40">
             <div className="mb-4 flex items-center gap-3 border-b-2 pb-3" style={{ borderColor: c.color }}>
               <CategoryMark c={c} size="lg" />
               <div className="min-w-0">
@@ -614,20 +666,40 @@ export function GlossaryDictionary() {
               </div>
             )}
 
-            <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {terms.map((t) => (
-                <li key={t.id}>
-                  <TermCard t={t} onOpen={open} />
-                </li>
-              ))}
-            </ul>
+            {subgroups(terms).map(({ group, terms: groupTerms }) => (
+              <div key={group ?? "-"} className={group ? "mt-6 first:mt-0" : undefined}>
+                {group && (
+                  <h3 className="mb-3 flex items-center gap-2 text-base font-bold">
+                    <span aria-hidden className="inline-block h-4 w-1" style={{ backgroundColor: c.color }} />
+                    {group}
+                    <span className="text-xs font-semibold text-muted tabular-nums">{groupTerms.length}語</span>
+                  </h3>
+                )}
+                <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {groupTerms.map((t) => (
+                    <li key={t.id}>
+                      <TermCard t={t} onOpen={open} />
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </section>
+          </Fragment>
         ))}
       </div>
 
       {/* 全用語の解説(ポップアップ)。閉じた状態でもHTMLに含まれる */}
       {GLOSSARY_TERMS.map((t) => (
-        <TermDialog key={t.id} term={t} onClose={handleClose} onOpen={open} speech={speech} showFigure={opened.has(t.id) || urlTerm === t.id} />
+        <TermDialog
+          key={t.id}
+          term={t}
+          onClose={handleClose}
+          onOpen={open}
+          speech={speech}
+          showFigure={opened.has(t.id) || urlTerm === t.id}
+          playerIds={playerIds}
+        />
       ))}
     </>
   );

@@ -10,8 +10,8 @@ import {
   type DraftMatchPlayer,
 } from "@/lib/draft/draft-player-match";
 
-// 選手名鑑の全選手(照合に使う列だけ)。全ドラフト年のページで共有するため1日キャッシュする
-const loadDraftMatchData = unstable_cache(
+// 選手名鑑の全選手(照合に使う列だけ)。全ドラフト年のページと用語辞典(lib/glossary-player-links.ts)で共有するため1日キャッシュする
+export const loadDraftMatchData = unstable_cache(
   async (): Promise<{ players: DraftMatchPlayer[]; aliases: DraftMatchAlias[] } | null> => {
     const supabase = createServerSupabaseClient();
     const [players, aliases] = await Promise.all([
