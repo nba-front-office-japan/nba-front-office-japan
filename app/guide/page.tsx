@@ -45,6 +45,13 @@ const GUIDE_CATEGORIES: GuideCategory[] = [
   },
 ];
 
+// PC(2列)での配置。「契約とサラリーを読む」は記事が多く縦に長いので左列で3段ぶんを使い、
+// 「NBAの歴史と事件」を右列(スタッツを読むの下)に入れて、右側に大きな空白が残らないようにする。スマホ(1列)は並び順どおり。
+const GRID_PLACEMENT: Record<string, string> = {
+  "契約とサラリーを読む": "sm:row-span-3",
+  "NBAの歴史と事件": "sm:col-start-2",
+};
+
 // 用語辞典(調べる)のカードに並べるリンク
 const GLOSSARY_LINKS = ["NBA用語辞典", "初級", "中級", "上級"];
 
@@ -119,7 +126,7 @@ export default function GuidePage() {
             const count = categoryArticles(row).filter((e) => GUIDE_PAGES[e]).length;
             const sections = row.groups ?? [{ heading: "", items: row.examples }];
             return (
-              <li key={row.category} className="flex flex-col border border-line border-t-4 border-t-foreground bg-surface">
+              <li key={row.category} className={`flex flex-col border border-line border-t-4 border-t-foreground bg-surface ${GRID_PLACEMENT[row.category] ?? ""}`}>
                 <div className="px-4 pb-2 pt-3.5 sm:px-5">
                   <p className="flex items-baseline gap-2">
                     <span className="text-[11px] font-extrabold tabular-nums tracking-[1.3px] text-muted">{String(i + 1).padStart(2, "0")}</span>
