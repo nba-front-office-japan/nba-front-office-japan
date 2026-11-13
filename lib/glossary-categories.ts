@@ -162,8 +162,9 @@ export const GLOSSARY_CULTURE_SUBHEADS: { category: GlossaryCategory; label: str
   { category: "trivia", label: "面白ネタ" },
 ];
 
-// 難易度別のリスト(/guide/glossary/beginner・intermediate・advanced)。中身は用語データの level(CSV の「現在の難易度」と同じ)。
-// 2026-11-13 まとめ版の指示で、学習導線(最初に知る用語・深掘りする用語)はやめて、この3リストに戻した。
+// 難易度(初級・中級・上級)。中身は用語データの level(CSV の「現在の難易度」と同じ)。
+// 2026-11-13(夜)の指示で、難易度は「ページ」ではなく、用語集トップの画面の中で切り替える選択にした(?level=〜 で選択済みの状態を表す)。
+// トップで選ぶと分類カードの語数・代表的な用語がその難易度の分になり、開いた分類ページでもその難易度の用語だけが流れる。
 export const GLOSSARY_LEVEL_PAGES: { key: GlossaryLevel; label: string; lead: string }[] = [
   { key: "beginner", label: "初級", lead: "NBAを見るなら、まずはここまで知っておきたい用語。ルール・基本のプレー・スタッツなど、試合を楽しむための土台です。" },
   { key: "intermediate", label: "中級", lead: "戦術や効率の指標、ロスターの動き、ニックネームやスラングまで。試合とニュースがもっと楽しくなる用語です。" },
@@ -195,7 +196,19 @@ export const GLOSSARY_LEGACY_CATEGORY_SECTION: Record<GlossaryCategory, Glossary
 // 用語集トップ / 分類ページ / 難易度別リスト / 用語カード(分類ページの #term-用語ID。開いた状態で着地する)
 export const GLOSSARY_TOP_PATH = "/guide/glossary";
 export const glossarySectionPath = (s: GlossarySectionKey) => `${GLOSSARY_TOP_PATH}/${s}`;
-export const glossaryLevelPath = (lv: GlossaryLevel) => `${GLOSSARY_TOP_PATH}/${lv}`;
+// 難易度を選んだ状態の用語集トップ(/guide/glossary?level=beginner など)
+export const glossaryLevelPath = (lv: GlossaryLevel) => `${GLOSSARY_TOP_PATH}?level=${lv}`;
+// 難易度の選択。"all" は「すべて」(初期状態)
+export type GlossaryLevelFilter = GlossaryLevel | "all";
+export const parseGlossaryLevel = (s: string | null | undefined): GlossaryLevelFilter =>
+  s === "beginner" || s === "intermediate" || s === "advanced" ? s : "all";
+// URL に難易度の選択(?level=)を付ける。"all" のときは付けない。#term- などの # は後ろに残す
+export function withGlossaryLevel(href: string, lv: GlossaryLevelFilter): string {
+  if (lv === "all") return href;
+  const i = href.indexOf("#");
+  const [path, hash] = i < 0 ? [href, ""] : [href.slice(0, i), href.slice(i)];
+  return `${path}${path.includes("?") ? "&" : "?"}level=${lv}${hash}`;
+}
 export const glossaryTermHash = (id: string) => `#term-${id}`;
 export const glossaryTermPath = (id: string, s: GlossarySectionKey) => `${glossarySectionPath(s)}${glossaryTermHash(id)}`;
 

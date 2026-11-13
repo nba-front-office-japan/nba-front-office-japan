@@ -7,11 +7,12 @@ import { GlossaryDictionary } from "@/components/glossary-dictionary";
 import { CategoryMark } from "@/components/glossary-mark";
 import { GLOSSARY_SECTIONS, GLOSSARY_TOP_PATH, glossarySectionPath } from "@/lib/glossary-terms";
 import { fetchGlossaryPlayerIds } from "@/lib/glossary-player-links";
-import { glossaryCounts, glossaryLookup, glossarySectionBlock, isGlossarySection } from "@/lib/glossary-pages";
+import { glossaryCounts, glossaryLevelCounts, glossaryLookup, glossarySectionBlock, isGlossarySection } from "@/lib/glossary-pages";
+import { GlossarySectionNeighbors } from "@/components/glossary-level-select";
 
 // 選手名鑑へのリンク(ニックネームなど)は名鑑のデータと照合して作るため、1日ごとに作り直す
 export const revalidate = 86400;
-// 9分類以外の URL は 404(first・deep は別のページ)
+// 9分類以外の URL は 404(beginner・intermediate・advanced・first・deep は next.config.ts で用語集トップへ転送)
 export const dynamicParams = false;
 
 export function generateStaticParams() {
@@ -30,15 +31,15 @@ export async function generateMetadata({ params }: PageProps<"/guide/glossary/[s
   };
 }
 
-// NBA用語辞典の分類ページ(中項目)。その分類の用語カードを全部流す(カードの表示は components/glossary-dictionary.tsx)。
+// NBA用語辞典の分類ページ(中項目)。その分類の用語カードを流す(カードの表示は components/glossary-dictionary.tsx)。
+// ?level=〜 が付いていれば、その難易度の用語だけを流す(ページは静的に作り、絞り込みはブラウザ側)。
 export default async function GlossarySectionPage({ params }: PageProps<"/guide/glossary/[section]">) {
   const { section } = await params;
   if (!isGlossarySection(section)) notFound();
   const i = GLOSSARY_SECTIONS.findIndex((x) => x.key === section);
   const c = GLOSSARY_SECTIONS[i];
-  const prev = GLOSSARY_SECTIONS[i - 1];
-  const next = GLOSSARY_SECTIONS[i + 1];
   const counts = glossaryCounts();
+  const levelCounts = glossaryLevelCounts();
   const playerIds = await fetchGlossaryPlayerIds();
 
   return (
@@ -60,36 +61,13 @@ export default async function GlossarySectionPage({ params }: PageProps<"/guide/
         key={c.key}
         blocks={[glossarySectionBlock(c.key)]}
         lookup={glossaryLookup()}
-        counts={counts}
+        levelCounts={levelCounts}
         current={c.key}
         playerIds={playerIds}
       />
 
-      {/* 前後の分類へ */}
-      <nav aria-label="前後の分類" className="mt-10 grid max-w-4xl gap-2.5 sm:grid-cols-2">
-        {prev ? (
-          <Link href={glossarySectionPath(prev.key)} className="group flex items-center gap-2.5 border border-line bg-surface px-4 py-3 hover:border-foreground">
-            <span aria-hidden className="text-muted">←</span>
-            <CategoryMark c={prev} />
-            <span className="min-w-0">
-              <span className="block text-[11px] font-bold text-muted">前の分類</span>
-              <span className="font-bold group-hover:text-blue">{prev.label}</span>
-            </span>
-          </Link>
-        ) : (
-          <span className="hidden sm:block" />
-        )}
-        {next && (
-          <Link href={glossarySectionPath(next.key)} className="group flex items-center justify-end gap-2.5 border border-line bg-surface px-4 py-3 text-right hover:border-foreground">
-            <span className="min-w-0">
-              <span className="block text-[11px] font-bold text-muted">次の分類</span>
-              <span className="font-bold group-hover:text-blue">{next.label}</span>
-            </span>
-            <CategoryMark c={next} />
-            <span aria-hidden className="text-muted">→</span>
-          </Link>
-        )}
-      </nav>
+      {/* 前後の分類へ(難易度を選んでいるときは、その難易度の用語がある分類だけをたどる) */}
+      <GlossarySectionNeighbors current={c.key} counts={levelCounts} />
 
       <div className="mt-8 flex flex-wrap gap-x-6">
         <Link href={GLOSSARY_TOP_PATH} className="mt-8 inline-block text-sm font-extrabold text-blue">

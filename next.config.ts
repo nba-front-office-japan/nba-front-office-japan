@@ -15,17 +15,21 @@ const nextConfig: NextConfig = {
         destination: "/salary",
         permanent: true,
       },
-      // 用語辞典の「最初に知る用語」「深掘りする用語」はやめて、初級・上級のリストにした(2026-11-13。旧URLは公開済みのため恒久転送)
-      {
-        source: "/guide/glossary/first",
-        destination: "/guide/glossary/beginner",
+      // 用語辞典の難易度は、ページではなく用語集トップの中の選択にした(2026-11-13)。
+      // 難易度別ページ(beginner・intermediate・advanced)と、その前の first・deep は、難易度を選んだ状態の用語集トップへ恒久転送する
+      ...(
+        [
+          ["beginner", "beginner"],
+          ["intermediate", "intermediate"],
+          ["advanced", "advanced"],
+          ["first", "beginner"],
+          ["deep", "advanced"],
+        ] as const
+      ).map(([from, level]) => ({
+        source: `/guide/glossary/${from}`,
+        destination: `/guide/glossary?level=${level}`,
         permanent: true,
-      },
-      {
-        source: "/guide/glossary/deep",
-        destination: "/guide/glossary/advanced",
-        permanent: true,
-      },
+      })),
     ];
   },
 };

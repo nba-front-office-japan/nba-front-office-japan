@@ -9,15 +9,20 @@ import {
   glossarySectionPath,
   glossaryTermHash,
   glossaryTermPath,
+  withGlossaryLevel,
+  type GlossaryLevelFilter,
   type GlossarySectionKey,
   type GlossaryTerm,
 } from "@/lib/glossary-categories";
+import { glossaryLevelLabel, useGlossaryLevel } from "@/components/glossary-level-select";
+import type { GlossaryLevelCounts } from "@/lib/glossary-pages";
 import { CategoryMark, GLOSSARY_SECTION_BY_KEY as SECTION_BY_KEY } from "@/components/glossary-mark";
 import { GlossaryFigureView, PositionCourt } from "@/components/glossary-figures";
 import { toSpeechText } from "@/lib/glossary-speech";
 import GLOSSARY_AUDIO from "@/lib/glossary-audio.json";
 
-// NBA用語辞典のカードを流す部品(分類ページ /guide/glossary/<分類> と、難易度別リスト beginner・intermediate・advanced で使う)。
+// NBA用語辞典のカードを流す部品(分類ページ /guide/glossary/<分類> で使う)。
+// ・URL の ?level=(初級 beginner・中級 intermediate・上級 advanced)があれば、その難易度の用語だけを流す(用語集トップで選んだ難易度の持ち越し)。
 // ・渡された分類(blocks)の順に、分類の見出しを区切りにしてカードを並べる。
 //   NBAカルチャーは小見出し(ニックネーム・実況表現など)ごと、さらに用語データの小見出し(term.group)ごとに並べる。
 // ・カードを押すと、その場で開いて(アコーディオン)全文・図解・読み上げ・選手名鑑へのリンク・あわせて読みたい用語を出す。
@@ -441,73 +446,108 @@ function TermEntry({
   );
 }
 
-// 上に固定する分類のナビ(用語集トップへ戻る＋17分類。今いる分類は塗りつぶし)
-// 上に固定する分類のナビ(用語集トップへ戻る＋9分類。今いる分類は塗りつぶし)。
-// blocks を渡したとき(難易度別リスト)は、ページの中の分類の見出しへ移動するボタンにする(語数はこのページの語数)
-function CategoryNav({
-  current,
-  counts,
-  blocks,
-}: {
-  current?: GlossarySectionKey;
-  counts: Record<GlossarySectionKey, number>;
-  blocks?: GlossaryBlock[];
-}) {
-  const inPage = blocks ? new Map(blocks.map((x) => [x.key, x.groups.reduce((n, g) => n + g.terms.length, 0)])) : null;
-  const navRef = useRef<HTMLElement>(null);
-  // 今いる分類のボタンが見えるように、横スクロールの位置を合わせる(スマホで後ろの分類を開いたとき)
-  useEffect(() => {
-    const nav = navRef.current;
-    const here = nav?.querySelector<HTMLElement>('[aria-current="page"]');
-    if (nav && here) nav.scrollLeft = here.offsetLeft - 120;
-  }, [current]);
+// 分類のナビ(用語集トップへ戻る＋9分類。今いる分類は塗りつぶし)。横スクロールはせず、折り返して複数段で出す。
+// 難易度を選んでいるときは、その難易度の語数を出し、0語の分類は出さない(リンクも難易度を持ち越す)。
+function CategoryNav({ current, counts, level }: { current: GlossarySectionKey; counts: Record<GlossarySectionKey, number>; level: GlossaryLevelFilter }) {
   return (
-    <div className="sticky top-0 z-10 -mx-4 mb-5 border-y border-line bg-background/95 px-4 py-2 backdrop-blur sm:mx-0 sm:border-x sm:px-3">
-      <nav ref={navRef} aria-label="用語集の分類" className="relative flex items-center gap-1.5 overflow-x-auto">
-        <Link
-          href={GLOSSARY_TOP_PATH}
-          className="inline-flex h-9 shrink-0 items-center gap-1 border border-foreground bg-surface px-2.5 text-xs font-bold hover:bg-navy hover:text-white"
-        >
-          <span aria-hidden>←</span>用語集トップ
-        </Link>
-        <span aria-hidden className="h-6 shrink-0 border-l border-line" />
-        {GLOSSARY_SECTIONS.filter((c) => !inPage || inPage.has(c.key)).map((c) => {
-          const here = c.key === current;
-          return (
-            <Link
-              key={c.key}
-              href={inPage ? `#${sectionId(c.key)}` : glossarySectionPath(c.key)}
-              aria-current={here ? "page" : undefined}
-              className={`inline-flex h-9 shrink-0 items-center gap-1.5 border pl-1 pr-2.5 text-xs font-bold transition-colors ${
-                here ? "text-white" : "bg-surface hover:border-foreground"
-              }`}
-              style={here ? { backgroundColor: c.color, borderColor: c.color } : { borderColor: c.color }}
-            >
-              <CategoryMark c={c} />
-              {c.label}
-              <span className={`tabular-nums ${here ? "text-white/80" : "text-muted"}`}>{inPage ? inPage.get(c.key) : counts[c.key]}</span>
-            </Link>
-          );
-        })}
-      </nav>
+    <nav aria-label="用語集の分類" className="mb-5 flex flex-wrap items-center gap-1.5 border-y border-line py-2.5">
+      <Link
+        href={withGlossaryLevel(GLOSSARY_TOP_PATH, level)}
+        className="inline-flex h-9 items-center gap-1 border border-foreground bg-surface px-2.5 text-xs font-bold hover:bg-navy hover:text-white"
+      >
+        <span aria-hidden>←</span>用語集トップ
+      </Link>
+      {GLOSSARY_SECTIONS.filter((c) => c.key === current || counts[c.key] > 0).map((c) => {
+        const here = c.key === current;
+        return (
+          <Link
+            key={c.key}
+            href={withGlossaryLevel(glossarySectionPath(c.key), level)}
+            aria-current={here ? "page" : undefined}
+            className={`inline-flex h-9 items-center gap-1.5 border pl-1 pr-2.5 text-xs font-bold transition-colors ${
+              here ? "text-white" : "bg-surface hover:border-foreground"
+            }`}
+            style={here ? { backgroundColor: c.color, borderColor: c.color } : { borderColor: c.color }}
+          >
+            <CategoryMark c={c} />
+            {c.label}
+            <span className={`tabular-nums ${here ? "text-white/80" : "text-muted"}`}>{counts[c.key]}</span>
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
+// 分類ページの難易度の切り替え(すべて・初級・中級・上級。この分類で0語の難易度は押せない)
+function LevelBar({
+  level,
+  setLevel,
+  counts,
+  current,
+}: {
+  level: GlossaryLevelFilter;
+  setLevel: (lv: GlossaryLevelFilter) => void;
+  counts: GlossaryLevelCounts;
+  current: GlossarySectionKey;
+}) {
+  return (
+    <div className="mb-5 flex flex-wrap items-center gap-1.5" role="group" aria-label="難易度">
+      <span className="mr-1 text-xs font-bold text-muted">難易度</span>
+      {(["all", "beginner", "intermediate", "advanced"] as const).map((lv) => {
+        const n = counts[lv][current];
+        const on = lv === level;
+        return (
+          <button
+            key={lv}
+            type="button"
+            aria-pressed={on}
+            disabled={n === 0}
+            onClick={() => setLevel(lv)}
+            className={`inline-flex min-h-9 items-center gap-1 border px-3 text-xs font-bold ${
+              on ? "border-navy bg-navy text-white" : "border-line bg-surface hover:border-foreground"
+            } disabled:cursor-default disabled:opacity-40 disabled:hover:border-line`}
+          >
+            {glossaryLevelLabel(lv)}
+            <span className={`tabular-nums ${on ? "text-white/80" : "text-muted"}`}>{n}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }
 
 export function GlossaryDictionary({
-  blocks,
+  blocks: allBlocks,
   lookup,
-  counts,
+  levelCounts,
   current,
   playerIds = {},
 }: {
   blocks: GlossaryBlock[];
   lookup: GlossaryLookup;
-  counts: Record<GlossarySectionKey, number>;
-  // 分類ページのときはその分類(ナビで塗りつぶす)。難易度別リストでは省略
-  current?: GlossarySectionKey;
+  levelCounts: GlossaryLevelCounts;
+  // この分類(ナビで塗りつぶす)
+  current: GlossarySectionKey;
   playerIds?: Record<string, string>;
 }) {
+  // 難易度(URL の ?level=)。#term- で開いた用語がその難易度に無いときは「すべて」に戻す
+  const [levelRaw, setLevel] = useGlossaryLevel();
+  const level = levelCounts[levelRaw][current] > 0 ? levelRaw : "all";
+  const blocks = useMemo(
+    () =>
+      level === "all"
+        ? allBlocks
+        : allBlocks.map((b) => ({ ...b, groups: b.groups.map((g) => ({ ...g, terms: g.terms.filter((t) => t.level === level) })).filter((g) => g.terms.length > 0) })),
+    [allBlocks, level],
+  );
+  useEffect(() => {
+    const id = termIdFromHash(location.hash, lookup);
+    if (!id || levelRaw === "all") return;
+    const t = allBlocks.flatMap((b) => b.groups.flatMap((g) => g.terms)).find((x) => x.id === id);
+    if (t && t.level !== levelRaw) setLevel("all");
+  }, [levelRaw, allBlocks, lookup, setLevel]);
+  const shown = blocks.reduce((n, b) => n + b.groups.reduce((m, g) => m + g.terms.length, 0), 0);
   // 開いているカード(複数開ける)と、一度でも開いたカード(図解は一度開いた用語だけ描く)
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set());
   const [opened, setOpened] = useState<ReadonlySet<string>>(() => new Set());
@@ -516,8 +556,8 @@ export function GlossaryDictionary({
   // このページに並んでいる用語
   const onPageKey = blocks.map((b) => b.groups.map((g) => g.terms.map((t) => t.id).join(",")).join(",")).join(",");
   const onPage = useMemo<ReadonlySet<string>>(() => new Set(onPageKey.split(",")), [onPageKey]);
-  // 分類の見出しは、複数の分類を流すページ(難易度別リスト)でだけ出す(分類ページはページの見出しが分類名)
-  const multi = !current;
+  // 分類の見出しは出さない(分類ページはページの見出しが分類名)。複数の分類を流す使い方のために残す
+  const multi = false;
 
   // カードを開く。scroll=true のときは開いたカードの位置まで移動する(関連用語・#リンクから開いたとき)
   const openTerm = useCallback(
@@ -588,7 +628,14 @@ export function GlossaryDictionary({
 
   return (
     <>
-      <CategoryNav current={current} counts={counts} blocks={multi ? blocks : undefined} />
+      <CategoryNav current={current} counts={levelCounts[level]} level={level} />
+      <LevelBar level={level} setLevel={setLevel} counts={levelCounts} current={current} />
+      {level !== "all" && (
+        <p className="-mt-2 mb-5 text-sm font-bold">
+          {glossaryLevelLabel(level)}の用語だけを表示しています
+          <span className="ml-1 font-semibold text-muted tabular-nums">（{shown}語／全{levelCounts.all[current]}語）</span>
+        </p>
+      )}
 
       {/* 用語のカード。分類の順にそのまま流し、見出しは区切りとして出すだけ */}
       <div id="glossary-list" className="max-w-4xl scroll-mt-16 space-y-10">
