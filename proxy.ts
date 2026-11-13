@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// ① /guide/glossary?level=beginner など(前の用語辞典のレベル絞り込みのURL)を転送する。難易度は廃止して学習導線にしたので、
-//    初心者向け → 最初に知る用語、上級者向け → 深掘りする用語、中級者向け → 用語辞典のトップ。
+// ① /guide/glossary?level=beginner など(前の用語辞典のレベル絞り込みのURL)を、難易度別リスト(初級・中級・上級)へ恒久転送する。
 // ② /admin配下の暫定的な保護。News Collector Phase D（Supabase Auth +
 // ADMIN_EMAIL_ALLOWLIST）で正式な認証に置き換えるまでの一時措置。
 // ADMIN_BASIC_AUTH_PASSWORD未設定の場合は/adminへのアクセス自体を止める
@@ -12,9 +11,9 @@ export const config = {
 };
 
 const GLOSSARY_LEVEL_REDIRECT: Record<string, string> = {
-  beginner: "/guide/glossary/first",
-  intermediate: "/guide/glossary",
-  advanced: "/guide/glossary/deep",
+  beginner: "/guide/glossary/beginner",
+  intermediate: "/guide/glossary/intermediate",
+  advanced: "/guide/glossary/advanced",
 };
 
 export function proxy(request: NextRequest) {

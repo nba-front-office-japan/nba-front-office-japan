@@ -4,13 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import Link from "next/link";
 import {
   GLOSSARY_EXTRA_GUIDE_LINKS,
-  GLOSSARY_PATHS,
   GLOSSARY_SECTIONS,
   GLOSSARY_TOP_PATH,
   glossarySectionPath,
   glossaryTermHash,
   glossaryTermPath,
-  type GlossaryPathKey,
   type GlossarySectionKey,
   type GlossaryTerm,
 } from "@/lib/glossary-categories";
@@ -19,11 +17,11 @@ import { GlossaryFigureView, PositionCourt } from "@/components/glossary-figures
 import { toSpeechText } from "@/lib/glossary-speech";
 import GLOSSARY_AUDIO from "@/lib/glossary-audio.json";
 
-// NBA用語辞典のカードを流す部品(分類ページ /guide/glossary/<分類> と、学習導線ページ first・deep で使う)。
+// NBA用語辞典のカードを流す部品(分類ページ /guide/glossary/<分類> と、難易度別リスト beginner・intermediate・advanced で使う)。
 // ・渡された分類(blocks)の順に、分類の見出しを区切りにしてカードを並べる。
 //   NBAカルチャーは小見出し(ニックネーム・実況表現など)ごと、さらに用語データの小見出し(term.group)ごとに並べる。
 // ・カードを押すと、その場で開いて(アコーディオン)全文・図解・読み上げ・選手名鑑へのリンク・あわせて読みたい用語を出す。
-// ・難易度のバッジは出さない。学習導線(最初に知る用語・深掘りする用語)に入っている用語だけバッジを出す。
+// ・見出しの上には「図解あり」「由来あり」のバッジだけを出す(難易度のバッジは出さない)。
 // ・全用語の解説はサーバー側でHTMLに含める(閉じたカードは hidden で隠すだけなので、検索エンジンも読める)。
 // ・URL の #term-用語ID(前の形式の #用語ID も)で、そのカードを開いた状態で表示する。
 //   このページに無い用語の # で開かれたときは、その用語の分類ページへ移る。
@@ -34,7 +32,6 @@ import GLOSSARY_AUDIO from "@/lib/glossary-audio.json";
 export type GlossaryLookup = Record<string, { term: string; section: GlossarySectionKey }>;
 export type GlossaryBlock = { key: GlossarySectionKey; groups: { label?: string; terms: GlossaryTerm[] }[] };
 
-const PATH_BADGE = Object.fromEntries(GLOSSARY_PATHS.map((p) => [p.key, p.badge])) as Record<GlossaryPathKey, string>;
 const dialogId = (id: string) => `term-${id}`;
 // URL の # から用語IDを取り出す(#term-用語ID と、前の形式の #用語ID の両方に対応)。用語でなければ ""
 function termIdFromHash(hash: string, lookup: GlossaryLookup): string {
@@ -59,6 +56,8 @@ function subgroups(terms: GlossaryTerm[]): { group: string | undefined; terms: G
   return out;
 }
 const playerKey = (draft: [number, number]) => `${draft[0]}-${draft[1]}`;
+// 「由来あり」の用語(選手のニックネーム。detail に必ず由来を書く決まり)
+const isOriginTerm = (t: GlossaryTerm) => t.category === "nickname" && !!t.detail;
 
 type Speed = "slow" | "normal";
 // 速さ。「ふつう」は声の標準(1.0)だと遅く聞こえるため少し速め、「ゆっくり」は差がはっきりわかる程度に
@@ -260,7 +259,6 @@ function TermEntry({
   playerIds,
   lookup,
   onPage,
-  path,
 }: {
   term: GlossaryTerm;
   expanded: boolean;
@@ -271,7 +269,6 @@ function TermEntry({
   playerIds: Record<string, string>;
   lookup: GlossaryLookup;
   onPage: ReadonlySet<string>;
-  path?: GlossaryPathKey;
 }) {
   const c = SECTION_BY_KEY[lookup[term.id].section];
   const players = (term.players ?? [])
@@ -281,6 +278,21 @@ function TermEntry({
   const bodyId = `${dialogId(term.id)}-body`;
   // 対応するガイド記事(用語データの href か、lib/glossary-categories.ts の GLOSSARY_EXTRA_GUIDE_LINKS)
   const guide = term.href ? { href: term.href, label: term.linkLabel ?? "" } : GLOSSARY_EXTRA_GUIDE_LINKS[term.id];
+  // 由来: 選手のニックネームは、用語データの detail が由来の説明(lib/glossary-slang.ts の決まり)なので「由来」として出す
+  const hasOrigin = isOriginTerm(term);
+  const playerLinks = players.length > 0 && (
+    <p className="mt-3 flex flex-wrap gap-2">
+      {players.map((pl) => (
+        <Link
+          key={pl.id}
+          href={`/players/${pl.id}`}
+          className="selection-button selection-blue inline-flex items-center gap-1 border border-blue px-3 py-1.5 text-xs font-bold text-blue"
+        >
+          選手名鑑：{pl.ja} →
+        </Link>
+      ))}
+    </p>
+  );
   return (
     <article
       id={dialogId(term.id)}
@@ -298,12 +310,8 @@ function TermEntry({
         >
           <span className="min-w-0 flex-1">
             <span className="mb-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-              {path && (
-                <span className={`px-1.5 text-[10px] font-bold ${path === "first" ? "bg-navy text-white" : "border border-foreground text-foreground"}`}>
-                  {PATH_BADGE[path]}
-                </span>
-              )}
               {term.figure && <span className="border border-line px-1.5 text-[10px] font-bold text-muted">図解あり</span>}
+              {hasOrigin && <span className="border border-line px-1.5 text-[10px] font-bold text-muted">由来あり</span>}
             </span>
             <span className="flex flex-wrap items-baseline gap-x-3">
               <span className="text-[17px] font-bold leading-snug [word-break:auto-phrase] group-hover:text-blue sm:text-[20px]">{term.term}</span>
@@ -327,26 +335,12 @@ function TermEntry({
       <div id={bodyId} hidden={!expanded} className="space-y-6 border-t border-line px-4 pb-5 pt-5 sm:px-5">
         <SpeechControls term={term} speech={speech} />
 
-        {/* 図解はページを軽くするため、一度開いた用語だけ描く */}
-        {term.figure && showFigure && <GlossaryFigureView figure={term.figure} />}
-
-        {term.detail && (
+        {/* カードの型: 一言(見出しの下) → 解説(詳しい解説・ポイント・観戦・実例) → 図解 → 由来 → あわせて読みたい用語 → 詳しく読む。無い要素は飛ばす */}
+        {term.detail && !hasOrigin && (
           <div>
             <SectionLabel>詳しい解説</SectionLabel>
             <p className="text-pretty text-[15px] leading-8 [word-break:auto-phrase]">{term.detail}</p>
-            {players.length > 0 && (
-              <p className="mt-3 flex flex-wrap gap-2">
-                {players.map((pl) => (
-                  <Link
-                    key={pl.id}
-                    href={`/players/${pl.id}`}
-                    className="selection-button selection-blue inline-flex items-center gap-1 border border-blue px-3 py-1.5 text-xs font-bold text-blue"
-                  >
-                    選手名鑑：{pl.ja} →
-                  </Link>
-                ))}
-              </p>
-            )}
+            {playerLinks}
           </div>
         )}
 
@@ -375,6 +369,18 @@ function TermEntry({
           <div>
             <SectionLabel>NBAでの実例</SectionLabel>
             <p className="text-pretty border-l-2 border-line pl-4 text-[15px] leading-8 text-muted [word-break:auto-phrase]">{term.example}</p>
+          </div>
+        )}
+
+        {/* 図解はページを軽くするため、一度開いた用語だけ描く */}
+        {term.figure && showFigure && <GlossaryFigureView figure={term.figure} />}
+
+        {/* 由来(選手のニックネーム) */}
+        {term.detail && hasOrigin && (
+          <div>
+            <SectionLabel>由来</SectionLabel>
+            <p className="text-pretty text-[15px] leading-8 [word-break:auto-phrase]">{term.detail}</p>
+            {playerLinks}
           </div>
         )}
 
@@ -437,7 +443,7 @@ function TermEntry({
 
 // 上に固定する分類のナビ(用語集トップへ戻る＋17分類。今いる分類は塗りつぶし)
 // 上に固定する分類のナビ(用語集トップへ戻る＋9分類。今いる分類は塗りつぶし)。
-// blocks を渡したとき(学習導線ページ)は、ページの中の分類の見出しへ移動するボタンにする(語数はこのページの語数)
+// blocks を渡したとき(難易度別リスト)は、ページの中の分類の見出しへ移動するボタンにする(語数はこのページの語数)
 function CategoryNav({
   current,
   counts,
@@ -492,16 +498,13 @@ export function GlossaryDictionary({
   blocks,
   lookup,
   counts,
-  paths,
   current,
   playerIds = {},
 }: {
   blocks: GlossaryBlock[];
   lookup: GlossaryLookup;
   counts: Record<GlossarySectionKey, number>;
-  // 学習導線に入っている用語(カードのバッジ用)
-  paths: Record<string, GlossaryPathKey>;
-  // 分類ページのときはその分類(ナビで塗りつぶす)。学習導線ページでは省略
+  // 分類ページのときはその分類(ナビで塗りつぶす)。難易度別リストでは省略
   current?: GlossarySectionKey;
   playerIds?: Record<string, string>;
 }) {
@@ -513,7 +516,7 @@ export function GlossaryDictionary({
   // このページに並んでいる用語
   const onPageKey = blocks.map((b) => b.groups.map((g) => g.terms.map((t) => t.id).join(",")).join(",")).join(",");
   const onPage = useMemo<ReadonlySet<string>>(() => new Set(onPageKey.split(",")), [onPageKey]);
-  // 分類の見出しは、複数の分類を流すページ(学習導線ページ)でだけ出す(分類ページはページの見出しが分類名)
+  // 分類の見出しは、複数の分類を流すページ(難易度別リスト)でだけ出す(分類ページはページの見出しが分類名)
   const multi = !current;
 
   // カードを開く。scroll=true のときは開いたカードの位置まで移動する(関連用語・#リンクから開いたとき)
@@ -579,7 +582,6 @@ export function GlossaryDictionary({
         playerIds={playerIds}
         lookup={lookup}
         onPage={onPage}
-        path={paths[t.id]}
       />
     </li>
   );

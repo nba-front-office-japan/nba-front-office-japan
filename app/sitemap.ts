@@ -9,7 +9,7 @@ import { teamSlug } from "@/lib/salary/types";
 import { PAST_DRAFT_YEARS } from "@/lib/draft/draft-history";
 import { fetchFinishedGamesForSitemap } from "@/lib/games/data";
 import { LEGENDS } from "@/lib/legends/data";
-import { GLOSSARY_PATHS, GLOSSARY_SECTIONS, glossaryPathPagePath, glossarySectionPath } from "@/lib/glossary-categories";
+import { GLOSSARY_LEVEL_PAGES, GLOSSARY_SECTIONS, glossaryLevelPath, glossarySectionPath } from "@/lib/glossary-categories";
 
 // 新しいニュース記事を1時間以内にsitemapへ反映する
 export const revalidate = 3600;
@@ -39,12 +39,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   for (const t of salaryTeams()) {
     entries.push({ url: `${SITE_URL}/salary/teams/${teamSlug(t.abbr)}` });
   }
-  // NBA用語辞典の分類ページと学習導線ページ
+  // NBA用語辞典の分類ページと難易度別リスト
   for (const s of GLOSSARY_SECTIONS) {
     entries.push({ url: `${SITE_URL}${glossarySectionPath(s.key)}` });
   }
-  for (const p of GLOSSARY_PATHS) {
-    entries.push({ url: `${SITE_URL}${glossaryPathPagePath(p.key)}` });
+  for (const l of GLOSSARY_LEVEL_PAGES) {
+    entries.push({ url: `${SITE_URL}${glossaryLevelPath(l.key)}` });
   }
   // レジェンド選手(現役は既存の選手ページへ転送するので載せない)
   for (const l of LEGENDS) {

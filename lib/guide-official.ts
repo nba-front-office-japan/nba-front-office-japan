@@ -119,14 +119,15 @@ export const GUIDE_PAGES: Record<string, string> = {
   "ジョー・スミス事件": "/guide/joe-smith-case",
   タンパリング: "/guide/tampering-cases",
   サラリーキャップ迂回に関する処分: "/guide/salary-cap-circumvention",
-  // 「NBA用語辞典」(URL はもとの用語一覧と同じ /guide/glossary)と、学習導線のページ(最初に知る用語・深掘りする用語)
+  // 「NBA用語辞典」(URL はもとの用語一覧と同じ /guide/glossary)と、難易度別リスト(初級・中級・上級)
   NBA用語辞典: "/guide/glossary",
-最初に知る用語: "/guide/glossary/first",
-  深掘りする用語: "/guide/glossary/deep",
-  // 前のガイド一覧で使っていた名前(他のページから参照されていても切れないよう、新しい分類ページへ向ける)
-  初心者向け: "/guide/glossary/first",
-  中級者向け: "/guide/glossary",
-  上級者向け: "/guide/glossary/deep",
+初級: "/guide/glossary/beginner",
+  中級: "/guide/glossary/intermediate",
+  上級: "/guide/glossary/advanced",
+  // 前のガイド一覧で使っていた名前(他のページから参照されていても切れないよう、新しいページへ向ける)
+  初心者向け: "/guide/glossary/beginner",
+  中級者向け: "/guide/glossary/intermediate",
+  上級者向け: "/guide/glossary/advanced",
   "基本の用語": "/guide/glossary",
   "スラング・ニックネーム": "/guide/glossary/culture",
   "NBAカルチャー": "/guide/glossary/culture",

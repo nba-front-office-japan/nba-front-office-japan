@@ -11,9 +11,9 @@ export const metadata: Metadata = {
 };
 
 // ガイドは「順番に理解するための読み物」、用語辞典は「知らない言葉を調べる場所」。
-// ガイドの記事は5つのテーマ(章)にまとめる(2026-11-13 のゼロベース再編)。記事の中身は変えず、並べ方だけを決める。
+// ガイドの記事は4つのテーマ(章)にまとめる(2026-11-13。「チームをつくる」は「契約とサラリーを読む」に合流)。記事の中身は変えず、並べ方だけを決める。
 // 詳細ページがある項目だけ GUIDE_PAGES(lib/guide-official.ts)にURLを登録してリンクにする(未作成のページへはリンクしない)。
-// 用語辞典は章とは別の「調べる」カードとして先頭に置き、辞典トップ・最初に知る用語・深掘りする用語へリンクする。
+// 用語辞典は章とは別の「調べる」カードとして先頭に置き、辞典トップ・初級・中級・上級へリンクする。
 
 const GUIDE_CATEGORIES: { category: string; description: string; examples: string[] }[] = [
   {
@@ -22,14 +22,16 @@ const GUIDE_CATEGORIES: { category: string; description: string; examples: strin
     examples: ["NBAを試合結果だけで終わらせない", "放映権", "NBAオーナー", "チーム資産価値"],
   },
   {
-    category: "チームをつくる",
-    description: "ドラフト・トレード・解雇など、選手を集めて入れ替える方法。",
-    examples: ["ドラフト指名権", "ロッタリー", "指名権の価値", "トレードの基本", "サラリーマッチング", "Buyout", "Waive"],
-  },
-  {
     category: "契約とサラリーを読む",
-    description: "サラリーキャップから契約の種類まで、年俸と編成を縛るルール。",
+    description: "ドラフト・トレードから契約・サラリーキャップまで、チームづくりを縛るルール。",
     examples: [
+      "ドラフト指名権",
+      "ロッタリー",
+      "指名権の価値",
+      "トレードの基本",
+      "サラリーマッチング",
+      "Buyout",
+      "Waive",
       "サラリーキャップ",
       "ラグジュアリータックス",
       "1st Apron / 2nd Apron",
@@ -52,7 +54,7 @@ const GUIDE_CATEGORIES: { category: string; description: string; examples: strin
 ];
 
 // 用語辞典(調べる)のカードに並べるリンク
-const GLOSSARY_LINKS = ["NBA用語辞典", "最初に知る用語", "深掘りする用語"];
+const GLOSSARY_LINKS = ["NBA用語辞典", "初級", "中級", "上級"];
 
 // 例を「、」区切りで並べる。1項目(例:「1st Apron / 2nd Apron」)が行の途中で折り返さないよう、
 // 項目ごとに改行を禁止し、項目の区切りでだけ折り返す。
@@ -96,7 +98,7 @@ export default function GuidePage() {
         }
       >
         {/* 用語辞典(調べる)と、5つのテーマ(章)のカード: タイトル＋1行説明＋記事数、その下に記事へのリンク */}
-        <ol className="grid gap-3 sm:grid-cols-2">
+        <ol className="grid items-start gap-3 sm:grid-cols-2">
           <li className="flex flex-col border border-navy border-t-4 bg-navy text-white">
             <div className="px-4 pb-2 pt-3.5 sm:px-5">
               <p className="flex items-baseline gap-2">
@@ -110,12 +112,12 @@ export default function GuidePage() {
               </p>
               <p className="mt-1 text-[13px] leading-6 text-white/75">試合やニュースで出てくる言葉を、1語1カードでその場で調べられます。</p>
             </div>
-            <ul className="mt-auto space-y-0.5 border-t border-white/20 px-4 py-2.5 text-sm sm:px-5">
+            <ul className="space-y-0.5 border-t border-white/20 px-4 py-2.5 text-sm sm:px-5">
               {GLOSSARY_LINKS.map((e) => (
                 <li key={e}>
                   <Link href={GUIDE_PAGES[e]} className="group flex items-center gap-1.5 py-1 font-semibold text-white">
                     <span aria-hidden className="text-gold">›</span>
-                    <span className="group-hover:underline">{e === "NBA用語辞典" ? "用語辞典のトップ（9分類）" : e}</span>
+                    <span className="group-hover:underline">{e === "NBA用語辞典" ? "用語辞典のトップ（9分類）" : `${e}の用語`}</span>
                   </Link>
                 </li>
               ))}
@@ -133,7 +135,7 @@ export default function GuidePage() {
                   </p>
                   <p className="mt-1 text-[13px] leading-6 text-muted">{row.description}</p>
                 </div>
-                <ul className="mt-auto space-y-0.5 border-t border-line px-4 py-2.5 text-sm sm:px-5">
+                <ul className="space-y-0.5 border-t border-line px-4 py-2.5 text-sm sm:px-5">
                   {row.examples.map((e) => (
                     <li key={e}>
                       {GUIDE_PAGES[e] ? (

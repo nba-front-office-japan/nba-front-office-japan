@@ -1,9 +1,8 @@
-// 用語集のページ(トップ・分類ページ・学習導線ページ)をサーバー側で組み立てるための補助。
+// 用語集のページ(トップ・分類ページ・難易度別リスト)をサーバー側で組み立てるための補助。
 import {
   GLOSSARY_CULTURE_SUBHEADS,
   GLOSSARY_SECTIONS,
   GLOSSARY_TERMS,
-  type GlossaryPathKey,
   type GlossarySectionKey,
   type GlossaryTerm,
 } from "@/lib/glossary-terms";
@@ -11,23 +10,12 @@ import { GLOSSARY_TAXONOMY } from "@/lib/glossary-taxonomy";
 
 export const GLOSSARY_TERM_BY_ID = Object.fromEntries(GLOSSARY_TERMS.map((t) => [t.id, t])) as Record<string, GlossaryTerm>;
 
-export const termSection = (id: string): GlossarySectionKey => GLOSSARY_TAXONOMY[id][0];
-export const termPath = (id: string): GlossaryPathKey | undefined => GLOSSARY_TAXONOMY[id][1];
+export const termSection = (id: string): GlossarySectionKey => GLOSSARY_TAXONOMY[id];
 
 // 全用語の「名前と分類」だけの表(ブラウザ側の部品に渡す。あわせて読みたい用語のリンクと、# からの振り替えに使う)
 export type GlossaryLookup = Record<string, { term: string; section: GlossarySectionKey }>;
 export function glossaryLookup(): GlossaryLookup {
   return Object.fromEntries(GLOSSARY_TERMS.map((t) => [t.id, { term: t.term, section: termSection(t.id) }]));
-}
-
-// 学習導線に入っている用語だけの表(カードのバッジ用)
-export function glossaryPathMap(): Record<string, GlossaryPathKey> {
-  const out: Record<string, GlossaryPathKey> = {};
-  for (const t of GLOSSARY_TERMS) {
-    const p = termPath(t.id);
-    if (p) out[t.id] = p;
-  }
-  return out;
 }
 
 // 分類ごとの語数

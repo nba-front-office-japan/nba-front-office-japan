@@ -7,7 +7,7 @@ import { GlossaryDictionary } from "@/components/glossary-dictionary";
 import { CategoryMark } from "@/components/glossary-mark";
 import { GLOSSARY_SECTIONS, GLOSSARY_TOP_PATH, glossarySectionPath } from "@/lib/glossary-terms";
 import { fetchGlossaryPlayerIds } from "@/lib/glossary-player-links";
-import { glossaryCounts, glossaryLookup, glossaryPathMap, glossarySectionBlock, isGlossarySection } from "@/lib/glossary-pages";
+import { glossaryCounts, glossaryLookup, glossarySectionBlock, isGlossarySection } from "@/lib/glossary-pages";
 
 // 選手名鑑へのリンク(ニックネームなど)は名鑑のデータと照合して作るため、1日ごとに作り直す
 export const revalidate = 86400;
@@ -61,7 +61,6 @@ export default async function GlossarySectionPage({ params }: PageProps<"/guide/
         blocks={[glossarySectionBlock(c.key)]}
         lookup={glossaryLookup()}
         counts={counts}
-        paths={glossaryPathMap()}
         current={c.key}
         playerIds={playerIds}
       />

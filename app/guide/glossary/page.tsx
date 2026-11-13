@@ -6,23 +6,23 @@ import { GlossaryTopSearch } from "@/components/glossary-top-search";
 import { CategoryMark } from "@/components/glossary-mark";
 import {
   GLOSSARY_FEATURED,
-  GLOSSARY_PATHS,
+  GLOSSARY_LEVEL_PAGES,
   GLOSSARY_SECTIONS,
   GLOSSARY_TERMS,
-  glossaryPathPagePath,
+  glossaryLevelPath,
   glossarySectionPath,
   glossaryTermPath,
 } from "@/lib/glossary-terms";
-import { GLOSSARY_TERM_BY_ID, glossaryCounts, termPath, termSection } from "@/lib/glossary-pages";
+import { GLOSSARY_TERM_BY_ID, glossaryCounts, termSection } from "@/lib/glossary-pages";
 
 export const metadata: Metadata = {
   title: "NBA用語辞典 | NBAガイド | NBA Front Office Japan",
   description:
-    "NBAのルール・プレー・スタッツ・契約制度の用語から、ニックネームや実況フレーズなどのNBAカルチャーまで、9つの分類で解説。まずは「最初に知る用語」から。用語を押すと「ひとことで言うと」「詳しい解説」「NBAでの実例」が開き、音声（ゆっくり／ふつう）でも聞けます。",
+    "NBAのルール・プレー・スタッツ・契約制度の用語から、ニックネームや実況フレーズなどのカルチャーまで、9つの分類と初級・中級・上級のリストで解説。用語を押すと「ひとことで言うと」「詳しい解説」「NBAでの実例」が開き、音声（ゆっくり／ふつう）でも聞けます。",
   alternates: { canonical: "/guide/glossary" },
 };
 
-// NBA用語辞典のトップ(入口ページ)。置くのは「見出し」「検索窓」「学習導線(最初に知る用語・深掘りする用語)の入口」「9分類のカード」だけ。
+// NBA用語辞典のトップ(入口ページ)。置くのは「見出し」「検索窓」「初級・中級・上級のリストの入口」「9分類のカード」だけ。
 // 用語のカードは分類ページ(/guide/glossary/<分類>、app/guide/glossary/[section]/page.tsx)に流す。
 // 前の URL(/guide/glossary#term-用語ID など)で開かれたときは、検索窓の部品が分類ページへ振り替える。
 export default function GlossaryTopPage() {
@@ -40,28 +40,34 @@ export default function GlossaryTopPage() {
         <GlossaryTopSearch items={searchItems} />
       </section>
 
-      {/* 学習導線の入口 */}
-      <section aria-labelledby="glossary-paths-title" className="mb-10">
-        <h2 id="glossary-paths-title" className="mb-3 border-b-4 border-foreground pb-2 text-xl font-black tracking-tight sm:text-2xl">
+      {/* 難易度別リストの入口(初級・中級・上級) */}
+      <section aria-labelledby="glossary-levels-title" className="mb-10">
+        <h2 id="glossary-levels-title" className="mb-3 border-b-4 border-foreground pb-2 text-xl font-black tracking-tight sm:text-2xl">
           どこから読む？
         </h2>
-        <ul className="grid gap-2.5 sm:grid-cols-2">
-          {GLOSSARY_PATHS.map((p) => {
-            const n = GLOSSARY_TERMS.filter((t) => termPath(t.id) === p.key).length;
+        <ul className="grid gap-2.5 sm:grid-cols-3">
+          {GLOSSARY_LEVEL_PAGES.map((l, i) => {
+            const n = GLOSSARY_TERMS.filter((t) => t.level === l.key).length;
+            const first = i === 0;
             return (
-              <li key={p.key}>
+              <li key={l.key}>
                 <Link
-                  href={glossaryPathPagePath(p.key)}
-                  className={`group flex h-full flex-col border px-4 py-4 ${p.key === "first" ? "border-navy bg-navy text-white" : "border-foreground bg-surface hover:bg-background"}`}
+                  href={glossaryLevelPath(l.key)}
+                  className={`group flex h-full flex-col border px-4 py-4 ${first ? "border-navy bg-navy text-white" : "border-foreground bg-surface hover:bg-background"}`}
                 >
                   <span className="flex items-center gap-2">
-                    <span className="text-lg font-black group-hover:underline">{p.label}</span>
-                    <span className={`text-xs font-semibold tabular-nums ${p.key === "first" ? "text-white/70" : "text-muted"}`}>{n}語</span>
+                    <span aria-hidden className="inline-flex gap-0.5">
+                      {[0, 1, 2].map((d) => (
+                        <span key={d} className={`inline-block size-2 bg-current ${d <= i ? "" : "opacity-25"}`} />
+                      ))}
+                    </span>
+                    <span className="text-lg font-black group-hover:underline">{l.label}</span>
+                    <span className={`text-xs font-semibold tabular-nums ${first ? "text-white/70" : "text-muted"}`}>{n}語</span>
                     <span aria-hidden className="ml-auto text-lg font-black">
                       →
                     </span>
                   </span>
-                  <span className={`mt-1.5 text-sm leading-6 ${p.key === "first" ? "text-white/80" : "text-muted"}`}>{p.lead}</span>
+                  <span className={`mt-1.5 text-sm leading-6 ${first ? "text-white/80" : "text-muted"}`}>{l.lead}</span>
                 </Link>
               </li>
             );

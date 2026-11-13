@@ -124,7 +124,7 @@ export const GLOSSARY_CATEGORIES: {
 // ─── 表示の分類(9つ) ───
 // 2026-11-13 のゼロベース再編で、表示の分類は次の9つにした(用語ごとの割り当ては lib/glossary-taxonomy.ts)。
 // 上の GLOSSARY_CATEGORIES(用語データの category。17種)は、NBAカルチャーの中の小見出しと、互換用の振り替えにだけ使う。
-// 難易度(level)は分類にもバッジにも使わない(学習導線に置き換えた)。
+// 難易度(level)は分類には使わず、難易度別リスト(GLOSSARY_LEVEL_PAGES)にだけ使う。
 export type GlossarySectionKey =
   | "game-rules"
   | "plays-tactics"
@@ -135,7 +135,6 @@ export type GlossarySectionKey =
   | "contracts-salary"
   | "health-injuries"
   | "culture";
-export type GlossaryPathKey = "first" | "deep";
 
 export const GLOSSARY_SECTIONS: { key: GlossarySectionKey; label: string; mark: string; lead: string; color: string; tint: string }[] = [
   { key: "game-rules", label: "試合・ルール", mark: "規", lead: "試合時間、反則、得点の数え方など、コートの上の決まりごと。", color: "#c8323c", tint: "#fdecee" },
@@ -146,7 +145,7 @@ export const GLOSSARY_SECTIONS: { key: GlossarySectionKey; label: string; mark: 
   { key: "team-building", label: "チーム編成", mark: "編", lead: "ドラフト、トレード、ロスターなど、チームをつくる仕事。", color: "#0f7d8c", tint: "#e4f5f7" },
   { key: "contracts-salary", label: "契約・サラリー", mark: "契", lead: "契約の種類と、サラリーキャップ・エプロンなどお金のルール。", color: "#a8641a", tint: "#fbf0e1" },
   { key: "health-injuries", label: "コンディション・怪我", mark: "傷", lead: "欠場情報や怪我のニュースで使われる言葉。", color: "#5b6779", tint: "#eef1f5" },
-  { key: "culture", label: "NBAカルチャー", mark: "文", lead: "ニックネーム、実況の決め台詞、決めポーズ、スラングなど、NBAを楽しむ言葉。", color: "#c2185b", tint: "#fce8f0" },
+  { key: "culture", label: "ニックネーム・スラング・カルチャー", mark: "文", lead: "ニックネーム、実況の決め台詞、決めポーズ、スラングなど、NBAを楽しむ言葉。", color: "#c2185b", tint: "#fce8f0" },
 ];
 
 // NBAカルチャーの中の小見出し(用語データの category ごと。並びもこの順)。
@@ -163,10 +162,12 @@ export const GLOSSARY_CULTURE_SUBHEADS: { category: GlossaryCategory; label: str
   { category: "trivia", label: "面白ネタ" },
 ];
 
-// 学習導線(難易度の代わり)。どちらにも入らない用語は「標準」(バッジなし)
-export const GLOSSARY_PATHS: { key: GlossaryPathKey; label: string; badge: string; lead: string }[] = [
-  { key: "first", label: "最初に知る用語", badge: "最初に知る", lead: "NBAを見るなら、まずはここから。ルール・基本のプレー・スタッツなど、試合を楽しむための土台になる用語です。" },
-  { key: "deep", label: "深掘りする用語", badge: "深掘り", lead: "契約とサラリーの仕組みや上級指標など、ニュースの裏側やフロントの判断を読み解くための用語です。" },
+// 難易度別のリスト(/guide/glossary/beginner・intermediate・advanced)。中身は用語データの level(CSV の「現在の難易度」と同じ)。
+// 2026-11-13 まとめ版の指示で、学習導線(最初に知る用語・深掘りする用語)はやめて、この3リストに戻した。
+export const GLOSSARY_LEVEL_PAGES: { key: GlossaryLevel; label: string; lead: string }[] = [
+  { key: "beginner", label: "初級", lead: "NBAを見るなら、まずはここまで知っておきたい用語。ルール・基本のプレー・スタッツなど、試合を楽しむための土台です。" },
+  { key: "intermediate", label: "中級", lead: "戦術や効率の指標、ロスターの動き、ニックネームやスラングまで。試合とニュースがもっと楽しくなる用語です。" },
+  { key: "advanced", label: "上級", lead: "サラリーキャップや契約制度、上級指標など。ニュースの裏側やフロントの判断を読み解くための用語です。" },
 ];
 
 // 前の分類(用語データの category。17種)の #cat-〜 で開かれたときの振り替え先
@@ -191,10 +192,10 @@ export const GLOSSARY_LEGACY_CATEGORY_SECTION: Record<GlossaryCategory, Glossary
 };
 
 // ─── URL ───
-// 用語集トップ / 分類ページ / 学習導線ページ / 用語カード(分類ページの #term-用語ID。開いた状態で着地する)
+// 用語集トップ / 分類ページ / 難易度別リスト / 用語カード(分類ページの #term-用語ID。開いた状態で着地する)
 export const GLOSSARY_TOP_PATH = "/guide/glossary";
 export const glossarySectionPath = (s: GlossarySectionKey) => `${GLOSSARY_TOP_PATH}/${s}`;
-export const glossaryPathPagePath = (p: GlossaryPathKey) => `${GLOSSARY_TOP_PATH}/${p}`;
+export const glossaryLevelPath = (lv: GlossaryLevel) => `${GLOSSARY_TOP_PATH}/${lv}`;
 export const glossaryTermHash = (id: string) => `#term-${id}`;
 export const glossaryTermPath = (id: string, s: GlossarySectionKey) => `${glossarySectionPath(s)}${glossaryTermHash(id)}`;
 
