@@ -12,6 +12,7 @@ import {
   SummarySection,
 } from "@/components/guide-article";
 import { GUIDE_PAGES, type OfficialSource } from "@/lib/guide-official";
+import { GlossaryTermLinks } from "@/components/glossary-term-links";
 
 export const metadata: Metadata = {
   title: "NBAのウェイブ（Waive）とは？ | NBAガイド | NBA Front Office Japan",
@@ -335,6 +336,8 @@ export default function WaiveGuidePage() {
         {/* 10. 公式一次資料 */}
         <OfficialSourcesSection sources={SOURCES} />
       </div>
+
+      <GlossaryTermLinks guidePath="/guide/waive" />
 
       <BackToGuide />
     </PageShell>

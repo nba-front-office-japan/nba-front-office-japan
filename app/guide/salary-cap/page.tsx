@@ -14,6 +14,7 @@ import {
   SystemLevelsTable,
 } from "@/components/guide-article";
 import { GUIDE_PAGES } from "@/lib/guide-official";
+import { GlossaryTermLinks } from "@/components/glossary-term-links";
 
 // 解説文は CBA と NBA作成の「CBA 101」をもとにした独自の要約で、条文の転載・全文翻訳ではない。
 // 数値・出典は lib/guide-official.ts の公式発表の値を使う。
@@ -200,6 +201,8 @@ export default function SalaryCapGuidePage() {
         {/* 6. 公式一次資料 */}
         <OfficialSourcesSection />
       </div>
+
+      <GlossaryTermLinks guidePath="/guide/salary-cap" />
 
       <BackToGuide />
     </PageShell>

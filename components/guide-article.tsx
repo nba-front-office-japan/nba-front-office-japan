@@ -16,7 +16,8 @@ export const HEADING_WRAP = "text-balance [word-break:auto-phrase]";
 
 // 「NBAガイド › カテゴリー › ページ名」の現在地表示と、カテゴリー・ページ名のラベル。
 // カテゴリーとページ名が同じ(例: 用語一覧)ときは current を省き、「NBAガイド › カテゴリー」とする
-export function GuideHeader({ category, current }: { category: string; current?: string }) {
+// categoryHref を渡すと、パンくずのカテゴリー名をリンクにする(用語集の分類ページ → 用語集トップ など)
+export function GuideHeader({ category, current, categoryHref }: { category: string; current?: string; categoryHref?: string }) {
   return (
     <>
       <nav aria-label="パンくずリスト" className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
@@ -26,7 +27,13 @@ export function GuideHeader({ category, current }: { category: string; current?:
         <span aria-hidden>›</span>
         {current ? (
           <>
-            <span>{category}</span>
+            {categoryHref ? (
+              <Link href={categoryHref} className="font-semibold text-blue hover:underline">
+                {category}
+              </Link>
+            ) : (
+              <span>{category}</span>
+            )}
             <span aria-hidden>›</span>
             <span className="font-semibold text-foreground">{current}</span>
           </>

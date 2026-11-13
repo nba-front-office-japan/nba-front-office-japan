@@ -3,6 +3,7 @@ import Link from "next/link";
 import { BriefSheet, BriefSide } from "@/components/brief-sheet";
 import { PageShell } from "@/components/page-shell";
 import { GUIDE_PAGES } from "@/lib/guide-official";
+import { GLOSSARY_TERMS } from "@/lib/glossary-terms";
 
 export const metadata: Metadata = {
   title: "NBAガイド | NBA Front Office Japan",
@@ -10,33 +11,48 @@ export const metadata: Metadata = {
 };
 
 // ガイドは「順番に理解するための読み物」、用語辞典は「知らない言葉を調べる場所」。
-// 初級・中級・上級は階層ではなく、辞典全体を横断して表示する学習の目安。
+// ガイドの記事は5つのテーマ(章)にまとめる(2026-11-13 のゼロベース再編)。記事の中身は変えず、並べ方だけを決める。
 // 詳細ページがある項目だけ GUIDE_PAGES(lib/guide-official.ts)にURLを登録してリンクにする(未作成のページへはリンクしない)。
+// 用語辞典は章とは別の「調べる」カードとして先頭に置き、辞典トップ・最初に知る用語・深掘りする用語へリンクする。
 
-const GUIDE_CATEGORIES: { category: string; examples: string[] }[] = [
-  // 最初に読む導入ページ
-  { category: "はじめに", examples: ["NBAを試合結果だけで終わらせない"] },
-  // 用語辞典は入口として使われやすいので「はじめに」の直後に置く
-  { category: "NBA用語辞典（調べる）", examples: ["NBA用語辞典", "初心者向け", "中級者向け", "上級者向け"] },
-  { category: "スラング・ニックネーム", examples: ["NBAカルチャー"] },
-  { category: "NBAの歴史", examples: ["NBAの歴史"] },
+const GUIDE_CATEGORIES: { category: string; description: string; examples: string[] }[] = [
   {
-    category: "NBA制度",
-    examples: ["サラリーキャップ", "ラグジュアリータックス", "1st Apron / 2nd Apron", "Revenue Sharing"],
+    category: "NBAの全体像",
+    description: "リーグのしくみとお金の流れ。まずここから全体をつかみます。",
+    examples: ["NBAを試合結果だけで終わらせない", "放映権", "NBAオーナー", "チーム資産価値"],
   },
-  { category: "契約", examples: ["MAX契約", "ミニマム契約", "Bird Rights", "RFA / UFA", "MLE", "ロスター契約・短期契約", "契約用語"] },
-  { category: "ドラフト", examples: ["ドラフト指名権", "ロッタリー", "指名権の価値"] },
   {
-    category: "トレード・ロスター移動",
-    examples: ["トレードの基本", "サラリーマッチング", "Buyout", "Waive"],
+    category: "チームをつくる",
+    description: "ドラフト・トレード・解雇など、選手を集めて入れ替える方法。",
+    examples: ["ドラフト指名権", "ロッタリー", "指名権の価値", "トレードの基本", "サラリーマッチング", "Buyout", "Waive"],
   },
-  { category: "NBAビジネス", examples: ["放映権", "NBAオーナー", "チーム資産価値"] },
   {
-    category: "過去事件",
-    examples: ["ジョー・スミス事件", "タンパリング", "サラリーキャップ迂回に関する処分"],
+    category: "契約とサラリーを読む",
+    description: "サラリーキャップから契約の種類まで、年俸と編成を縛るルール。",
+    examples: [
+      "サラリーキャップ",
+      "ラグジュアリータックス",
+      "1st Apron / 2nd Apron",
+      "Revenue Sharing",
+      "MAX契約",
+      "ミニマム契約",
+      "Bird Rights",
+      "RFA / UFA",
+      "MLE",
+      "ロスター契約・短期契約",
+      "契約用語",
+    ],
   },
-  { category: "スタッツの見方", examples: ["スタッツ表の見方", "ネットレーティング", "PER"] },
+  { category: "スタッツを読む", description: "ボックススコアから上級指標まで、数字の読み方。", examples: ["スタッツ表の見方", "ネットレーティング", "PER"] },
+  {
+    category: "NBAの歴史とカルチャー",
+    description: "リーグの歩みと、ルールが変わるきっかけになった事件。",
+    examples: ["NBAの歴史", "ジョー・スミス事件", "タンパリング", "サラリーキャップ迂回に関する処分"],
+  },
 ];
+
+// 用語辞典(調べる)のカードに並べるリンク
+const GLOSSARY_LINKS = ["NBA用語辞典", "最初に知る用語", "深掘りする用語"];
 
 // 例を「、」区切りで並べる。1項目(例:「1st Apron / 2nd Apron」)が行の途中で折り返さないよう、
 // 項目ごとに改行を禁止し、項目の区切りでだけ折り返す。
@@ -75,54 +91,70 @@ export default function GuidePage() {
         lead="NBAを順番に理解するためのガイドです。制度・契約・ドラフト・トレード・ビジネスを背景から学べます。知らない言葉をその場で調べるときは、NBA用語辞典を使ってください。"
         side={
           <BriefSide label="Start here">
-            <ExampleList examples={GUIDE_CATEGORIES[0].examples} />
+            <ExampleList examples={[GUIDE_CATEGORIES[0].examples[0]]} />
           </BriefSide>
         }
       >
-        {/* PC: 2列の表 */}
-        <div className="hidden border border-line bg-surface sm:block">
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr className="border-b-2 border-foreground text-left">
-                <th scope="col" className="w-[220px] px-5 py-3 text-[11px] font-extrabold uppercase tracking-[1.3px] text-muted">
-                  GUIDE内カテゴリー
-                </th>
-                <th scope="col" className="px-5 py-3 text-[11px] font-extrabold uppercase tracking-[1.3px] text-muted">
-                  例
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {GUIDE_CATEGORIES.map((row) => (
-                <tr key={row.category} className="border-b border-line last:border-b-0">
-                  <th scope="row" className="px-5 py-4 text-left align-top text-[15px] font-bold">
-                    {row.category}
-                  </th>
-                  <td className="px-5 py-4 leading-7">
-                    <ExampleList examples={row.examples} />
-                  </td>
-                </tr>
+        {/* 用語辞典(調べる)と、5つのテーマ(章)のカード: タイトル＋1行説明＋記事数、その下に記事へのリンク */}
+        <ol className="grid gap-3 sm:grid-cols-2">
+          <li className="flex flex-col border border-navy border-t-4 bg-navy text-white">
+            <div className="px-4 pb-2 pt-3.5 sm:px-5">
+              <p className="flex items-baseline gap-2">
+                <span className="text-[11px] font-extrabold tracking-[1.3px] text-gold">調べる</span>
+                <Link href={GUIDE_PAGES["NBA用語辞典"]} className="text-[17px] font-bold hover:underline">
+                  NBA用語辞典
+                </Link>
+                <span className="ml-auto shrink-0 border border-white/40 px-1.5 py-0.5 text-[11px] font-bold tabular-nums text-white/80">
+                  {GLOSSARY_TERMS.length}語
+                </span>
+              </p>
+              <p className="mt-1 text-[13px] leading-6 text-white/75">試合やニュースで出てくる言葉を、1語1カードでその場で調べられます。</p>
+            </div>
+            <ul className="mt-auto space-y-0.5 border-t border-white/20 px-4 py-2.5 text-sm sm:px-5">
+              {GLOSSARY_LINKS.map((e) => (
+                <li key={e}>
+                  <Link href={GUIDE_PAGES[e]} className="group flex items-center gap-1.5 py-1 font-semibold text-white">
+                    <span aria-hidden className="text-gold">›</span>
+                    <span className="group-hover:underline">{e === "NBA用語辞典" ? "用語辞典のトップ（9分類）" : e}</span>
+                  </Link>
+                </li>
               ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* スマホ: カテゴリーごとの縦並び */}
-        <div className="border border-line bg-surface sm:hidden">
-          <p className="border-b-2 border-foreground px-4 py-3 text-[11px] font-extrabold uppercase tracking-[1.3px] text-muted">
-            GUIDE内カテゴリー ／ 例
-          </p>
-          <dl>
-            {GUIDE_CATEGORIES.map((row) => (
-              <div key={row.category} className="border-b border-line px-4 py-4 last:border-b-0">
-                <dt className="mb-1 text-[15px] font-bold">{row.category}</dt>
-                <dd className="text-sm leading-7 text-muted">
-                  <ExampleList examples={row.examples} />
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </div>
+            </ul>
+          </li>
+          {GUIDE_CATEGORIES.map((row, i) => {
+            const count = row.examples.filter((e) => GUIDE_PAGES[e]).length;
+            return (
+              <li key={row.category} className="flex flex-col border border-line border-t-4 border-t-foreground bg-surface">
+                <div className="px-4 pb-2 pt-3.5 sm:px-5">
+                  <p className="flex items-baseline gap-2">
+                    <span className="text-[11px] font-extrabold tabular-nums tracking-[1.3px] text-muted">{String(i + 1).padStart(2, "0")}</span>
+                    <span className="text-[17px] font-bold">{row.category}</span>
+                    <span className="ml-auto shrink-0 border border-line px-1.5 py-0.5 text-[11px] font-bold text-muted tabular-nums">{count}記事</span>
+                  </p>
+                  <p className="mt-1 text-[13px] leading-6 text-muted">{row.description}</p>
+                </div>
+                <ul className="mt-auto space-y-0.5 border-t border-line px-4 py-2.5 text-sm sm:px-5">
+                  {row.examples.map((e) => (
+                    <li key={e}>
+                      {GUIDE_PAGES[e] ? (
+                        <Link href={GUIDE_PAGES[e]} className="group flex items-center gap-1.5 py-1 font-semibold text-blue">
+                          <span aria-hidden className="text-muted group-hover:text-blue">›</span>
+                          <span className="group-hover:underline">{e === "NBAを試合結果だけで終わらせない" ? `はじめに：${e}` : e}</span>
+                        </Link>
+                      ) : (
+                        <span className="flex items-center gap-1.5 py-1 text-muted">
+                          <span aria-hidden>›</span>
+                          {e}
+                          <span className="text-[11px]">（準備中）</span>
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            );
+          })}
+        </ol>
       </BriefSheet>
     </PageShell>
   );

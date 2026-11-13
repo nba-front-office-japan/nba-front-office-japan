@@ -14,6 +14,7 @@ import {
   SystemLevelsTable,
 } from "@/components/guide-article";
 import { GUIDE_PAGES } from "@/lib/guide-official";
+import { GlossaryTermLinks } from "@/components/glossary-term-links";
 
 export const metadata: Metadata = {
   title: "NBAラグジュアリータックスとは？ | NBAガイド | NBA Front Office Japan",
@@ -279,6 +280,8 @@ export default function LuxuryTaxGuidePage() {
         {/* 7. 公式一次資料 */}
         <OfficialSourcesSection />
       </div>
+
+      <GlossaryTermLinks guidePath="/guide/luxury-tax" />
 
       <BackToGuide />
     </PageShell>

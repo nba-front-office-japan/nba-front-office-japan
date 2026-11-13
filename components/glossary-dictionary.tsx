@@ -1,56 +1,53 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
 import {
-  GLOSSARY_CATEGORIES,
-  GLOSSARY_CATEGORY_GROUPS,
-  GLOSSARY_LEVELS,
-  GLOSSARY_TERMS,
-  type GlossaryCategory,
-  type GlossaryLevel,
+  GLOSSARY_EXTRA_GUIDE_LINKS,
+  GLOSSARY_PATHS,
+  GLOSSARY_SECTIONS,
+  GLOSSARY_TOP_PATH,
+  glossarySectionPath,
+  glossaryTermHash,
+  glossaryTermPath,
+  type GlossaryPathKey,
+  type GlossarySectionKey,
   type GlossaryTerm,
-} from "@/lib/glossary-terms";
-import { GLOSSARY_KANA_TABLE, type GlossaryIndex } from "@/lib/glossary-index";
+} from "@/lib/glossary-categories";
+import { CategoryMark, GLOSSARY_SECTION_BY_KEY as SECTION_BY_KEY } from "@/components/glossary-mark";
 import { GlossaryFigureView, PositionCourt } from "@/components/glossary-figures";
 import { toSpeechText } from "@/lib/glossary-speech";
 import GLOSSARY_AUDIO from "@/lib/glossary-audio.json";
 
-// NBA用語辞典の本体。
-// ・用語は「分類」ごとの見出しの下に並べる(分類は色だけでなく、1文字のマークと名前で区別する)。
-//   分類は「基本の用語」と「スラング・ニックネーム」の2つのまとまりに分けて、目次と見出しを出す。
-//   分類の中に小見出し(term.group)がある用語は、小見出しごとに並べる(選手のニックネームの「レジェンド」など)。
-// ・ニックネームなどの選手は、選手名鑑と照合できた場合だけ「選手名鑑」へのリンクを出す(playerIds。照合はサーバー側)。
-// ・検索・レベル(初心者/中級者/上級者)・あいうえお索引・分類ボタンは、使いたい人のための補助として上に置く。
-// ・ザッピングして眺める読み物として、最初から全用語のカード(用語名＋ひとことで言うと)を分類の順に流す。
-// ・カードを押すと、その場で開いて(アコーディオン)全文・読み上げ・選手名鑑へのリンクを出す。ページ移動やポップアップはしない。
+// NBA用語辞典のカードを流す部品(分類ページ /guide/glossary/<分類> と、学習導線ページ first・deep で使う)。
+// ・渡された分類(blocks)の順に、分類の見出しを区切りにしてカードを並べる。
+//   NBAカルチャーは小見出し(ニックネーム・実況表現など)ごと、さらに用語データの小見出し(term.group)ごとに並べる。
+// ・カードを押すと、その場で開いて(アコーディオン)全文・図解・読み上げ・選手名鑑へのリンク・あわせて読みたい用語を出す。
+// ・難易度のバッジは出さない。学習導線(最初に知る用語・深掘りする用語)に入っている用語だけバッジを出す。
 // ・全用語の解説はサーバー側でHTMLに含める(閉じたカードは hidden で隠すだけなので、検索エンジンも読める)。
-// ・URL の #term-用語ID(例: #term-too-small)で直接開ける(共有用)。前の形式の #用語ID も開ける。?level=beginner などでレベルを選んだ状態で開ける。
-// ・あいうえお索引(あいうえお順/ABC順)は「索引」ボタンで開く。用語名を押すと、そのカードを開いてその位置へ移動する。
+// ・URL の #term-用語ID(前の形式の #用語ID も)で、そのカードを開いた状態で表示する。
+//   このページに無い用語の # で開かれたときは、その用語の分類ページへ移る。
+// ・用語データ(lib/glossary-terms.ts)はここでは読み込まない(ブラウザに送る量を減らすため)。必要な分だけ props で受け取る。
 // ・音声読み上げは「ゆっくり」「ふつう」の2速度。Googleの音声で作ったファイルを再生し、ファイルが無い用語だけブラウザ標準の speechSynthesis で読む。
 
-type Category = (typeof GLOSSARY_CATEGORIES)[number];
-const CATEGORY_BY_KEY = Object.fromEntries(GLOSSARY_CATEGORIES.map((c) => [c.key, c])) as Record<GlossaryCategory, Category>;
-const LEVEL_LABEL = Object.fromEntries(GLOSSARY_LEVELS.map((l) => [l.key, l.label])) as Record<GlossaryLevel, string>;
-const TERM_BY_ID = Object.fromEntries(GLOSSARY_TERMS.map((t) => [t.id, t])) as Record<string, GlossaryTerm>;
+// 全用語の「名前と分類」だけの表(あわせて読みたい用語のリンクと、# からの振り替えに使う。lib/glossary-pages.ts で作る)
+export type GlossaryLookup = Record<string, { term: string; section: GlossarySectionKey }>;
+export type GlossaryBlock = { key: GlossarySectionKey; groups: { label?: string; terms: GlossaryTerm[] }[] };
+
+const PATH_BADGE = Object.fromEntries(GLOSSARY_PATHS.map((p) => [p.key, p.badge])) as Record<GlossaryPathKey, string>;
 const dialogId = (id: string) => `term-${id}`;
-// URL の # に付ける形(#term-用語ID)。ポップアップの要素IDと同じ
-const termHash = (id: string) => `#${dialogId(id)}`;
 // URL の # から用語IDを取り出す(#term-用語ID と、前の形式の #用語ID の両方に対応)。用語でなければ ""
-function termIdFromHash(hash: string): string {
+function termIdFromHash(hash: string, lookup: GlossaryLookup): string {
   let raw = hash.replace(/^#/, "");
   try {
     raw = decodeURIComponent(raw);
   } catch {
     return "";
   }
-  if (raw.startsWith("term-") && TERM_BY_ID[raw.slice(5)]) return raw.slice(5);
-  return TERM_BY_ID[raw] ? raw : "";
+  if (raw.startsWith("term-") && lookup[raw.slice(5)]) return raw.slice(5);
+  return lookup[raw] ? raw : "";
 }
-const sectionId = (c: GlossaryCategory) => `cat-${c}`;
-const LEVEL_DOTS: Record<GlossaryLevel, number> = { beginner: 1, intermediate: 2, advanced: 3 };
-const groupId = (g: string) => `group-${g}`;
-const GROUP_LABEL = Object.fromEntries(GLOSSARY_CATEGORY_GROUPS.map((g) => [g.key, g.label])) as Record<string, string>;
+const sectionId = (c: GlossarySectionKey) => `sec-${c}`;
 // 分類の中の小見出し(term.group)ごとに分ける。小見出しのない用語はそのまま1つにまとめる(並び順はデータの順)
 function subgroups(terms: GlossaryTerm[]): { group: string | undefined; terms: GlossaryTerm[] }[] {
   const out: { group: string | undefined; terms: GlossaryTerm[] }[] = [];
@@ -63,7 +60,6 @@ function subgroups(terms: GlossaryTerm[]): { group: string | undefined; terms: G
 }
 const playerKey = (draft: [number, number]) => `${draft[0]}-${draft[1]}`;
 
-type LevelFilter = GlossaryLevel | "all";
 type Speed = "slow" | "normal";
 // 速さ。「ふつう」は声の標準(1.0)だと遅く聞こえるため少し速め、「ゆっくり」は差がはっきりわかる程度に
 const RATES: Record<Speed, number> = { slow: 0.85, normal: 1.3 };
@@ -82,11 +78,6 @@ const VOICE_KEY = "glossary-voice";
 // useSyncExternalStore 用(表示中に変わらない値を読むだけなので購読は不要)
 const subscribeNoop = () => () => {};
 const readSpeechSupported = () => "speechSynthesis" in window;
-const readUrlLevel = (): LevelFilter | null => {
-  const lv = new URLSearchParams(location.search).get("level");
-  return lv === "beginner" || lv === "intermediate" || lv === "advanced" ? lv : null;
-};
-const serverNull = () => null;
 const serverFalse = () => false;
 
 // 端末にある日本語の声。自然に聞こえやすい順に並べる
@@ -207,34 +198,6 @@ function useSpeech() {
 }
 type Speech = ReturnType<typeof useSpeech>;
 
-// 分類のマーク(1文字)。色だけに頼らず文字でも見分けられるようにする
-function CategoryMark({ c, size = "sm" }: { c: Category; size?: "sm" | "lg" }) {
-  const cls = size === "lg" ? "size-12 text-2xl" : "size-6 text-[13px]";
-  return (
-    <span
-      aria-hidden
-      className={`inline-flex shrink-0 items-center justify-center font-black text-white ${cls}`}
-      style={{ backgroundColor: c.color }}
-    >
-      {c.mark}
-    </span>
-  );
-}
-
-function LevelDots({ level, light = false }: { level: GlossaryLevel; light?: boolean }) {
-  const dots = LEVEL_DOTS[level];
-  return (
-    <span aria-hidden className="inline-flex gap-0.5">
-      {[1, 2, 3].map((n) => (
-        <span
-          key={n}
-          className={`inline-block size-1.5 ${n <= dots ? (light ? "bg-gold" : "bg-foreground") : light ? "bg-white/30" : "bg-line"}`}
-        />
-      ))}
-    </span>
-  );
-}
-
 function SpeechControls({ term, speech }: { term: GlossaryTerm; speech: Speech }) {
   // 両方の速さの音声ファイルがあれば端末の声は使わない(声の選択も出さない)
   const hasAudio = !!audioSrc(term.id, "slow") && !!audioSrc(term.id, "normal");
@@ -295,6 +258,9 @@ function TermEntry({
   speech,
   showFigure,
   playerIds,
+  lookup,
+  onPage,
+  path,
 }: {
   term: GlossaryTerm;
   expanded: boolean;
@@ -303,13 +269,18 @@ function TermEntry({
   speech: Speech;
   showFigure: boolean;
   playerIds: Record<string, string>;
+  lookup: GlossaryLookup;
+  onPage: ReadonlySet<string>;
+  path?: GlossaryPathKey;
 }) {
-  const c = CATEGORY_BY_KEY[term.category];
+  const c = SECTION_BY_KEY[lookup[term.id].section];
   const players = (term.players ?? [])
     .map((pl) => ({ ja: pl.ja, id: playerIds[playerKey(pl.draft)] }))
     .filter((pl): pl is { ja: string; id: string } => !!pl.id);
-  const related = (term.related ?? []).map((id) => TERM_BY_ID[id]).filter(Boolean);
+  const related = (term.related ?? []).filter((id) => lookup[id]).map((id) => ({ id, ...lookup[id] }));
   const bodyId = `${dialogId(term.id)}-body`;
+  // 対応するガイド記事(用語データの href か、lib/glossary-categories.ts の GLOSSARY_EXTRA_GUIDE_LINKS)
+  const guide = term.href ? { href: term.href, label: term.linkLabel ?? "" } : GLOSSARY_EXTRA_GUIDE_LINKS[term.id];
   return (
     <article
       id={dialogId(term.id)}
@@ -327,10 +298,11 @@ function TermEntry({
         >
           <span className="min-w-0 flex-1">
             <span className="mb-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-muted">
-                <LevelDots level={term.level} />
-                {LEVEL_LABEL[term.level]}
-              </span>
+              {path && (
+                <span className={`px-1.5 text-[10px] font-bold ${path === "first" ? "bg-navy text-white" : "border border-foreground text-foreground"}`}>
+                  {PATH_BADGE[path]}
+                </span>
+              )}
               {term.figure && <span className="border border-line px-1.5 text-[10px] font-bold text-muted">図解あり</span>}
             </span>
             <span className="flex flex-wrap items-baseline gap-x-3">
@@ -414,27 +386,40 @@ function TermEntry({
           <div>
             <SectionLabel>あわせて読みたい用語</SectionLabel>
             <div className="flex flex-wrap gap-2">
-              {related.map((r) => (
-                <a
-                  key={r.id}
-                  href={termHash(r.id)}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    onOpen(r.id);
-                  }}
-                  className="inline-flex items-center gap-1.5 border border-line bg-surface px-2.5 py-1.5 text-xs font-bold hover:border-foreground"
-                >
-                  <CategoryMark c={CATEGORY_BY_KEY[r.category]} />
-                  {r.term}
-                </a>
-              ))}
+              {related.map((r) => {
+                const cls = "inline-flex items-center gap-1.5 border border-line bg-surface px-2.5 py-1.5 text-xs font-bold hover:border-foreground";
+                const body = (
+                  <>
+                    <CategoryMark c={SECTION_BY_KEY[r.section]} />
+                    {r.term}
+                  </>
+                );
+                // 同じページにある用語はその場で開く。別の分類の用語は、その分類ページの該当カード(開いた状態)へ
+                return onPage.has(r.id) ? (
+                  <a
+                    key={r.id}
+                    href={glossaryTermHash(r.id)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onOpen(r.id);
+                    }}
+                    className={cls}
+                  >
+                    {body}
+                  </a>
+                ) : (
+                  <Link key={r.id} href={glossaryTermPath(r.id, r.section)} className={cls}>
+                    {body}
+                  </Link>
+                );
+              })}
             </div>
           </div>
         )}
 
-        {term.href && (
-          <Link href={term.href} className="selection-button selection-blue inline-block border border-blue px-4 py-2 text-sm font-bold text-blue">
-            詳しく読む：{term.linkLabel} →
+        {guide && (
+          <Link href={guide.href} className="selection-button selection-blue inline-block border border-blue px-4 py-2 text-sm font-bold text-blue">
+            詳しく読む：{guide.label} →
           </Link>
         )}
 
@@ -450,188 +435,100 @@ function TermEntry({
   );
 }
 
-const INDEX_ID = "term-index";
-type IndexOrder = "kana" | "abc";
-
-// ページ上部の索引(全用語)。用語名をチップ(ボタン状)で並べ、押すとその用語の解説(ポップアップ)を開く。
-// 並びはサーバー側で決めたもの(lib/glossary-index.ts)。レベルの絞り込みと検索に合わせて、当てはまる用語だけ出す。
-// 索引の上に50音表(ABC順はA〜Z)を置き、1文字目を押すとその文字の用語へ飛ぶ(スマホでも「文字→用語」の2タップで開ける)。
-function TermIndex({ index, visible, onOpen }: { index: GlossaryIndex; visible: GlossaryTerm[]; onOpen: (id: string) => void }) {
-  const [order, setOrder] = useState<IndexOrder>("kana");
-  const shown = new Set(visible.map((t) => t.id));
-  const groups = index[order]
-    .map((g) => ({ label: g.label, subs: g.subs, terms: g.ids.filter((id) => shown.has(id)).map((id) => TERM_BY_ID[id]) }))
-    .filter((g) => g.terms.length > 0);
-  const total = groups.reduce((n, g) => n + g.terms.length, 0);
-  const tabs: { key: IndexOrder; label: string }[] = [
-    { key: "kana", label: "あいうえお順" },
-    { key: "abc", label: "ABC順（英字）" },
-  ];
-  const rowId = (label: string) => `${INDEX_ID}-${order}-${label}`;
-  const charId = (ch: string) => `${INDEX_ID}-kana-c-${ch}`;
-  const rowLabel = (label: string) => (order === "kana" && label !== "他" ? `${label}行` : label);
-  const jumpId = `${INDEX_ID}-jump`;
-  // 表示中の1文字目(用語がない文字は押せない表示にする)
-  const kanaChars = new Set<string>();
-  if (order === "kana") for (const g of groups) for (const sub of g.subs ?? []) if (sub.ids.some((id) => shown.has(id))) kanaChars.add(sub.label);
-  const rowsShown = new Set(groups.map((g) => g.label));
-  const jumpButton = "inline-flex h-11 items-center justify-center border text-base font-black";
-  const jumpOn = "border-line bg-surface hover:border-foreground hover:text-blue";
-  const jumpOff = "pointer-events-none border-transparent bg-background text-muted/40";
+// 上に固定する分類のナビ(用語集トップへ戻る＋17分類。今いる分類は塗りつぶし)
+// 上に固定する分類のナビ(用語集トップへ戻る＋9分類。今いる分類は塗りつぶし)。
+// blocks を渡したとき(学習導線ページ)は、ページの中の分類の見出しへ移動するボタンにする(語数はこのページの語数)
+function CategoryNav({
+  current,
+  counts,
+  blocks,
+}: {
+  current?: GlossarySectionKey;
+  counts: Record<GlossarySectionKey, number>;
+  blocks?: GlossaryBlock[];
+}) {
+  const inPage = blocks ? new Map(blocks.map((x) => [x.key, x.groups.reduce((n, g) => n + g.terms.length, 0)])) : null;
+  const navRef = useRef<HTMLElement>(null);
+  // 今いる分類のボタンが見えるように、横スクロールの位置を合わせる(スマホで後ろの分類を開いたとき)
+  useEffect(() => {
+    const nav = navRef.current;
+    const here = nav?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (nav && here) nav.scrollLeft = here.offsetLeft - 120;
+  }, [current]);
   return (
-    <section id={INDEX_ID} aria-labelledby={`${INDEX_ID}-title`} className="mb-10 scroll-mt-16">
-      <div className="mb-3 flex flex-wrap items-end justify-between gap-3 border-b-4 border-foreground pb-3">
-        <div>
-          <p className="text-[11px] font-extrabold tracking-[2px] text-muted">INDEX</p>
-          <h2 id={`${INDEX_ID}-title`} className="text-2xl font-black tracking-tight sm:text-3xl">
-            索引から探す
-            <span className="ml-2 text-sm font-semibold text-muted tabular-nums">{total}語</span>
-          </h2>
-          <p className="mt-1 text-sm text-muted">最初の文字を選んで、用語名を押すと解説が開きます。</p>
-        </div>
-        <div role="tablist" aria-label="索引の並び" className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
-          {tabs.map((tab) => {
-            const selected = order === tab.key;
-            return (
-              <button
-                key={tab.key}
-                type="button"
-                role="tab"
-                aria-selected={selected}
-                onClick={() => setOrder(tab.key)}
-                className={`selection-button min-h-11 border px-4 py-2 text-sm font-bold ${
-                  selected ? "border-foreground bg-navy text-white" : "border-line bg-surface hover:border-foreground"
-                }`}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {total === 0 ? (
-        <p className="py-4 text-sm text-muted">当てはまる用語はありません。</p>
-      ) : (
-        <>
-          {/* 50音表 / A〜Z(押すとその文字の用語へ移動) */}
-          <nav id={jumpId} aria-label="最初の文字から探す" className="scroll-mt-16 border-b border-line pb-4">
-            {order === "kana" ? (
-              <div className="grid gap-x-6 gap-y-1.5 sm:grid-cols-2">
-                {GLOSSARY_KANA_TABLE.map(({ row, chars }) => (
-                  <div key={row} className="grid grid-cols-[3.5rem_repeat(5,minmax(0,1fr))] gap-1.5">
-                    <a href={`#${rowId(row)}`} className={`${jumpButton} ${rowsShown.has(row) ? "border-navy bg-navy text-white hover:opacity-90" : jumpOff}`}>
-                      {row}行
-                    </a>
-                    {chars.map((ch) => (
-                      <a key={ch} href={`#${charId(ch)}`} aria-disabled={!kanaChars.has(ch)} className={`${jumpButton} ${kanaChars.has(ch) ? jumpOn : jumpOff}`}>
-                        {ch}
-                      </a>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="grid grid-cols-6 gap-1.5 sm:flex sm:flex-wrap">
-                {groups.map((g) => (
-                  <a key={g.label} href={`#${rowId(g.label)}`} className={`${jumpButton} px-2 sm:min-w-11 ${jumpOn}`}>
-                    {g.label}
-                  </a>
-                ))}
-              </div>
-            )}
-          </nav>
-          <div className="space-y-6 pt-5">
-            {groups.map((g) => {
-              // あいうえお順は1文字目ごとに分け、各文字の最初の用語に飛び先(id)を付ける
-              const parts = order === "kana" && g.subs ? g.subs.map((sub) => ({ ch: sub.label, terms: sub.ids.filter((id) => shown.has(id)).map((id) => TERM_BY_ID[id]) })) : [{ ch: "", terms: g.terms }];
-              return (
-                <div key={g.label} id={rowId(g.label)} className="scroll-mt-16">
-                  <h3 className="mb-3 flex items-baseline gap-3 border-b border-line pb-2">
-                    <span className="inline-flex min-w-12 items-center justify-center bg-navy px-2 py-1 text-2xl font-black leading-none text-white sm:text-3xl">
-                      {rowLabel(g.label)}
-                    </span>
-                    <span className="text-xs font-semibold text-muted tabular-nums">{g.terms.length}語</span>
-                    <a href={`#${jumpId}`} className="ml-auto text-xs font-bold text-blue hover:underline">
-                      ↑ 文字の一覧へ
-                    </a>
-                  </h3>
-                  <ul className="flex flex-wrap gap-2">
-                    {parts.flatMap(({ ch, terms }) =>
-                      terms.map((t, ti) => (
-                        <li key={t.id} id={ch && ti === 0 ? charId(ch) : undefined} className="scroll-mt-16">
-                          <a
-                            href={termHash(t.id)}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              onOpen(t.id);
-                            }}
-                            lang={order === "abc" ? "en" : undefined}
-                            className="selection-button inline-flex min-h-11 items-center border border-line border-l-4 bg-surface px-3 py-2 text-sm font-bold leading-snug hover:border-foreground hover:text-blue [word-break:auto-phrase]"
-                            style={{ borderLeftColor: CATEGORY_BY_KEY[t.category].color }}
-                          >
-                            {order === "abc" ? t.en : t.term}
-                          </a>
-                        </li>
-                      )),
-                    )}
-                  </ul>
-                </div>
-              );
-            })}
-          </div>
-        </>
-      )}
-    </section>
+    <div className="sticky top-0 z-10 -mx-4 mb-5 border-y border-line bg-background/95 px-4 py-2 backdrop-blur sm:mx-0 sm:border-x sm:px-3">
+      <nav ref={navRef} aria-label="用語集の分類" className="relative flex items-center gap-1.5 overflow-x-auto">
+        <Link
+          href={GLOSSARY_TOP_PATH}
+          className="inline-flex h-9 shrink-0 items-center gap-1 border border-foreground bg-surface px-2.5 text-xs font-bold hover:bg-navy hover:text-white"
+        >
+          <span aria-hidden>←</span>用語集トップ
+        </Link>
+        <span aria-hidden className="h-6 shrink-0 border-l border-line" />
+        {GLOSSARY_SECTIONS.filter((c) => !inPage || inPage.has(c.key)).map((c) => {
+          const here = c.key === current;
+          return (
+            <Link
+              key={c.key}
+              href={inPage ? `#${sectionId(c.key)}` : glossarySectionPath(c.key)}
+              aria-current={here ? "page" : undefined}
+              className={`inline-flex h-9 shrink-0 items-center gap-1.5 border pl-1 pr-2.5 text-xs font-bold transition-colors ${
+                here ? "text-white" : "bg-surface hover:border-foreground"
+              }`}
+              style={here ? { backgroundColor: c.color, borderColor: c.color } : { borderColor: c.color }}
+            >
+              <CategoryMark c={c} />
+              {c.label}
+              <span className={`tabular-nums ${here ? "text-white/80" : "text-muted"}`}>{inPage ? inPage.get(c.key) : counts[c.key]}</span>
+            </Link>
+          );
+        })}
+      </nav>
+    </div>
   );
 }
 
-// 検索語に当てはまるか(用語名・英語名・ひとことで言うと)
-function matchesQuery(t: GlossaryTerm, query: string): boolean {
-  const q = query.trim().toLowerCase();
-  return !q || t.term.toLowerCase().includes(q) || t.en.toLowerCase().includes(q) || t.short.toLowerCase().includes(q);
-}
-
 export function GlossaryDictionary({
+  blocks,
+  lookup,
+  counts,
+  paths,
+  current,
   playerIds = {},
-  termIndex,
 }: {
+  blocks: GlossaryBlock[];
+  lookup: GlossaryLookup;
+  counts: Record<GlossarySectionKey, number>;
+  // 学習導線に入っている用語(カードのバッジ用)
+  paths: Record<string, GlossaryPathKey>;
+  // 分類ページのときはその分類(ナビで塗りつぶす)。学習導線ページでは省略
+  current?: GlossarySectionKey;
   playerIds?: Record<string, string>;
-  termIndex?: GlossaryIndex;
 }) {
-  // レベル: 画面で選んだもの > URL の ?level= > すべて
-  const [chosenLevel, setLevel] = useState<LevelFilter | null>(null);
-  const urlLevel = useSyncExternalStore(subscribeNoop, readUrlLevel, serverNull);
-  const level: LevelFilter = chosenLevel ?? urlLevel ?? "all";
-  const [query, setQuery] = useState("");
   // 開いているカード(複数開ける)と、一度でも開いたカード(図解は一度開いた用語だけ描く)
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set());
   const [opened, setOpened] = useState<ReadonlySet<string>>(() => new Set());
-  const [showIndex, setShowIndex] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
   const speech = useSpeech();
   const { stop, speaking } = speech;
-  // openTerm から今の絞り込みを読むため(openTerm 自体は作り直さない)
-  const filterRef = useRef({ level, query });
-  useEffect(() => {
-    filterRef.current = { level, query };
-  }, [level, query]);
+  // このページに並んでいる用語
+  const onPageKey = blocks.map((b) => b.groups.map((g) => g.terms.map((t) => t.id).join(",")).join(",")).join(",");
+  const onPage = useMemo<ReadonlySet<string>>(() => new Set(onPageKey.split(",")), [onPageKey]);
+  // 分類の見出しは、複数の分類を流すページ(学習導線ページ)でだけ出す(分類ページはページの見出しが分類名)
+  const multi = !current;
 
-  // カードを開く。scroll=true のときは開いたカードの位置まで移動する(索引・関連用語・#リンクから開いたとき)
-  const openTerm = useCallback((id: string, scroll: boolean) => {
-    const term = TERM_BY_ID[id];
-    if (!term) return;
-    // レベルの絞り込みや検索で隠れている用語なら、絞り込みを外して見えるようにする
-    const f = filterRef.current;
-    if (f.level !== "all" && f.level !== term.level) setLevel("all");
-    if (!matchesQuery(term, f.query)) setQuery("");
-    setExpanded((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
-    setOpened((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
-    history.replaceState(null, "", `${location.pathname}${location.search}${termHash(id)}`);
-    if (scroll) {
-      window.setTimeout(() => document.getElementById(dialogId(id))?.scrollIntoView({ block: "start" }), 30);
-    }
-  }, []);
+  // カードを開く。scroll=true のときは開いたカードの位置まで移動する(関連用語・#リンクから開いたとき)
+  const openTerm = useCallback(
+    (id: string, scroll: boolean) => {
+      if (!onPage.has(id)) return;
+      setExpanded((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
+      setOpened((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
+      history.replaceState(history.state, "", `${location.pathname}${location.search}${glossaryTermHash(id)}`);
+      if (scroll) {
+        window.setTimeout(() => document.getElementById(dialogId(id))?.scrollIntoView({ block: "start" }), 30);
+      }
+    },
+    [onPage],
+  );
 
   const open = useCallback((id: string) => openTerm(id, true), [openTerm]);
 
@@ -647,258 +544,127 @@ export function GlossaryDictionary({
         next.delete(id);
         return next;
       });
-      if (termIdFromHash(location.hash) === id) history.replaceState(null, "", `${location.pathname}${location.search}`);
+      if (termIdFromHash(location.hash, lookup) === id) history.replaceState(history.state, "", `${location.pathname}${location.search}`);
     },
-    [expanded, openTerm, speaking, stop],
+    [expanded, openTerm, speaking, stop, lookup],
   );
 
-  // 初回表示: #term-用語ID(前の形式の #用語ID も)があればそのカードを開く。表示中に # だけ変わったとき(URL を貼り直した・戻るボタンなど)も開く
+  // 初回表示: #term-用語ID(前の形式の #用語ID も)があればそのカードを開く。このページに無い用語なら、その用語の分類ページへ移る。
+  // 表示中に # だけ変わったとき(URL を貼り直した・戻るボタンなど)も同じようにする
   useEffect(() => {
-    const id = termIdFromHash(location.hash);
-    // 表示が終わってから開く(開いたカードの位置へ移動するため)
-    const timer = id ? window.setTimeout(() => openTerm(id, true), 0) : undefined;
-    const onHashChange = () => {
-      const next = termIdFromHash(location.hash);
-      if (next) openTerm(next, true);
+    const go = () => {
+      const id = termIdFromHash(location.hash, lookup);
+      if (!id) return;
+      if (onPage.has(id)) openTerm(id, true);
+      else location.replace(glossaryTermPath(id, lookup[id].section));
     };
-    window.addEventListener("hashchange", onHashChange);
+    // 表示が終わってから開く(開いたカードの位置へ移動するため)
+    const timer = window.setTimeout(go, 0);
+    window.addEventListener("hashchange", go);
     return () => {
       window.clearTimeout(timer);
-      window.removeEventListener("hashchange", onHashChange);
+      window.removeEventListener("hashchange", go);
     };
-  }, [openTerm]);
+  }, [openTerm, onPage, lookup]);
 
-  // 一覧の先頭(カードの流れの最初)。絞り込みを変えたとき、下の方にいたらここへ戻す
-  const backToListTop = () => {
-    const el = document.getElementById("glossary-list");
-    if (el && el.getBoundingClientRect().top < 0) el.scrollIntoView({ block: "start" });
-  };
-  const changeQuery = (v: string) => {
-    setQuery(v);
-    backToListTop();
-  };
-  // 索引を開いたら、索引の位置へ移動する(バーは上に固定なので、下の方から押しても見えるように)
-  const toggleIndex = () => {
-    const next = !showIndex;
-    setShowIndex(next);
-    if (next) window.setTimeout(() => document.getElementById("term-index")?.scrollIntoView({ block: "start" }), 0);
-  };
-  const selectLevel = (lv: LevelFilter) => {
-    setLevel(lv);
-    const url = lv === "all" ? location.pathname : `${location.pathname}?level=${lv}`;
-    history.replaceState(null, "", url);
-    backToListTop();
-  };
-
-  const q = query.trim().toLowerCase();
-  const inLevel = GLOSSARY_TERMS.filter((t) => level === "all" || t.level === level);
-  const visible = inLevel.filter((t) => matchesQuery(t, query));
-  const sections = GLOSSARY_CATEGORIES.map((c) => ({ c, terms: visible.filter((t) => t.category === c.key) })).filter((s) => s.terms.length > 0);
-  const showPositionCourt = !q && (level === "all" || level === "beginner");
-
-  const levelTabs = [
-    { key: "all", label: "すべて", short: "すべて", count: GLOSSARY_TERMS.length },
-    ...GLOSSARY_LEVELS.map((l) => ({ key: l.key, label: l.label, short: l.label.replace("向け", ""), count: GLOSSARY_TERMS.filter((t) => t.level === l.key).length })),
-  ] as { key: LevelFilter; label: string; short: string; count: number }[];
+  const card = (t: GlossaryTerm) => (
+    <li key={t.id}>
+      <TermEntry
+        term={t}
+        expanded={expanded.has(t.id)}
+        onToggle={toggle}
+        onOpen={open}
+        speech={speech}
+        showFigure={opened.has(t.id)}
+        playerIds={playerIds}
+        lookup={lookup}
+        onPage={onPage}
+        path={paths[t.id]}
+      />
+    </li>
+  );
 
   return (
     <>
-      {/* 補助の道具(検索・レベル・索引・分類)を1本のバーにまとめて上に固定する。
-          用語のカードは最初から全部並べ、このバーは使いたい人だけ使う(スマホでも最初の画面にカードが見えるよう、高さを抑える) */}
-      <div className="sticky top-0 z-10 -mx-4 mb-5 border-y border-line bg-background/95 px-4 py-2 backdrop-blur sm:mx-0 sm:border-x sm:px-3">
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            aria-expanded={showSearch}
-            aria-controls="glossary-search"
-            aria-label="用語を検索"
-            onClick={() => {
-              setShowSearch((v) => !v);
-              window.setTimeout(() => document.getElementById("glossary-search-input")?.focus(), 0);
-            }}
-            className={`inline-flex h-9 shrink-0 items-center gap-1 border px-2.5 text-xs font-bold sm:hidden ${showSearch || query ? "border-foreground bg-navy text-white" : "border-line bg-surface"}`}
-          >
-            <svg aria-hidden viewBox="0 0 20 20" className="size-4" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="8.5" cy="8.5" r="6" />
-              <path d="M13 13l5 5" />
-            </svg>
-            検索
-          </button>
-          <label className="hidden h-9 w-64 shrink-0 items-center gap-2 border border-line bg-surface px-2.5 focus-within:border-foreground sm:flex">
-            <svg aria-hidden viewBox="0 0 20 20" className="size-4 text-muted" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="8.5" cy="8.5" r="6" />
-              <path d="M13 13l5 5" />
-            </svg>
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => changeQuery(e.target.value)}
-              placeholder="用語を探す（例：TS%）"
-              aria-label="用語を検索"
-              className="w-full min-w-0 bg-transparent text-sm outline-none"
-            />
-          </label>
-          <label className="relative shrink-0">
-            <span className="sr-only">レベル</span>
-            <select
-              value={level}
-              onChange={(e) => selectLevel(e.target.value as LevelFilter)}
-              className={`h-9 appearance-none border py-0 pl-2.5 pr-6 text-xs font-bold sm:text-sm ${level !== "all" ? "border-foreground bg-navy text-white" : "border-line bg-surface"}`}
-            >
-              {levelTabs.map((tab) => (
-                <option key={tab.key} value={tab.key}>
-                  {tab.key === "all" ? `全レベル（${tab.count}）` : `${tab.label}（${tab.count}）`}
-                </option>
-              ))}
-            </select>
-            <span aria-hidden className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px]">▼</span>
-          </label>
-          {termIndex && (
-            <button
-              type="button"
-              aria-expanded={showIndex}
-              aria-controls="term-index"
-              onClick={toggleIndex}
-              className={`inline-flex h-9 shrink-0 items-center border px-2.5 text-xs font-bold sm:text-sm ${showIndex ? "border-foreground bg-navy text-white" : "border-line bg-surface hover:border-foreground"}`}
-            >
-              <span className="sm:hidden">索引</span>
-              <span className="hidden sm:inline">あいうえお索引</span>
-            </button>
-          )}
-          {/* 分類(押すとその分類の見出しへ移動)。横にスクロール */}
-          <nav aria-label="分類" className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto border-l border-line pl-1.5">
-            {GLOSSARY_CATEGORY_GROUPS.map((g) => (
-              <Fragment key={g.key}>
-                <span className="shrink-0 pl-1 text-[11px] font-extrabold text-muted first:pl-0">{g.short}</span>
-                {GLOSSARY_CATEGORIES.filter((c) => c.group === g.key).map((c) => {
-                  const count = visible.filter((t) => t.category === c.key).length;
-                  return (
-                    <a
-                      key={c.key}
-                      href={`#${sectionId(c.key)}`}
-                      aria-disabled={count === 0}
-                      className={`inline-flex h-9 shrink-0 items-center gap-1.5 border bg-surface pl-1 pr-2.5 text-xs font-bold transition-colors hover:border-foreground ${
-                        count === 0 ? "pointer-events-none opacity-40" : ""
-                      }`}
-                      style={{ borderColor: c.color }}
-                    >
-                      <CategoryMark c={c} />
-                      {c.label}
-                      <span className="tabular-nums text-muted">{count}</span>
-                    </a>
-                  );
-                })}
-              </Fragment>
-            ))}
-          </nav>
-        </div>
-        {/* スマホの検索窓(「検索」を押したときだけ出す) */}
-        {(showSearch || query) && (
-          <label id="glossary-search" className="mt-2 flex items-center gap-2 border border-line bg-surface px-3 py-2 focus-within:border-foreground sm:hidden">
-            <input
-              id="glossary-search-input"
-              type="search"
-              value={query}
-              onChange={(e) => changeQuery(e.target.value)}
-              placeholder="用語を探す（例：トラベリング、TS%）"
-              aria-label="用語を検索"
-              className="w-full min-w-0 bg-transparent text-sm outline-none"
-            />
-          </label>
-        )}
-      </div>
-      {level !== "all" && <p className="mb-3 text-sm text-muted">{GLOSSARY_LEVELS.find((l) => l.key === level)?.lead}</p>}
+      <CategoryNav current={current} counts={counts} blocks={multi ? blocks : undefined} />
 
-      {/* 索引(「索引」を押したときだけ出す)。用語名を押すと、そのカードを開いてその位置へ移動する */}
-      {termIndex && showIndex && <TermIndex index={termIndex} visible={visible} onOpen={open} />}
-
-
-      {sections.length === 0 && <p className="text-sm text-muted">「{query}」に当てはまる用語はありません。</p>}
-
-      {/* 全用語のカード。分類の順にそのまま流し、分類の見出しは区切りとして出すだけ */}
+      {/* 用語のカード。分類の順にそのまま流し、見出しは区切りとして出すだけ */}
       <div id="glossary-list" className="max-w-4xl scroll-mt-16 space-y-10">
-        {sections.map(({ c, terms }, i) => (
-          <Fragment key={c.key}>
-          {/* まとまり(基本の用語/スラング)の見出し。スマホでは最初の見出しを省いて、最初の画面にカードが多く見えるようにする */}
-          {(i === 0 || sections[i - 1].c.group !== c.group) && (
-            <div id={groupId(c.group)} className={`mb-3! scroll-mt-16 border-t-[3px] border-foreground pt-1.5 ${i === 0 ? "hidden sm:block" : ""}`}>
-              <h2 className="text-lg font-black tracking-tight sm:text-2xl">{GROUP_LABEL[c.group]}</h2>
-              {c.group === "slang" && (
-                <p className="mt-0.5 text-sm text-muted">実況やSNSで見かけるスラング、決めポーズ、選手のニックネームの由来など。</p>
-              )}
-            </div>
-          )}
-          <section id={sectionId(c.key)} aria-labelledby={`${sectionId(c.key)}-title`} className="scroll-mt-16">
-            <div className="mb-3 flex items-center gap-2.5 border-b-2 pb-2" style={{ borderColor: c.color }}>
-              <CategoryMark c={c} />
-              <h2 id={`${sectionId(c.key)}-title`} className="shrink-0 text-lg font-bold tracking-tight sm:text-xl">
-                {c.label}
-                <span className="ml-2 text-xs font-semibold text-muted tabular-nums">{terms.length}語</span>
-              </h2>
-              <p className="hidden text-sm text-muted md:block">{c.lead}</p>
-            </div>
-
-            {c.key === "position" && showPositionCourt && (
-              <div className="mb-5 grid items-center gap-4 border border-line bg-surface p-4 sm:grid-cols-[minmax(0,420px)_1fr] sm:p-5">
-                <PositionCourt onOpen={open} />
-                <div>
-                  <p className="text-[11px] font-extrabold tracking-[1px]" style={{ color: c.color }}>
-                    まずはここから
-                  </p>
-                  <h3 className="mt-1 text-lg font-bold">5つのポジション</h3>
-                  <p className="mt-2 text-sm leading-7 text-muted">
-                    バスケットボールは1チーム5人。役割に合わせて1番〜5番と呼びます。コート上の番号を押すと、そのポジションの解説が開きます。
-                  </p>
-                  <ul className="mt-3 grid gap-1.5 text-sm">
-                    {[
-                      ["1", "ポイントガード（PG）", "司令塔", "point-guard"],
-                      ["2", "シューティングガード（SG）", "得点役", "shooting-guard"],
-                      ["3", "スモールフォワード（SF）", "万能型", "small-forward"],
-                      ["4", "パワーフォワード（PF）", "体を張る", "power-forward"],
-                      ["5", "センター（C）", "ゴール下の柱", "center"],
-                    ].map(([n, name, role, id]) => (
-                      <li key={id}>
-                        <button type="button" onClick={() => open(id)} className="flex w-full items-center gap-2 text-left hover:text-blue">
-                          <span className="inline-flex size-6 shrink-0 items-center justify-center bg-navy text-xs font-black text-white">{n}</span>
-                          <span className="font-bold">{name}</span>
-                          <span className="text-xs text-muted">{role}</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
+        {blocks.map(({ key, groups }) => {
+          const c = SECTION_BY_KEY[key];
+          const n = groups.reduce((m, g) => m + g.terms.length, 0);
+          return (
+            <section key={key} id={sectionId(key)} aria-label={c.label} className="scroll-mt-16">
+              {multi && (
+                <div className="mb-3 flex items-center gap-2.5 border-b-2 pb-2" style={{ borderColor: c.color }}>
+                  <CategoryMark c={c} />
+                  <h2 className="shrink-0 text-lg font-bold tracking-tight sm:text-xl">
+                    <Link href={glossarySectionPath(key)} className="hover:text-blue hover:underline">
+                      {c.label}
+                    </Link>
+                    <span className="ml-2 text-xs font-semibold text-muted tabular-nums">{n}語</span>
+                  </h2>
+                  <p className="hidden text-sm text-muted md:block">{c.lead}</p>
                 </div>
-              </div>
-            )}
+              )}
 
-            {subgroups(terms).map(({ group, terms: groupTerms }) => (
-              <div key={group ?? "-"} className={group ? "mt-6 first:mt-0" : undefined}>
-                {group && (
-                  <h3 className="mb-2.5 flex items-center gap-2 text-base font-bold">
-                    <span aria-hidden className="inline-block h-4 w-1" style={{ backgroundColor: c.color }} />
-                    {group}
-                    <span className="text-xs font-semibold text-muted tabular-nums">{groupTerms.length}語</span>
-                  </h3>
-                )}
-                <ul className="space-y-2.5">
-                  {groupTerms.map((t) => (
-                    <li key={t.id}>
-                      <TermEntry
-                        term={t}
-                        expanded={expanded.has(t.id)}
-                        onToggle={toggle}
-                        onOpen={open}
-                        speech={speech}
-                        showFigure={opened.has(t.id)}
-                        playerIds={playerIds}
-                      />
-                    </li>
+              {key === "players-positions" && groups.some((g) => g.terms.some((t) => t.id === "point-guard")) && (
+                <div className="mb-5 grid items-center gap-4 border border-line bg-surface p-4 sm:grid-cols-[minmax(0,420px)_1fr] sm:p-5">
+                  <PositionCourt onOpen={open} />
+                  <div>
+                    <p className="text-[11px] font-extrabold tracking-[1px]" style={{ color: c.color }}>
+                      まずはここから
+                    </p>
+                    <h3 className="mt-1 text-lg font-bold">5つのポジション</h3>
+                    <p className="mt-2 text-sm leading-7 text-muted">
+                      バスケットボールは1チーム5人。役割に合わせて1番〜5番と呼びます。コート上の番号を押すと、そのポジションの解説が開きます。
+                    </p>
+                    <ul className="mt-3 grid gap-1.5 text-sm">
+                      {[
+                        ["1", "ポイントガード（PG）", "司令塔", "point-guard"],
+                        ["2", "シューティングガード（SG）", "得点役", "shooting-guard"],
+                        ["3", "スモールフォワード（SF）", "万能型", "small-forward"],
+                        ["4", "パワーフォワード（PF）", "体を張る", "power-forward"],
+                        ["5", "センター（C）", "ゴール下の柱", "center"],
+                      ].map(([num, name, role, id]) => (
+                        <li key={id}>
+                          <button type="button" onClick={() => open(id)} className="flex w-full items-center gap-2 text-left hover:text-blue">
+                            <span className="inline-flex size-6 shrink-0 items-center justify-center bg-navy text-xs font-black text-white">{num}</span>
+                            <span className="font-bold">{name}</span>
+                            <span className="text-xs text-muted">{role}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {groups.map((g) => (
+                <div key={g.label ?? "-"} className={g.label ? "mt-8 first:mt-0" : undefined}>
+                  {g.label && (
+                    <h3 className="mb-3 flex items-baseline gap-2 border-b border-line pb-1.5 text-lg font-black tracking-tight">
+                      <span aria-hidden className="inline-block h-4 w-1.5 self-center" style={{ backgroundColor: c.color }} />
+                      {g.label}
+                      <span className="text-xs font-semibold text-muted tabular-nums">{g.terms.length}語</span>
+                    </h3>
+                  )}
+                  {subgroups(g.terms).map(({ group, terms }) => (
+                    <div key={group ?? "-"} className={group ? "mt-5 first:mt-0" : undefined}>
+                      {group && (
+                        <h4 className="mb-2.5 flex items-center gap-2 text-sm font-bold text-muted">
+                          {group}
+                          <span className="text-xs font-semibold tabular-nums">{terms.length}語</span>
+                        </h4>
+                      )}
+                      <ul className="space-y-2.5">{terms.map(card)}</ul>
+                    </div>
                   ))}
-                </ul>
-              </div>
-            ))}
-          </section>
-          </Fragment>
-        ))}
+                </div>
+              ))}
+            </section>
+          );
+        })}
       </div>
     </>
   );

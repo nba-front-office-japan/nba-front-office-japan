@@ -3,6 +3,7 @@ import Link from "next/link";
 import { PageShell } from "@/components/page-shell";
 import { BackToGuide, GuideHeader, GuideTitle, OfficialSourcesSection, Section } from "@/components/guide-article";
 import { GUIDE_PAGES, type OfficialSource } from "@/lib/guide-official";
+import { GlossaryTermLinks } from "@/components/glossary-term-links";
 
 export const metadata: Metadata = {
   title: "NBA契約用語 | NBAガイド | NBA Front Office Japan",
@@ -160,6 +161,8 @@ export default function ContractTermsGuidePage() {
 
         <OfficialSourcesSection sources={SOURCES} />
       </div>
+
+      <GlossaryTermLinks guidePath="/guide/contract-terms" />
 
       <BackToGuide />
     </PageShell>

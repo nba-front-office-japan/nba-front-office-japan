@@ -13,6 +13,7 @@ import {
   SummarySection,
 } from "@/components/guide-article";
 import { GUIDE_PAGES, type OfficialSource } from "@/lib/guide-official";
+import { GlossaryTermLinks } from "@/components/glossary-term-links";
 
 export const metadata: Metadata = {
   title: "NBAのMAX契約とは？ | NBAガイド | NBA Front Office Japan",
@@ -325,6 +326,8 @@ export default function MaxContractGuidePage() {
         {/* 8. 公式一次資料 */}
         <OfficialSourcesSection sources={SOURCES} />
       </div>
+
+      <GlossaryTermLinks guidePath="/guide/max-contract" />
 
       <BackToGuide />
     </PageShell>

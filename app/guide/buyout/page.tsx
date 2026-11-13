@@ -12,6 +12,7 @@ import {
   SummarySection,
 } from "@/components/guide-article";
 import { GUIDE_PAGES, type OfficialSource } from "@/lib/guide-official";
+import { GlossaryTermLinks } from "@/components/glossary-term-links";
 
 export const metadata: Metadata = {
   title: "NBAのBuyout（バイアウト）とは？ | NBAガイド | NBA Front Office Japan",
@@ -305,6 +306,8 @@ export default function BuyoutGuidePage() {
         {/* 9. 公式一次資料 */}
         <OfficialSourcesSection sources={SOURCES} />
       </div>
+
+      <GlossaryTermLinks guidePath="/guide/buyout" />
 
       <BackToGuide />
     </PageShell>
