@@ -15,7 +15,14 @@ export const metadata: Metadata = {
 // 詳細ページがある項目だけ GUIDE_PAGES(lib/guide-official.ts)にURLを登録してリンクにする(未作成のページへはリンクしない)。
 // 用語辞典は章とは別の「調べる」カードとして先頭に置き、辞典トップ・初級・中級・上級へリンクする。
 
-const GUIDE_CATEGORIES: { category: string; description: string; examples: string[] }[] = [
+// groups があるテーマは、記事一覧を小見出しで分ける(並び順は groups の順のまま)。
+type GuideCategory = { category: string; description: string } & (
+  | { examples: string[]; groups?: undefined }
+  | { groups: { heading: string; items: string[] }[]; examples?: undefined }
+);
+const categoryArticles = (row: GuideCategory) => row.groups ? row.groups.flatMap((g) => g.items) : row.examples;
+
+const GUIDE_CATEGORIES: GuideCategory[] = [
   {
     category: "NBAの全体像",
     description: "リーグのしくみとお金の流れ。まずここから全体をつかみます。",
@@ -24,30 +31,15 @@ const GUIDE_CATEGORIES: { category: string; description: string; examples: strin
   {
     category: "契約とサラリーを読む",
     description: "ドラフト・トレードから契約・サラリーキャップまで、チームづくりを縛るルール。",
-    examples: [
-      "ドラフト指名権",
-      "ロッタリー",
-      "指名権の価値",
-      "トレードの基本",
-      "サラリーマッチング",
-      "Buyout",
-      "Waive",
-      "サラリーキャップ",
-      "ラグジュアリータックス",
-      "1st Apron / 2nd Apron",
-      "Revenue Sharing",
-      "MAX契約",
-      "ミニマム契約",
-      "Bird Rights",
-      "RFA / UFA",
-      "MLE",
-      "ロスター契約・短期契約",
-      "契約用語",
+    groups: [
+      { heading: "ドラフトとトレード", items: ["ドラフト指名権", "ロッタリー", "指名権の価値", "トレードの基本", "サラリーマッチング", "Buyout", "Waive"] },
+      { heading: "サラリーキャップと税金", items: ["サラリーキャップ", "ラグジュアリータックス", "1st Apron / 2nd Apron", "Revenue Sharing"] },
+      { heading: "契約の種類", items: ["MAX契約", "ミニマム契約", "Bird Rights", "RFA / UFA", "MLE", "ロスター契約・短期契約", "契約用語"] },
     ],
   },
   { category: "スタッツを読む", description: "ボックススコアから上級指標まで、数字の読み方。", examples: ["スタッツ表の見方", "ネットレーティング", "PER"] },
   {
-    category: "NBAの歴史とカルチャー",
+    category: "NBAの歴史と事件",
     description: "リーグの歩みと、ルールが変わるきっかけになった事件。",
     examples: ["NBAの歴史", "ジョー・スミス事件", "タンパリング", "サラリーキャップ迂回に関する処分"],
   },
@@ -93,7 +85,7 @@ export default function GuidePage() {
         lead="NBAを順番に理解するためのガイドです。制度・契約・ドラフト・トレード・ビジネスを背景から学べます。知らない言葉をその場で調べるときは、NBA用語辞典を使ってください。"
         side={
           <BriefSide label="Start here">
-            <ExampleList examples={[GUIDE_CATEGORIES[0].examples[0]]} />
+            <ExampleList examples={[categoryArticles(GUIDE_CATEGORIES[0])[0]]} />
           </BriefSide>
         }
       >
@@ -124,7 +116,8 @@ export default function GuidePage() {
             </ul>
           </li>
           {GUIDE_CATEGORIES.map((row, i) => {
-            const count = row.examples.filter((e) => GUIDE_PAGES[e]).length;
+            const count = categoryArticles(row).filter((e) => GUIDE_PAGES[e]).length;
+            const sections = row.groups ?? [{ heading: "", items: row.examples }];
             return (
               <li key={row.category} className="flex flex-col border border-line border-t-4 border-t-foreground bg-surface">
                 <div className="px-4 pb-2 pt-3.5 sm:px-5">
@@ -135,24 +128,33 @@ export default function GuidePage() {
                   </p>
                   <p className="mt-1 text-[13px] leading-6 text-muted">{row.description}</p>
                 </div>
-                <ul className="space-y-0.5 border-t border-line px-4 py-2.5 text-sm sm:px-5">
-                  {row.examples.map((e) => (
-                    <li key={e}>
-                      {GUIDE_PAGES[e] ? (
-                        <Link href={GUIDE_PAGES[e]} className="group flex items-center gap-1.5 py-1 font-semibold text-blue">
-                          <span aria-hidden className="text-muted group-hover:text-blue">›</span>
-                          <span className="group-hover:underline">{e === "NBAを試合結果だけで終わらせない" ? `はじめに：${e}` : e}</span>
-                        </Link>
-                      ) : (
-                        <span className="flex items-center gap-1.5 py-1 text-muted">
-                          <span aria-hidden>›</span>
-                          {e}
-                          <span className="text-[11px]">（準備中）</span>
-                        </span>
+                <div className="border-t border-line px-4 py-2.5 text-sm sm:px-5">
+                  {sections.map((sec) => (
+                    <div key={sec.heading || "all"} className={sec.heading ? "mt-2 first:mt-0" : undefined}>
+                      {sec.heading && (
+                        <p className="border-b border-line pb-1 pt-1 text-[12px] font-extrabold tracking-[0.5px] text-foreground">{sec.heading}</p>
                       )}
-                    </li>
+                      <ul className="space-y-0.5">
+                      {sec.items.map((e) => (
+                        <li key={e}>
+                          {GUIDE_PAGES[e] ? (
+                            <Link href={GUIDE_PAGES[e]} className="group flex items-center gap-1.5 py-1 font-semibold text-blue">
+                              <span aria-hidden className="text-muted group-hover:text-blue">›</span>
+                              <span className="group-hover:underline">{e === "NBAを試合結果だけで終わらせない" ? `はじめに：${e}` : e}</span>
+                            </Link>
+                          ) : (
+                            <span className="flex items-center gap-1.5 py-1 text-muted">
+                              <span aria-hidden>›</span>
+                              {e}
+                              <span className="text-[11px]">（準備中）</span>
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                      </ul>
+                    </div>
                   ))}
-                </ul>
+                </div>
               </li>
             );
           })}
