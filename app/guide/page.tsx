@@ -9,15 +9,16 @@ export const metadata: Metadata = {
   description: "NBAの制度・契約・ドラフト・トレード・ビジネスなどを日本語で解説するガイドの一覧です。",
 };
 
-// ガイドのカテゴリーと、各カテゴリーで扱う内容の例。
+// ガイドは「順番に理解するための読み物」、用語辞典は「知らない言葉を調べる場所」。
+// 初級・中級・上級は階層ではなく、辞典全体を横断して表示する学習の目安。
 // 詳細ページがある項目だけ GUIDE_PAGES(lib/guide-official.ts)にURLを登録してリンクにする(未作成のページへはリンクしない)。
-// 契約・サラリーの用語は「契約」の「契約用語」に、それ以外も含めたレベル別の用語は「NBA用語辞典」(/guide/glossary)にまとめる。
 
 const GUIDE_CATEGORIES: { category: string; examples: string[] }[] = [
   // 最初に読む導入ページ
   { category: "はじめに", examples: ["NBAを試合結果だけで終わらせない"] },
   // 用語辞典は入口として使われやすいので「はじめに」の直後に置く
-  { category: "NBA用語辞典", examples: ["初心者向け", "中級者向け", "上級者向け"] },
+  { category: "NBA用語辞典（調べる）", examples: ["NBA用語辞典", "初心者向け", "中級者向け", "上級者向け"] },
+  { category: "スラング・ニックネーム", examples: ["NBAカルチャー"] },
   { category: "NBAの歴史", examples: ["NBAの歴史"] },
   {
     category: "NBA制度",
@@ -71,7 +72,7 @@ export default function GuidePage() {
         report="REFERENCE LIBRARY"
         kicker="Guide"
         title="NBAガイド"
-        lead="NBAの制度・契約・ドラフト・トレード・ビジネスを理解するためのガイドです。各カテゴリーの解説は順次追加します。"
+        lead="NBAを順番に理解するためのガイドです。制度・契約・ドラフト・トレード・ビジネスを背景から学べます。知らない言葉をその場で調べるときは、NBA用語辞典を使ってください。"
         side={
           <BriefSide label="Start here">
             <ExampleList examples={GUIDE_CATEGORIES[0].examples} />
