@@ -21,6 +21,10 @@ const JORDAN = p("マイケル・ジョーダン", "Michael Jordan", 1984, 3);
 const TRAE = p("トレイ・ヤング", "Trae Young", 2018, 5);
 const GIANNIS = p("ヤニス・アデトクンボ", "Giannis Antetokounmpo", 2013, 15);
 const MUTOMBO = p("ディケンベ・ムトンボ", "Dikembe Mutombo", 1991, 4);
+const SHAQ = p("シャキール・オニール", "Shaquille O'Neal", 1992, 1);
+// 指名順位 0 = ドラフト外(ドラフト外の選手と、全体順位のない地域指名(テリトリアル・ピック)の選手)。名鑑の名前が1人に決まる場合だけリンクする
+const WILT = p("ウィルト・チェンバレン", "Wilt Chamberlain", 1959, 0);
+const BEN_WALLACE = p("ベン・ウォーレス", "Ben Wallace", 1996, 0);
 
 const LEGEND = "レジェンド";
 const STAR = "現役・近年のスター";
@@ -865,17 +869,6 @@ export const SLANG_TERMS: GlossaryTerm[] = [
       "スティーブ・ナッシュを司令塔に、ボールを持ったら7秒以内にシュートまで持ち込むことを目指した攻撃です。当時は珍しかった速いペースとスリー重視のスタイルは、のちのNBA全体の流れを先取りしたものと言われます。",
     related: ["pace", "fast-break", "transition"],
   },
-  {
-    id: "linsanity",
-    term: "リンサニティ",
-    en: "Linsanity",
-    level: "intermediate",
-    category: "team-era",
-    short: "2012年、無名だったジェレミー・リンがニックスで巻き起こした大旋風。",
-    detail:
-      "名前の「Lin」と「insanity（熱狂・狂気）」を合わせた言葉です。出場機会の少なかったリンが、2012年2月に突然スターターとして大活躍を続け、ニューヨークだけでなく世界中で社会現象になりました。",
-    related: ["vinsanity"],
-  },
 
   // ════════════════════ 選手のニックネーム（由来）: レジェンド ════════════════════
   {
@@ -1246,6 +1239,228 @@ export const SLANG_TERMS: GlossaryTerm[] = [
     related: ["uncle-drew"],
     players: [p("ラリー・ジョンソン", "Larry Johnson", 1991, 1)],
   },
+  // ── 2026-11-14 追加(18件のうちレジェンド16件) ──
+  {
+    id: "big-ben",
+    term: "ビッグ・ベン",
+    en: "Big Ben",
+    level: "intermediate",
+    category: "nickname",
+    group: LEGEND,
+    short: "ベン・ウォーレスの愛称。ロンドンの有名な時計台の鐘「ビッグ・ベン」にかけた呼び名。",
+    detail:
+      "由来は、名前の「ベン」と、ロンドンの国会議事堂の時計台にある大きな鐘「ビッグ・ベン」をかけたことです。ピストンズの本拠地では、ウォーレスが得点やブロックを決めると鐘の音を鳴らす演出もありました。ドラフトで指名されなかった選手ながら、最優秀守備選手賞（DPOY）を4度受賞し、2004年の優勝を支えました。",
+    related: ["dpoy", "block", "rebound"],
+    players: [BEN_WALLACE],
+  },
+  {
+    id: "the-big-diesel",
+    term: "ザ・ビッグ・ディーゼル",
+    en: "The Big Diesel",
+    level: "intermediate",
+    category: "nickname",
+    group: LEGEND,
+    short: "シャキール・オニールの愛称。ゴール下に突進するパワーを、大型のディーゼルエンジンにたとえた。",
+    detail:
+      "由来は、216cmの巨体で相手を押しのけてゴール下へ突き進む力強さを、トラックや機関車を動かすディーゼルエンジンにたとえたものとされます。シャックは自分でも次々と愛称を名乗ったことで知られ、ラッパーとして出したアルバムの名前も「Shaq Diesel」でした。レイカーズで3連覇（2000〜2002年）を果たし、3度ともファイナルMVPに選ばれました。",
+    related: ["dunk", "big-man", "flash"],
+    players: [SHAQ],
+  },
+  {
+    id: "the-big-dipper",
+    term: "ザ・ビッグ・ディッパー",
+    en: "The Big Dipper",
+    level: "intermediate",
+    category: "nickname",
+    group: LEGEND,
+    short: "ウィルト・チェンバレンの愛称。チェンバレン本人が気に入っていた呼び名。",
+    detail:
+      "由来は、背の高いチェンバレンが戸口をくぐるたびに頭をひょいと下げる（dip）姿を見た友人たちが、そう呼んだことです。英語の「Big Dipper」は北斗七星のことでもあります。身長ばかりを強調する新聞記者の呼び名を嫌ったチェンバレンは、この愛称を好んだと言われます。1962年に記録した1試合100得点は、いまも破られていないNBA記録です。",
+    related: ["wilt-the-stilt", "big-man", "rebound"],
+    players: [WILT],
+  },
+  {
+    id: "wilt-the-stilt",
+    term: "ウィルト・ザ・スティルト",
+    en: "Wilt the Stilt",
+    level: "intermediate",
+    category: "nickname",
+    group: LEGEND,
+    short: "ウィルト・チェンバレンのもう一つの有名な愛称。「竹馬のウィルト」。",
+    detail:
+      "由来は、名前の「Wilt」と、竹馬や長い脚を意味する「stilt」の韻を踏ませたものです。高校時代から216cmの長身が注目され、新聞記者たちが付けた呼び名の一つでした。広く知られた愛称ですが、本人は身長だけを見られているようで嫌っていたとされ、「ビッグ・ディッパー」のほうを好みました。1961-62シーズンには1試合平均50.4得点という驚異的な数字を残しています。",
+    related: ["the-big-dipper", "big-man"],
+    players: [WILT],
+  },
+  {
+    id: "big-shot-rob",
+    term: "ビッグ・ショット・ロブ",
+    en: "Big Shot Rob",
+    level: "intermediate",
+    category: "nickname",
+    group: LEGEND,
+    short: "ロバート・オーリーの愛称。プレーオフの大事な場面で、何度も試合を決めるシュートを沈めた。",
+    detail:
+      "由来は、プレーオフの勝負どころで「大きな一本（big shot）」を決め続けたことです。2002年のキングスとのカンファレンス決勝第4戦では、試合終了のブザーと同時に逆転のスリーを決めました。ロケッツ、レイカーズ、スパーズの3チームで計7度優勝しており、これはマイケル・ジョーダンの6度より多い数です。",
+    related: ["clutch", "buzzer-beater", "mr-big-shot"],
+    players: [p("ロバート・オーリー", "Robert Horry", 1992, 11)],
+  },
+  {
+    id: "clyde",
+    term: "クライド",
+    en: "Clyde",
+    level: "advanced",
+    category: "nickname",
+    group: LEGEND,
+    short: "ウォルト・フレイジャーの愛称。おしゃれな帽子が、映画の主人公クライドを思わせた。",
+    detail:
+      "由来は、ニックスに入団した1967年、フレイジャーがかぶっていたつば広の帽子が、同じ年に公開された映画『俺たちに明日はない（原題：Bonnie and Clyde）』のクライドのようだと言われたことです。派手なスーツなどのファッションでも知られ、プーマのバスケットシューズ「クライド」の名前にもなりました。ニックスの2度の優勝（1970年・1973年）を支えた名ポイントガードです。",
+    related: ["point-guard", "clyde-the-glide"],
+    players: [p("ウォルト・フレイジャー", "Walt Frazier", 1967, 5)],
+  },
+  {
+    id: "clyde-the-glide",
+    term: "クライド・ザ・グライド",
+    en: "Clyde the Glide",
+    level: "intermediate",
+    category: "nickname",
+    group: LEGEND,
+    short: "クライド・ドレクスラーの愛称。空中を滑るように舞うプレーから。",
+    detail:
+      "由来は、名前の「Clyde」と、滑空するという意味の「glide」の韻を踏ませたもので、ゴールに向かって空中を滑るように飛ぶダンクやレイアップを表しています。ヒューストン大学ではアキーム・オラジュワンらと「ファイ・スラマ・ジャマ」と呼ばれたダンク軍団を組みました。NBAではブレイザーズのエースとして活躍し、1995年にはロケッツでオラジュワンと再び組んで優勝しています。",
+    related: ["the-dream", "dunk", "clyde"],
+    players: [p("クライド・ドレクスラー", "Clyde Drexler", 1983, 14)],
+  },
+  {
+    id: "flash",
+    term: "フラッシュ",
+    en: "Flash",
+    level: "intermediate",
+    category: "nickname",
+    group: LEGEND,
+    short: "ドウェイン・ウェイドの愛称。閃光のようなスピードから。",
+    detail:
+      "由来は、ヒートでチームメイトだったシャキール・オニールが、ウェイドの素早さをアメコミの超高速ヒーロー「フラッシュ」になぞらえて呼んだことだとされます。ウェイド本人は、最初はこの愛称を気に入っていなかったと明かしています。2006年のファイナルではMVPに輝き、ヒートを初優勝に導きました。",
+    related: ["the-big-diesel", "fast-break", "finals"],
+    players: [p("ドウェイン・ウェイド", "Dwyane Wade", 2003, 5)],
+  },
+  {
+    id: "junkyard-dog",
+    term: "ザ・ジャンクヤード・ドッグ",
+    en: "The Junk Yard Dog / JYD",
+    level: "advanced",
+    category: "nickname",
+    group: LEGEND,
+    short: "ジェローム・ウィリアムスの愛称「JYD」。泥臭く走り回るハッスルプレーから。",
+    detail:
+      "由来は、ピストンズ時代のチームメイト、リック・マホーンが、ルーズボールやリバウンドに食らいつくウィリアムスの働きぶりを見て名付けたことです。「廃品置き場の番犬」のようにしつこく、休まず動き回る姿を表しています。頭文字を取った「JYD」の呼び名でも親しまれ、ピストンズやラプターズでエネルギッシュなプレーを見せました。",
+    related: ["rebound", "glue-guy"],
+    players: [p("ジェローム・ウィリアムス", "Jerome Williams", 1996, 26)],
+  },
+  {
+    id: "mighty-mouse",
+    term: "マイティ・マウス",
+    en: "Mighty Mouse",
+    level: "advanced",
+    category: "nickname",
+    group: LEGEND,
+    short: "デイモン・スタウダマイアーの愛称。小さな体で大活躍する、アニメのネズミのヒーローにちなむ。",
+    detail:
+      "由来は、身長178cmと小柄なスタウダマイアーが、アメリカのアニメに登場する小さなスーパーヒーロー「マイティ・マウス」になぞらえられたことです。本人の腕にもマイティ・マウスのタトゥーが入っていました。1995年のドラフトで、この年に誕生したラプターズから指名され、その年の新人王に輝きました。",
+    related: ["rookie-of-the-year", "point-guard"],
+    players: [p("デイモン・スタウダマイアー", "Damon Stoudamire", 1995, 7)],
+  },
+  {
+    id: "mr-big-shot",
+    term: "ミスター・ビッグ・ショット",
+    en: "Mr. Big Shot",
+    level: "intermediate",
+    category: "nickname",
+    group: LEGEND,
+    short: "チャンシー・ビラップスの愛称。勝負どころで決めきる勝負強さから。",
+    detail:
+      "由来は、試合終盤の大事な場面で何度も決定的なシュートを沈めたことです。ピストンズの司令塔として、2004年のファイナルでスター軍団のレイカーズを破り、ファイナルMVPに選ばれました。飛び抜けたスーパースターがいないと言われたチームで、「大きな一本」を任される存在でした。",
+    related: ["clutch", "big-shot-rob", "big-ben"],
+    players: [p("チャンシー・ビラップス", "Chauncey Billups", 1997, 3)],
+  },
+  {
+    id: "mr-clutch",
+    term: "ミスター・クラッチ",
+    en: "Mr. Clutch",
+    level: "intermediate",
+    category: "nickname",
+    group: LEGEND,
+    short: "ジェリー・ウェストの愛称。試合終盤の勝負強さから。",
+    detail:
+      "由来は、レイカーズの名実況アナウンサー、チック・ハーンが、勝負どころで次々とシュートを決めるウェストをそう呼んだことです。1970年のファイナル第3戦では、約18m（60フィート）の超ロングシュートをブザーと同時に決め、延長戦に持ち込みました。1969年には、負けたチームから選ばれた唯一のファイナルMVPにもなっています。NBAロゴのモデルとされることから「ザ・ロゴ」とも呼ばれます。",
+    related: ["the-logo", "clutch", "buzzer-beater"],
+    players: [p("ジェリー・ウェスト", "Jerry West", 1960, 2)],
+  },
+  {
+    id: "prince-of-darkness",
+    term: "ザ・プリンス・オブ・ダークネス",
+    en: "The Prince of Darkness",
+    level: "advanced",
+    category: "nickname",
+    group: LEGEND,
+    short: "ビル・レインビアの愛称。「闇の王子」。相手チームとファンに嫌われた悪役ぶりから。",
+    detail:
+      "由来は、激しい体のぶつけ合いや、大げさに倒れてファウルを誘うプレーで相手をいら立たせ、リーグ屈指の嫌われ者になった悪役ぶりです。ピストンズの「バッドボーイズ」の中心選手として、1989年と1990年に連覇を果たしました。1985-86シーズンにはリバウンド王にも輝いています。",
+    related: ["bad-boys", "enforcer", "the-worm"],
+    players: [p("ビル・レインビア", "Bill Laimbeer", 1979, 65)],
+  },
+  {
+    id: "the-reignman",
+    term: "ザ・レインマン",
+    en: "The Reignman",
+    level: "intermediate",
+    category: "nickname",
+    group: LEGEND,
+    short: "ショーン・ケンプの愛称。豪快なダンクでコートに「君臨」した。",
+    detail:
+      "由来は、ソニックスの実況アナウンサー、ケビン・カラブロが付けた呼び名で、「reign（君臨する）」を使った言葉遊びです。同じ発音の映画『レインマン（Rain Man）』にもかけたものと言われます。高く跳び上がって相手の上から叩き込むダンクで人気を集め、ゲイリー・ペイトンとのコンビで1996年にはファイナルに進出しました。",
+    related: ["the-glove", "dunk", "posterize"],
+    players: [p("ショーン・ケンプ", "Shawn Kemp", 1989, 17)],
+  },
+  {
+    id: "sir-charles",
+    term: "サー・チャールズ",
+    en: "Sir Charles",
+    level: "intermediate",
+    category: "nickname",
+    group: LEGEND,
+    short: "チャールズ・バークレーの愛称。「チャールズ卿」。",
+    detail:
+      "由来は、76ers時代に見せた圧倒的なプレーが尊敬を集め、イギリスの騎士の称号「サー」を付けて呼ばれるようになったことです。本人も「NBAで最初に付いたニックネーム」と話しています。ビッグマンとしては小柄ながらリバウンドに強く、「ラウンド・マウンド・オブ・リバウンド（リバウンドの丸い山）」とも呼ばれました。1993年にはサンズでMVPを受賞しています。",
+    related: ["rebound", "mvp", "trash-talk"],
+    players: [p("チャールズ・バークレー", "Charles Barkley", 1984, 5)],
+  },
+  {
+    id: "sugar-ray",
+    term: "シュガー・レイ",
+    en: "Sugar Ray",
+    level: "advanced",
+    category: "nickname",
+    group: LEGEND,
+    short: "レイ・アレンの愛称。なめらかなシュートを、伝説のボクサーになぞらえた。",
+    detail:
+      "由来は、名前の「レイ」から、華麗な動きで知られた伝説のボクサー、シュガー・レイ・ロビンソンになぞらえたものとされます。お手本のように美しいジャンプシュートで知られ、引退した時点ではスリーの成功数で歴代1位でした（のちにステフィン・カリーが更新）。セルティックスとヒートで優勝し、2013年のファイナル第6戦で決めた同点のスリーは、NBA史に残る一本と言われます。",
+    related: ["three-point", "catch-and-shoot", "chef-curry"],
+    players: [p("レイ・アレン", "Ray Allen", 1996, 5)],
+  },
+  {
+    id: "half-man-half-amazing",
+    term: "ハーフマン・ハーフアメージング",
+    en: "Half Man, Half Amazing",
+    level: "intermediate",
+    category: "nickname",
+    group: LEGEND,
+    short: "ビンス・カーターの愛称。「半分は人間、半分は驚異」。",
+    detail:
+      "由来は、人間離れした跳躍力とダンクを「体の半分は人間、もう半分は驚き（amazing）でできている」と表したことです。2000年のスラムダンクコンテストでは、ひじまで腕をリングに入れるダンクなどで優勝し、その跳躍力を世界に印象づけました。トロントでの熱狂を表す「ヴィンサニティ」や、「エア・カナダ」とも呼ばれました。",
+    related: ["vinsanity", "dunk"],
+    players: [p("ビンス・カーター", "Vince Carter", 1998, 5)],
+  },
 
   // ════════════════════ 選手のニックネーム（由来）: 現役・近年のスター ════════════════════
   {
@@ -1556,6 +1771,19 @@ export const SLANG_TERMS: GlossaryTerm[] = [
       "由来は、名前の頭文字「A・K」に合わせて、キリレンコが自ら背番号47を選んだことです。ブロック、スティール、リバウンドと何でもこなす万能のフォワードとして、ジャズで活躍しました。",
     related: ["glue-guy", "block"],
     players: [p("アンドレイ・キリレンコ", "Andrei Kirilenko", 1999, 24)],
+  },
+  {
+    id: "linsanity",
+    term: "リンサニティ",
+    en: "Linsanity",
+    level: "intermediate",
+    category: "nickname",
+    group: STAR,
+    short: "ジェレミー・リンの愛称。2012年、無名だったリンがニックスで巻き起こした大旋風のこと。",
+    detail:
+      "由来は、名前の「Lin」と「insanity（熱狂・狂気）」を合わせた言葉で、リン本人と、彼が巻き起こした熱狂の両方を指します。ドラフトで指名されず、出場機会も少なかったリンが、2012年2月に突然スターターとして大活躍を続け、レイカーズ戦では38得点を挙げました。ニューヨークだけでなく世界中で社会現象になりました。",
+    related: ["vinsanity"],
+    players: [p("ジェレミー・リン", "Jeremy Lin", 2010, 0)],
   },
 
   // ════════════════════ 選手のニックネーム（由来）: 登録名が実はニックネーム ════════════════════

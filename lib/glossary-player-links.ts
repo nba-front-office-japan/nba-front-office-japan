@@ -32,7 +32,9 @@ export async function fetchGlossaryPlayerIds(): Promise<Record<string, string>> 
         // 名鑑のドラフト年が一致する選手だけ採用する(昔の選手は同名の別人がいるため)。
         // 名鑑にドラフト年が入っていない場合は、同名の別人がいにくい最近(2020年以降)のドラフトの選手だけ採用する
         const dbYear = match.status === "matched" ? draftYearById.get(match.playerId) : undefined;
-        if (match.status === "matched" && (dbYear === year || (dbYear === null && year >= 2020))) {
+        // 指名順位 0 = ドラフト外・地域指名(全体順位なし)。名前で1人に決まり、名鑑のドラフト年が同じか空の場合だけ採用する
+        const undrafted = overallPick === 0 && match.status === "matched" && match.by === "name" && (dbYear === year || dbYear === null);
+        if (match.status === "matched" && (undrafted || dbYear === year || (dbYear === null && year >= 2020))) {
           result[key] = match.playerId;
           break;
         }
