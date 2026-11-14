@@ -42,3 +42,7 @@ yarn-error.log*
 next-env.d.ts
 
 .vercel
+
+# 河村勇輝 Gリーグ成績の生データ・報告用(scripts/update-kawamura-gleague.py)
+/_kawamura_gleague/
+/_kawamura_report/

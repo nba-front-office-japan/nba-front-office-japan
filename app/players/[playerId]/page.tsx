@@ -28,6 +28,14 @@ import { deriveStats, formatPct, formatStat } from "@/lib/stats";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { fetchPlayerRelatedArticles } from "@/lib/news/player-articles";
 import { formatArticleDate } from "@/components/news/article-view";
+import { KAWAMURA_CURRENT_TEAM, kawamuraExtrasFor } from "@/lib/kawamura";
+import {
+  KawamuraGLeagueCurrentCard,
+  KawamuraGLeagueLogSection,
+  KawamuraGLeagueSeasonStats,
+  KawamuraNationalTeamStats,
+  KawamuraNationalTeamSummary,
+} from "@/components/kawamura/kawamura-sections";
 
 // 選手ページは Profile(基本情報・受賞歴)・Stats(シーズン別成績)・Game Log(今季の試合ごとの成績)を ?view= で切り替える。
 // 上部の選手情報(PlayerHeader)はどの表示でも出す。
@@ -57,7 +65,9 @@ export async function generateMetadata({ params, searchParams }: PageProps<"/pla
   const canonical = view === "profile" ? `/players/${playerId}` : `/players/${playerId}?view=${view}`;
   // 解説・今季ロスター・今季出場・過去成績のどれも無い空に近いページは検索に載せない(リンクはたどってもらう)
   // Game Log は今季の出場が無ければ中身が空になるため、検索に載せない
-  const indexable = (view !== "gamelog" || current !== null) && await isPlayerPageIndexable({
+  // (河村勇輝は今季NBAの出場が無くてもGリーグの試合別成績を出すので載せる)
+  const kawamura = kawamuraExtrasFor(base.player.full_name);
+  const indexable = (view !== "gamelog" || current !== null || (kawamura?.gleagueGames.length ?? 0) > 0) && await isPlayerPageIndexable({
     playerId,
     fullName: base.player.full_name,
     onCurrentRoster: base.currentRosterTeamId !== null,
@@ -109,6 +119,8 @@ export default async function PlayerDetailPage({
     notFound();
   }
   const { player, currentTeam } = base;
+  // 河村勇輝だけ: Gリーグ成績・日本代表成績・Gリーグの所属(lib/kawamura)。ほかの選手は null
+  const kawamura = kawamuraExtrasFor(player.full_name);
   const currentDerived = current ? deriveStats(current.totals) : null;
 
   const pastStats = (stats ?? []).filter(
@@ -200,6 +212,7 @@ export default async function PlayerDetailPage({
         player={player}
         currentTeam={currentTeam}
         currentTeamPending={base.currentRosterTeamId === null}
+        currentTeamText={kawamura && !currentTeam ? KAWAMURA_CURRENT_TEAM : undefined}
         showRosterProfile={selectedView === "profile"}
         actions={
           <div className="mb-4 flex flex-wrap gap-2">
@@ -250,6 +263,8 @@ export default async function PlayerDetailPage({
           </dl>
         </section>
       )}
+      {selectedView === "profile" && kawamura && <KawamuraGLeagueCurrentCard extras={kawamura} playerId={playerId} />}
+      {selectedView === "profile" && kawamura && <KawamuraNationalTeamSummary extras={kawamura} playerId={playerId} />}
       {selectedView === "profile" && awardSummaries.length > 0 && <PlayerAwardHistory summaries={awardSummaries} />}
       {selectedView === "profile" && awardLabels.length > 0 && (
         <div className="mt-6 border border-line bg-surface p-6">
@@ -314,7 +329,14 @@ export default async function PlayerDetailPage({
           で確認できます。
         </p>
       )}
-      {selectedView === "gamelog" && (
+      {/* 河村勇輝は今季NBAの出場が無い間、NBAの表の代わりにGリーグの試合別成績を出す */}
+      {selectedView === "gamelog" && kawamura && (
+        <KawamuraGLeagueLogSection
+          extras={kawamura}
+          nbaNote={gameLog.length === 0 ? `${seasonLabel(ROSTER_SEASON)}シーズンのNBAの出場はまだないため、Gリーグの試合別成績を表示しています。` : undefined}
+        />
+      )}
+      {selectedView === "gamelog" && !(kawamura && gameLog.length === 0) && (
         <div className="mt-8 border border-line bg-surface p-4 sm:p-6">
           <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">Game Log</p>
           <h2 className="mb-4 text-lg font-semibold">{seasonLabel(ROSTER_SEASON)} 試合別成績</h2>
@@ -336,6 +358,8 @@ export default async function PlayerDetailPage({
           )}
         </div>
       )}
+      {selectedView === "stats" && kawamura && <KawamuraGLeagueSeasonStats extras={kawamura} />}
+      {selectedView === "stats" && kawamura && <KawamuraNationalTeamStats extras={kawamura} />}
     </PageShell>
   );
 }

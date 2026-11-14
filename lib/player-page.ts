@@ -10,6 +10,7 @@ import { featuredPlayerFor } from "@/lib/featured-players";
 import type { Database } from "@/lib/supabase/types";
 import type { PlayerCurrentSeasonStats } from "@/lib/player-box-score-stats";
 import { deriveStats, formatStat } from "@/lib/stats";
+import { GLEAGUE_CURRENT_SEASON, kawamuraExtrasFor, totalsOf } from "@/lib/kawamura";
 
 type PlayerRow = Database["public"]["Tables"]["players"]["Row"];
 type TeamRow = Database["public"]["Tables"]["teams"]["Row"];
@@ -92,6 +93,8 @@ export function playerPageTitle(
   current: PlayerCurrentSeasonStats | null = null,
 ): string {
   const name = playerDisplayName(player);
+  // 河村勇輝だけ: Gリーグ所属・Gリーグ成績をタイトルに入れる
+  if (kawamuraExtrasFor(player.full_name)) return kawamuraTitle(name, view, current);
   const team = teamShortLabel(currentTeam);
   const tail = [team, current ? currentSeasonTitleText(current) : null].filter(Boolean).join(" ");
   const suffix = tail ? `｜${tail}` : "";
@@ -103,6 +106,21 @@ export function playerPageTitle(
   const featured = featuredPlayerFor(player.full_name);
   if (featured) return `${name}の${height}成績・${featured.hideSalary ? "経歴" : "年俸"}${suffix}`;
   return `${name}の${height}成績・スタッツ${suffix}`;
+}
+
+function kawamuraTitle(name: string, view: "profile" | "stats" | "gamelog", current: PlayerCurrentSeasonStats | null): string {
+  const suffix = `｜サンディエゴ・クリッパーズ（Gリーグ）${current ? ` ${currentSeasonTitleText(current)}` : ""}`;
+  if (view === "stats") return `${name}のシーズン別成績（NBA・Gリーグ・日本代表）${suffix}`;
+  if (view === "gamelog") return `${name}の${current ? "NBA・" : ""}Gリーグ試合別成績（ゲームログ）${suffix}`;
+  return `${name}の身長・成績・経歴・Gリーグ成績${suffix}`;
+}
+
+/** 河村勇輝の説明文用の今季Gリーグ成績(例: 2026-27のGリーグは1試合で平均8.0得点・3.0アシスト。) */
+function kawamuraGLeagueDescriptionText(fullName: string): string {
+  const games = kawamuraExtrasFor(fullName)?.gleagueGames.filter((g) => g.season === GLEAGUE_CURRENT_SEASON) ?? [];
+  if (games.length === 0) return "";
+  const d = deriveStats(totalsOf(games));
+  return `${seasonLabel(GLEAGUE_CURRENT_SEASON)}のGリーグは${games.length}試合で平均${formatStat(d.ppg)}得点・${formatStat(d.apg)}アシスト。`;
 }
 
 /** 説明文用の今季成績(例: 2026-27は5試合で平均5.6得点・4.2リバウンド・1.0アシスト（10月28日時点）。) */
@@ -122,6 +140,9 @@ export function playerPageDescription(
   if (featured) {
     // 紹介文に身長が入っていない選手は「（身長201cm）」を添える
     const height = player.height_cm && !featured.catchphrase.includes("身長") ? `（身長${player.height_cm}cm）` : "";
+    if (kawamuraExtrasFor(player.full_name)) {
+      return `${featured.catchphrase}${currentText}${kawamuraGLeagueDescriptionText(player.full_name)}${featured.nameJa}${height}の経歴・プレースタイル、NBA・Gリーグ・日本代表の成績を日本語で解説。`;
+    }
     return `${featured.catchphrase}${currentText}${featured.nameJa}${height}の経歴・プレースタイル・主なタイトル${featured.hideSalary ? "" : "・年俸"}、シーズン別成績を日本語で解説。`;
   }
   // 例: 「アデイ・マーラ（サンダー／C／身長218cm）」
