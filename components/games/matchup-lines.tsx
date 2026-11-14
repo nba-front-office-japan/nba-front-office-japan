@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { formatJstTime } from "@/lib/games/date";
 import type { GameMatchup, GamePreviewLink } from "@/lib/games/types";
 import { PreviewLink } from "./preview-link";
@@ -7,7 +8,7 @@ import { PreviewLink } from "./preview-link";
 // PCでは時刻の列と同じ幅の空き列を右にも置き、「vs」を中央にそろえる(スマホは幅を優先して空き列なし)。
 // 開始時刻が分かる試合が1つもない日(プレシーズン等)は、時刻の列ごと出さない。
 // 試合プレビュー記事がある試合(試合当日の終わりまで。日本時間)は、その対戦の下に「プレビューを読む」と見出しを出す。
-// 対戦カードのチーム名は各試合ブロックの見出しとして、濃い深紅・ゴシック体の太字で大きめに出す(開始時刻は元のサイズ・色)。
+// 対戦カードのチーム名は各試合ブロックの見出しとして、濃い深紅・ゴシック体の太字で大きめに出す(開始時刻は元のサイズ・色)。長い名前も折り返さず1行。
 // 1試合を1ブロックとし、プレビューの有無にかかわらず同じ上下の余白と下の区切り線を付ける(どのプレビューがどの試合のものか分かるように)。
 export function MatchupLines({ matchups, previews = {} }: { matchups: GameMatchup[]; previews?: Record<string, GamePreviewLink> }) {
   const showTime = matchups.some((m) => m.tipoffAt);
@@ -25,9 +26,9 @@ export function MatchupLines({ matchups, previews = {} }: { matchups: GameMatchu
             {showTime && (
               <span className="text-left tabular-nums font-normal text-muted">{m.tipoffAt ? formatJstTime(m.tipoffAt) : "未定"}</span>
             )}
-            <span className={`text-right ${teamNameClass(m.away)}`}>{m.away}</span>
+            <TeamName name={m.away} align="text-right" />
             <span className="text-xs font-normal text-muted">vs</span>
-            <span className={`text-left ${teamNameClass(m.home)}`}>{m.home}</span>
+            <TeamName name={m.home} align="text-left" />
             {showTime && <span aria-hidden="true" className="hidden sm:block" />}
             {previews[m.gameId] && <PreviewLink preview={previews[m.gameId]} className="col-span-full mt-1.5 font-normal" />}
           </li>
@@ -38,9 +39,17 @@ export function MatchupLines({ matchups, previews = {} }: { matchups: GameMatchu
   );
 }
 
-// チーム名の文字(紺・太字・元の約1.25倍)。スマホでは列が狭いため、長い名前(ティンバーウルブズ等)は少し小さくして1行に収める。
-function teamNameClass(name: string): string {
-  const mobileSize = name.length >= 10 ? "text-[11.5px]" : name.length >= 8 ? "text-[13px]" : "text-[15px]";
-  // 色は「今日」ボタンの赤と同系で、それより濃い深紅(ベージュの紙の上で見出しとしてはっきり読める濃さ)。青はボタン類だけに残す
-  return `np-matchup-team ${mobileSize} font-extrabold text-[#8f2420] sm:text-[17px]`;
+// チーム名(深紅・ゴシック体の太字)。どのチームも1行に収める: 列の幅(コンテナクエリ)を名前の文字数で割った大きさまで文字を小さくする。
+// 上限はスマホ15px・PC17px(globals.css の .np-matchup-team)。短い名前は上限のまま、長い名前(トレイルブレイザーズ等)だけ小さくなる。
+// 全角は1文字、半角(76ers)は0.6文字として数える。
+function TeamName({ name, align }: { name: string; align: string }) {
+  const chars = [...name].reduce((n, ch) => n + (ch.charCodeAt(0) < 0x80 ? 0.6 : 1), 0);
+  return (
+    <span className={`np-matchup-cell ${align}`}>
+      {/* 色は「今日」ボタンの赤と同系で、それより濃い深紅(ベージュの紙の上で見出しとしてはっきり読める濃さ)。青はボタン類だけに残す */}
+      <span className="np-matchup-team font-extrabold text-[#8f2420]" style={{ "--np-team-chars": chars } as CSSProperties}>
+        {name}
+      </span>
+    </span>
+  );
 }

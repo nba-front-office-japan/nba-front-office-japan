@@ -1296,6 +1296,25 @@ body:has(.home-cinema) {
   font-weight: 800;
 }
 
+/* チーム名を必ず1行に収める。列(.np-matchup-cell)の幅 ÷ 文字数(--np-team-chars)まで文字を小さくする。上限はスマホ15px・PC17px。
+   コンテナクエリ(cqw)に未対応の古いブラウザでは、1つ目の font-size(上限の大きさ)のまま1行で表示する */
+.np-matchup-cell {
+  container-type: inline-size;
+  min-width: 0;
+}
+.np-matchup-cell > .np-matchup-team {
+  display: block;
+  white-space: nowrap;
+  font-size: 15px;
+  font-size: min(15px, calc(100cqw / (var(--np-team-chars, 6) + 0.2)));
+}
+@media (min-width: 40rem) {
+  .np-matchup-cell > .np-matchup-team {
+    font-size: 17px;
+    font-size: min(17px, calc(100cqw / (var(--np-team-chars, 6) + 0.2)));
+  }
+}
+
 .np-numeral {
   font-family: var(--font-np-numeral), "Arial Narrow", sans-serif;
   font-variant-numeric: tabular-nums;

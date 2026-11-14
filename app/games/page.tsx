@@ -20,6 +20,15 @@ import {
   todayJst,
 } from "@/lib/games/date";
 
+// 画像を作り直したら v を変える(SNS側のキャッシュを更新するため)
+const GAMES_SHARE_IMAGE = {
+  url: "/games/og-games.jpg?v=1",
+  width: 1200,
+  height: 630,
+  type: "image/jpeg",
+  alt: "The Box Score — NBA試合結果・今日のスコアとボックススコア（日本時間・ネタバレ防止）",
+};
+
 // タイトル・説明文にも試合結果を含めない(検索結果やSNSの共有でネタバレしないため)
 // ?date= 付きのURLも中身は同じページなので、canonical は /games にまとめる
 export const metadata: Metadata = {
@@ -27,6 +36,15 @@ export const metadata: Metadata = {
   description:
     "NBAの試合結果を日本時間で毎日更新。全試合のスコアと選手別ボックススコア（得点・リバウンド・アシスト）を掲載。ネタバレ防止で、結果はボタンを押すまで表示しません。",
   alternates: { canonical: "/games" },
+  // SNSの共有画像は /games 専用(public/games/og-games.jpg、1200×630)。他のページは app/opengraph-image.jpg のまま。
+  // openGraph を書くとレイアウトの openGraph が丸ごと置き換わるため、サイト名・言語・種類もここで指定し直す。
+  openGraph: {
+    siteName: "NBA Front Office Japan",
+    locale: "ja_JP",
+    type: "website",
+    images: [GAMES_SHARE_IMAGE],
+  },
+  twitter: { card: "summary_large_image", images: [GAMES_SHARE_IMAGE] },
 };
 
 // 日付は日本時間。?date=YYYY-MM-DD でその日の試合を表示する(指定なしは今日)。
