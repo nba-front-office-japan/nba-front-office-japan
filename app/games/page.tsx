@@ -22,7 +22,7 @@ import {
 
 // 画像を作り直したら v を変える(SNS側のキャッシュを更新するため)
 const GAMES_SHARE_IMAGE = {
-  url: "/games/og-games.jpg?v=1",
+  url: "/games/og-games.jpg?v=2",
   width: 1200,
   height: 630,
   type: "image/jpeg",
