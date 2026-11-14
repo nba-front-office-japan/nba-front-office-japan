@@ -145,7 +145,7 @@ export function playerPageDescription(
     }
     return `${featured.catchphrase}${currentText}${featured.nameJa}${height}の経歴・プレースタイル・主なタイトル${featured.hideSalary ? "" : "・年俸"}、シーズン別成績を日本語で解説。`;
   }
-  // 例: 「アデイ・マーラ（サンダー／C／身長218cm）」
+  // 例: 「アダイ・マーラ（サンダー／C／身長218cm）」
   const details = [teamShortLabel(currentTeam), player.position, player.height_cm ? `身長${player.height_cm}cm` : null].filter(Boolean);
   const nameJa = player.full_name_ja ?? player.full_name;
   const head = details.length > 0 ? `${nameJa}（${details.join("／")}）` : nameJa;

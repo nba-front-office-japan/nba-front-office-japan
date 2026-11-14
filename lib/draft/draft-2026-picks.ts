@@ -195,7 +195,7 @@ export const DRAFT_2026_PICKS: DraftPick[] = [
     round: 1,
     pickInRound: 12,
     overallPick: 12,
-    playerNameJa: "アデイ・マーラ",
+    playerNameJa: "アダイ・マーラ",
     playerNameEn: "Aday Mara",
     teamDisplay: "Oklahoma City Thunder",
     teamRaw: "オクラホマシティ・サンダー",
