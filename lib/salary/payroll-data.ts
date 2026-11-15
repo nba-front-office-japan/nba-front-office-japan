@@ -5,7 +5,7 @@ import type { SalaryPlayer, SalaryTeam } from "./types";
 
 export const SALARY_TEAMS: SalaryTeam[] = [
   {"abbr": "NYK", "name": "New York Knicks", "totals": [230195861, 226434292, 144555486, 50928570, null, null]},
-  {"abbr": "GSW", "name": "Golden State Warriors", "totals": [223306506, 116454861, 74968268, 8899128, null, null]},
+  {"abbr": "GSW", "name": "Golden State Warriors", "totals": [223306506, 116454861, 74968268, 8899127, null, null]},
   {"abbr": "ORL", "name": "Orlando Magic", "totals": [223288224, 192930667, 197412400, 129193510, 54780000, null]},
   {"abbr": "DEN", "name": "Denver Nuggets", "totals": [221069148, 195049206, 121572007, 26724137, 28448274, null]},
   {"abbr": "PHX", "name": "Phoenix Suns", "totals": [216225506, 198703527, 158117834, 133807565, null, null]},
@@ -65,7 +65,8 @@ export const SALARY_PLAYERS: SalaryPlayer[] = [
   {"name": "Kristaps Porziņģis", "team": "GSW", "age": 31, "salaries": [19512195, 20487805, null, null, null, null], "guaranteed": 19512195, "options": [{"season": "2027-28", "type": "player"}]},
   {"name": "Moses Moody", "team": "GSW", "age": 24, "salaries": [12500000, 13425925, null, null, null, null], "guaranteed": 25925925, "options": []},
   {"name": "Al Horford", "team": "GSW", "age": 40, "salaries": [6822000, 7163100, null, null, null, null], "guaranteed": 13985100, "options": [{"season": "2026-27", "type": "player"}]},
-  {"name": "Yaxel Lendeborg", "team": "GSW", "age": 24, "salaries": [6096240, 6401280, 6706200, 8899128, null, null], "guaranteed": 12497520, "options": []},
+  {"name": "Yaxel Lendeborg", "team": "GSW", "age": 24, "salaries": [6096240, 6401280, 6706200, 8899127, null, null], "guaranteed": 12497520, "options": [{"season": "2028-29", "type": "team"},
+  {"season": "2029-30", "type": "team"}]},
   {"name": "Brandin Podziemski", "team": "GSW", "age": 23, "salaries": [5679459, null, null, null, null, null], "guaranteed": 5679459, "options": [{"season": "2026-27", "type": "team"}]},
   {"name": "De'Anthony Melton", "team": "GSW", "age": 28, "salaries": [5477000, 5750850, null, null, null, null], "guaranteed": 5477000, "options": []},
   {"name": "Gui Santos", "team": "GSW", "age": 24, "salaries": [4629630, 5000000, 5370370, null, null, null], "guaranteed": 9629630, "options": [{"season": "2028-29", "type": "player"}]},
@@ -512,7 +513,8 @@ export const SALARY_PLAYERS: SalaryPlayer[] = [
   {"name": "De'Andre Hunter", "team": "SAC", "age": 28, "salaries": [24910714, null, null, null, null, null], "guaranteed": 24910714, "options": []},
   {"name": "Keegan Murray", "team": "SAC", "age": 26, "salaries": [24137936, 26068965, 27999999, 29931033, 31862067, null], "guaranteed": 140000000, "options": []},
   {"name": "Malik Monk", "team": "SAC", "age": 28, "salaries": [20190035, 21582451, null, null, null, null], "guaranteed": 20190035, "options": [{"season": "2027-28", "type": "player"}]},
-  {"name": "Darius Acuff Jr.", "team": "SAC", "age": 19, "salaries": [8021640, 8422920, 8823600, 11205972, null, null], "guaranteed": 16444560, "options": []},
+  {"name": "Darius Acuff Jr.", "team": "SAC", "age": 19, "salaries": [8021640, 8422920, 8823600, 11205972, null, null], "guaranteed": 16444560, "options": [{"season": "2028-29", "type": "team"},
+  {"season": "2029-30", "type": "team"}]},
   {"name": "Precious Achiuwa", "team": "SAC", "age": 27, "salaries": [5477000, 5750850, null, null, null, null], "guaranteed": 11227850, "options": []},
   {"name": "Nique Clifford", "team": "SAC", "age": 24, "salaries": [3263400, 3418800, 5979481, null, null, null], "guaranteed": 3263400, "options": [{"season": "2027-28", "type": "team"}]},
   {"name": "Alex Karaban", "team": "SAC", "age": 23, "salaries": [2948280, 3095640, 3243120, 5853832, null, null], "guaranteed": 6043920, "options": []},

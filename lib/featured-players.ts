@@ -47,6 +47,8 @@ export type FeaturedCollegeSeason = {
   bpg: number;
   /** 成功率(0〜1)。試投がなければ null */
   fgPct: number | null;
+  /** 3ポイント成功率(0〜1)。入れた選手だけ表に3P%の列を出す */
+  fg3Pct?: number | null;
   ftPct: number | null;
 };
 
