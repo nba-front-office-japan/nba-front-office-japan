@@ -22,7 +22,35 @@ export type FeaturedPlayer = {
   faqs: FeaturedPlayerFaq[];
   /** サラリーデータ(lib/salary)の年俸を表示しない(契約状況がデータと違う選手) */
   hideSalary?: boolean;
+  /** 現在の状況(トレード要求・けがなど、その時点の動き)。観測段階の話は「観測」「浮上」と段階を書く */
+  now?: string[];
+  /**
+   * 契約の説明(年俸・年数・オプション)。ある選手は年俸表にオプション(PO・TO)も出し、
+   * タイトルを「身長・成績・経歴・契約」の型にする。年俸額はサラリーデータ(lib/salary)の数字と一致させる
+   */
+  contract?: string[];
+  /** 大学成績(Stats に「大学成績」のセクションを出す) */
+  college?: FeaturedCollegeStats;
 };
+
+/** 大学のシーズン別成績(1試合平均。出典で確認できた項目だけ) */
+export type FeaturedCollegeSeason = {
+  /** 例: 2023-24 */
+  season: string;
+  school: string;
+  games: number;
+  starts: number;
+  mpg: number;
+  ppg: number;
+  rpg: number;
+  apg: number;
+  bpg: number;
+  /** 成功率(0〜1)。試投がなければ null */
+  fgPct: number | null;
+  ftPct: number | null;
+};
+
+export type FeaturedCollegeStats = { seasons: FeaturedCollegeSeason[]; source: string };
 
 import { FEATURED_PLAYERS_2 } from "@/lib/featured-players-2";
 import { FEATURED_PLAYERS_3 } from "@/lib/featured-players-3";

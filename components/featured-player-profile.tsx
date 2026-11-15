@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { FeaturedPlayer } from "@/lib/featured-players";
 import type { SalaryPlayer } from "@/lib/salary/types";
-import { SALARY_SEASONS, formatUsd } from "@/lib/salary/types";
+import { SALARY_SEASONS, formatUsd, optionFor } from "@/lib/salary/types";
 import { formatUsdJa } from "@/lib/salary/lines";
 
 // 有名選手の選手ページ(Profile)に出す日本語の解説: 経歴・プレースタイル・主な実績・日本との関わり・年俸・よくある質問。
@@ -47,6 +47,8 @@ export function FeaturedPlayerProfile({ featured, salary }: { featured: Featured
         (s): s is { season: (typeof SALARY_SEASONS)[number]; value: number } => s.value !== null,
       )
     : [];
+  // 契約の説明がある選手だけ、年俸表にオプション(PO・TO)も出す
+  const showOptions = Boolean(featured.contract && salary);
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -55,6 +57,11 @@ export function FeaturedPlayerProfile({ featured, salary }: { featured: Featured
 
   return (
     <>
+      {featured.now && featured.now.length > 0 && (
+        <Section id="featured-now" eyebrow="Now" title="現在の状況">
+          <Paragraphs items={featured.now} />
+        </Section>
+      )}
       <Section id="featured-career" eyebrow="Career" title={`${featured.nameJa}の経歴`}>
         <p className="mb-4 text-base font-semibold leading-7">{featured.catchphrase}</p>
         <Paragraphs items={featured.career} />
@@ -81,7 +88,14 @@ export function FeaturedPlayerProfile({ featured, salary }: { featured: Featured
           <dl className="divide-y divide-line text-sm">
             {futureSalaries.map((s) => (
               <div key={s.season} className="flex items-baseline justify-between gap-4 py-2 first:pt-0 last:pb-0">
-                <dt className="font-bold tabular-nums">{s.season}</dt>
+                <dt className="font-bold tabular-nums">
+                  {s.season}
+                  {showOptions && salary && optionFor(salary, s.season) && (
+                    <span className="ml-2 text-xs font-semibold text-muted">
+                      {optionFor(salary, s.season) === "player" ? "プレーヤーオプション" : "チームオプション"}
+                    </span>
+                  )}
+                </dt>
                 <dd className="text-right tabular-nums">
                   {formatUsd(s.value)}
                   <span className="ml-2 text-xs text-muted">{formatUsdJa(s.value)}</span>
@@ -89,6 +103,11 @@ export function FeaturedPlayerProfile({ featured, salary }: { featured: Featured
               </div>
             ))}
           </dl>
+          {featured.contract && featured.contract.length > 0 && (
+            <div className="mt-4 border-t border-line pt-4">
+              <Paragraphs items={featured.contract} />
+            </div>
+          )}
           <p className="mt-4 text-xs text-muted">
             ほかの選手の年俸は
             <Link href="/salary/players" className="mx-1 font-semibold text-blue underline-offset-2 hover:underline">

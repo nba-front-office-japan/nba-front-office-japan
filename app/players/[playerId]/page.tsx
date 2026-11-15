@@ -12,6 +12,7 @@ import { AWARDS_SEASON, getAwardLabel } from "@/lib/awards/constants";
 import { summarizeAwards } from "@/lib/awards/history";
 import { PlayerAwardHistory } from "@/components/player-award-history";
 import { FeaturedPlayerProfile } from "@/components/featured-player-profile";
+import { FeaturedCollegeStatsSection } from "@/components/featured-college-stats";
 import { featuredPlayerFor } from "@/lib/featured-players";
 import { salaryPlayerByName, salaryPlayersByName } from "@/lib/salary/data";
 import { playerDataSummary } from "@/lib/player-summary";
@@ -358,6 +359,8 @@ export default async function PlayerDetailPage({
           )}
         </div>
       )}
+      {/* 大学成績を手で入れた選手(lib/featured-players の college)だけ、NBAの表の下に大学成績を出す */}
+      {selectedView === "stats" && featured?.college && <FeaturedCollegeStatsSection college={featured.college} />}
       {selectedView === "stats" && kawamura && <KawamuraGLeagueSeasonStats extras={kawamura} />}
       {selectedView === "stats" && kawamura && <KawamuraNationalTeamStats extras={kawamura} />}
     </PageShell>

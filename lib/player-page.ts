@@ -98,12 +98,14 @@ export function playerPageTitle(
   const team = teamShortLabel(currentTeam);
   const tail = [team, current ? currentSeasonTitleText(current) : null].filter(Boolean).join(" ");
   const suffix = tail ? `｜${tail}` : "";
-  if (view === "stats") return `${name}のシーズン別成績・スタッツ${suffix}`;
+  const featured = featuredPlayerFor(player.full_name);
+  if (view === "stats") return `${name}のシーズン別成績${featured?.college ? "（NBA・大学）" : "・スタッツ"}${suffix}`;
   if (view === "gamelog") return `${name}の${seasonLabel(ROSTER_SEASON)}試合別成績（ゲームログ）${suffix}`;
   // 「{選手名} 身長」で検索されることが多いため、身長が分かる選手は「身長」を入れる
   const height = player.height_cm ? "身長・" : "";
+  // 契約の説明がある選手(lib/featured-players.ts の contract)は「身長・成績・経歴・契約｜チーム」の型
+  if (featured?.contract) return `${name}の${height}成績・経歴・契約${suffix}`;
   // 有名選手(lib/featured-players.ts)は、検索されやすい「年俸・経歴」も入れる
-  const featured = featuredPlayerFor(player.full_name);
   if (featured) return `${name}の${height}成績・${featured.hideSalary ? "経歴" : "年俸"}${suffix}`;
   return `${name}の${height}成績・スタッツ${suffix}`;
 }
@@ -143,7 +145,8 @@ export function playerPageDescription(
     if (kawamuraExtrasFor(player.full_name)) {
       return `${featured.catchphrase}${currentText}${kawamuraGLeagueDescriptionText(player.full_name)}${featured.nameJa}${height}の経歴・プレースタイル、NBA・Gリーグ・日本代表の成績を日本語で解説。`;
     }
-    return `${featured.catchphrase}${currentText}${featured.nameJa}${height}の経歴・プレースタイル・主なタイトル${featured.hideSalary ? "" : "・年俸"}、シーズン別成績を日本語で解説。`;
+    const salaryText = featured.hideSalary ? "" : featured.contract ? "・年俸と契約" : "・年俸";
+    return `${featured.catchphrase}${currentText}${featured.nameJa}${height}の経歴・プレースタイル・主なタイトル${salaryText}、シーズン別成績${featured.college ? "（大学成績を含む）" : ""}を日本語で解説。`;
   }
   // 例: 「アダイ・マーラ（サンダー／C／身長218cm）」
   const details = [teamShortLabel(currentTeam), player.position, player.height_cm ? `身長${player.height_cm}cm` : null].filter(Boolean);
