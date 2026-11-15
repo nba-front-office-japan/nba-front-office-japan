@@ -4,7 +4,7 @@
 import type { SalaryPlayer, SalaryTeam } from "./types";
 
 export const SALARY_TEAMS: SalaryTeam[] = [
-  {"abbr": "NYK", "name": "New York Knicks", "totals": [227746440, 226434292, 144555486, 50928570, null, null]},
+  {"abbr": "NYK", "name": "New York Knicks", "totals": [230195861, 226434292, 144555486, 50928570, null, null]},
   {"abbr": "GSW", "name": "Golden State Warriors", "totals": [223306506, 116454861, 74968268, 8899128, null, null]},
   {"abbr": "ORL", "name": "Orlando Magic", "totals": [223288224, 192930667, 197412400, 129193510, 54780000, null]},
   {"abbr": "DEN", "name": "Denver Nuggets", "totals": [221069148, 195049206, 121572007, 26724137, 28448274, null]},
@@ -148,7 +148,8 @@ export const SALARY_PLAYERS: SalaryPlayer[] = [
   {"name": "Alex Caruso", "team": "OKC", "age": 32, "salaries": [19550160, 20998320, 22446480, null, null, null], "guaranteed": 62994960, "options": []},
   {"name": "Jaylin Williams", "team": "OKC", "age": 24, "salaries": [7774648, 7774648, null, null, null, null], "guaranteed": 7774648, "options": []},
   {"name": "Cason Wallace", "team": "OKC", "age": 22, "salaries": [7420806, null, null, null, null, null], "guaranteed": 7420806, "options": []},
-  {"name": "Aday Mara", "team": "OKC", "age": 21, "salaries": [5791680, 6081480, 6371160, 8779458, null, null], "guaranteed": 11873160, "options": [{"season": "2028-29", "type": "team"}, {"season": "2029-30", "type": "team"}]},
+  {"name": "Aday Mara", "team": "OKC", "age": 21, "salaries": [5791680, 6081480, 6371160, 8779458, null, null], "guaranteed": 11873160, "options": [{"season": "2028-29", "type": "team"},
+  {"season": "2029-30", "type": "team"}]},
   {"name": "Nikola Topić", "team": "OKC", "age": 21, "salaries": [5429760, 7482210, null, null, null, null], "guaranteed": 5429760, "options": []},
   {"name": "Kenrich Williams", "team": "OKC", "age": 31, "salaries": [5000000, null, null, null, null, null], "guaranteed": 5000000, "options": []},
   {"name": "Thomas Sorber", "team": "OKC", "age": 20, "salaries": [4887720, 5120400, 7849573, null, null, null], "guaranteed": 4887720, "options": []},
