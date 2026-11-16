@@ -28,7 +28,9 @@ export default async function FeaturedPlayersPage() {
   const japanese = FEATURED_PLAYERS.slice(0, 3);
   const starNames = [...FEATURED_PLAYERS.slice(3).map((p) => p.name).filter((n) => n !== "Ja Morant"), "Joel Embiid"];
   const stars = starNames.flatMap((name) => links.filter((l) => l.featured.name === name));
-  const others = links.filter((l) => !japanese.includes(l.featured) && !starNames.includes(l.featured.name));
+  // 引退した選手(解説の retired)は最後の「引退した名選手」に分ける
+  const retired = links.filter((l) => l.featured.retired);
+  const others = links.filter((l) => !japanese.includes(l.featured) && !starNames.includes(l.featured.name) && !l.featured.retired);
   // モラントは注目の選手の3番目(エンビードがいた位置)に置く
   const morant = others.findIndex((l) => l.featured.name === "Ja Morant");
   if (morant >= 0) others.splice(2, 0, ...others.splice(morant, 1));
@@ -49,6 +51,7 @@ export default async function FeaturedPlayersPage() {
           { id: "stars", title: "トップスター", lead: "MVP経験者やリーグの顔となるスーパースター。", players: stars },
           { id: "more", title: "注目の選手", lead: "オールスター選手や今後が楽しみな若手など。", players: others },
           { id: "japanese", title: "日本人選手", lead: "NBAに挑戦する日本人選手。", players: links.filter((l) => japanese.includes(l.featured)) },
+          { id: "retired", title: "引退した名選手", lead: "殿堂入りした往年の名選手。", players: retired },
         ]}
       />
     </PageShell>

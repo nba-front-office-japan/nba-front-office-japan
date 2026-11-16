@@ -13,6 +13,8 @@ import { summarizeAwards } from "@/lib/awards/history";
 import { PlayerAwardHistory } from "@/components/player-award-history";
 import { FeaturedPlayerProfile } from "@/components/featured-player-profile";
 import { FeaturedCollegeStatsSection } from "@/components/featured-college-stats";
+import { LegendStatsTable } from "@/components/legends/legend-stats-table";
+import { collapseLegendSeasons } from "@/lib/legends/calc";
 import { featuredPlayerFor } from "@/lib/featured-players";
 import { salaryPlayerByName, salaryPlayersByName } from "@/lib/salary/data";
 import { playerDataSummary } from "@/lib/player-summary";
@@ -214,10 +216,12 @@ export default async function PlayerDetailPage({
         currentTeam={currentTeam}
         currentTeamPending={base.currentRosterTeamId === null}
         currentTeamText={kawamura && !currentTeam ? KAWAMURA_CURRENT_TEAM : undefined}
+        retiredText={featured?.retired}
         showRosterProfile={selectedView === "profile"}
         actions={
           <div className="mb-4 flex flex-wrap gap-2">
-            {VIEW_OPTIONS.map((opt) => (
+            {/* 引退した選手(解説の retired)は今季の試合が無いので Game Log のタブを出さない */}
+            {VIEW_OPTIONS.filter((opt) => !(featured?.retired && opt.view === "gamelog")).map((opt) => (
               <Link
                 key={opt.view}
                 href={opt.view === "profile" ? `/players/${playerId}` : `/players/${playerId}?view=${opt.view}`}
@@ -344,7 +348,22 @@ export default async function PlayerDetailPage({
           <PlayerGameLog rows={gameLog} seasonLabel={seasonLabel(ROSTER_SEASON)} />
         </div>
       )}
-      {selectedView === "stats" && (
+      {/* NBAの通算成績を手で入れた引退選手(解説の careerStats)は、DBの表の代わりにレジェンド枠と同じ表を出す */}
+      {selectedView === "stats" && featured?.careerStats && statRows.length === 0 && (
+        <div className="mt-8 border border-line bg-surface p-4 sm:p-6">
+          <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">Season Stats</p>
+          <h2 className="mb-4 text-lg font-semibold">シーズン別成績（全期間）</h2>
+          <LegendStatsTable
+            regular={collapseLegendSeasons(featured.careerStats.regularSeason)}
+            playoffs={collapseLegendSeasons(featured.careerStats.playoffs)}
+            playoffsAvailable
+          />
+          <p className="mt-3 text-xs text-muted">
+            1試合平均。移籍した年は2チームの合計です。出典: {featured.careerStats.source}
+          </p>
+        </div>
+      )}
+      {selectedView === "stats" && !(featured?.careerStats && statRows.length === 0) && (
         <div className="mt-8 border border-line bg-surface p-6">
           <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[1.3px] text-blue">
             Season Stats

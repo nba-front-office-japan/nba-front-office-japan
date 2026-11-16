@@ -3,6 +3,8 @@ import type { FeaturedPlayer } from "@/lib/featured-players";
 import type { SalaryPlayer } from "@/lib/salary/types";
 import { SALARY_SEASONS, formatUsd, optionFor } from "@/lib/salary/types";
 import { formatUsdJa } from "@/lib/salary/lines";
+import { parseRelatedMediaUrl, type RelatedMedia } from "@/lib/news/related-media";
+import { MediaEmbed, MediaScriptLoaders } from "@/components/news/related-media";
 
 // 有名選手の選手ページ(Profile)に出す日本語の解説: 経歴・プレースタイル・主な実績・日本との関わり・年俸・よくある質問。
 // よくある質問は FAQPage の構造化データ(JSON-LD)にも出す。
@@ -49,6 +51,9 @@ export function FeaturedPlayerProfile({ featured, salary }: { featured: Featured
     : [];
   // 契約の説明がある選手だけ、年俸表にオプション(PO・TO)も出す
   const showOptions = Boolean(featured.contract && salary);
+  // 動画(ニュースの関連メディアと同じ検証。使えないURLは出さない)と関連コラム。どちらも無い選手には欄を出さない
+  const videos = (featured.videos ?? []).map(parseRelatedMediaUrl).filter((m): m is RelatedMedia => m !== null);
+  const columns = featured.columns ?? [];
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -78,6 +83,30 @@ export function FeaturedPlayerProfile({ featured, salary }: { featured: Featured
           ))}
         </ul>
       </Section>
+      {(videos.length > 0 || columns.length > 0) && (
+        <Section id="featured-media" eyebrow="Video & Column" title="動画・コラム">
+          {videos.length > 0 && (
+            <div className="space-y-6">
+              {videos.map((m) => (
+                <MediaEmbed key={m.url} media={m} />
+              ))}
+              <MediaScriptLoaders media={videos} />
+            </div>
+          )}
+          {columns.length > 0 && (
+            <ul className={`space-y-2 text-sm ${videos.length > 0 ? "mt-6 border-t border-line pt-4" : ""}`}>
+              {columns.map((c) => (
+                <li key={c.href} className="border-l-[3px] border-blue pl-3">
+                  <span className="mr-2 text-xs font-bold text-muted">コラム</span>
+                  <Link href={c.href} className="font-semibold hover:text-blue hover:underline">
+                    {c.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Section>
+      )}
       {featured.japan && featured.japan.length > 0 && (
         <Section id="featured-japan" eyebrow="Japan" title="日本との関わり">
           <Paragraphs items={featured.japan} />

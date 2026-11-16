@@ -31,7 +31,29 @@ export type FeaturedPlayer = {
   contract?: string[];
   /** 大学成績(Stats に「大学成績」のセクションを出す) */
   college?: FeaturedCollegeStats;
+  /**
+   * 引退した選手の表示(例: 2020年に引退)。上部の「ロスター準備中」の代わりに出し、Game Log のタブを出さない。
+   * 人気選手ガイドでは「引退した名選手」に並べる
+   */
+  retired?: string;
+  /** タイトルの末尾(所属チーム・今季成績が無い選手だけ。例: 2024年殿堂入り) */
+  titleSuffix?: string;
+  /**
+   * NBAの通算成績を手で入れた選手(DBの player_stats に無い引退選手)。Stats にレジェンド枠と同じ表
+   * (レギュラーシーズン/プレーオフ切り替え・通算)を出す。DBに入れないのは /stats の一覧に昔のシーズンを混ぜないため
+   */
+  careerStats?: FeaturedCareerStats;
+  /**
+   * Profile の「動画・コラム」に埋め込む動画のURL(YouTube の動画・Shorts。ニュースの関連メディアと同じ検証・表示)。
+   * 縦型のショートは https://www.youtube.com/shorts/動画ID の形で書くと縦長で表示する。無い選手には欄を出さない
+   */
+  videos?: string[];
+  /** Profile の「動画・コラム」に出す関連コラムへのリンク */
+  columns?: { title: string; href: string }[];
 };
+
+/** 手で入れたNBAの通算成績(Basketball-Reference の Totals。移籍した年はチーム別の行と TOT 行) */
+export type FeaturedCareerStats = { source: string; regularSeason: LegendSeasonRow[]; playoffs: LegendSeasonRow[] };
 
 /** 大学のシーズン別成績(1試合平均。出典で確認できた項目だけ) */
 export type FeaturedCollegeSeason = {
@@ -54,8 +76,10 @@ export type FeaturedCollegeSeason = {
 
 export type FeaturedCollegeStats = { seasons: FeaturedCollegeSeason[]; source: string };
 
+import type { LegendSeasonRow } from "@/lib/legends/calc";
 import { FEATURED_PLAYERS_2 } from "@/lib/featured-players-2";
 import { FEATURED_PLAYERS_3 } from "@/lib/featured-players-3";
+import { FEATURED_PLAYERS_RETIRED } from "@/lib/featured-players-retired";
 
 const AS_OF = "2026年10月";
 
@@ -483,8 +507,8 @@ export function normalizeName(name: string): string {
   return name.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 }
 
-/** 解説のある選手すべて(第1弾15人+第2弾50人+第3弾35人) */
-export const ALL_FEATURED_PLAYERS: FeaturedPlayer[] = [...FEATURED_PLAYERS, ...FEATURED_PLAYERS_2, ...FEATURED_PLAYERS_3];
+/** 解説のある選手すべて(第1弾15人+第2弾50人+第3弾35人+追加分、引退した名選手) */
+export const ALL_FEATURED_PLAYERS: FeaturedPlayer[] = [...FEATURED_PLAYERS, ...FEATURED_PLAYERS_2, ...FEATURED_PLAYERS_3, ...FEATURED_PLAYERS_RETIRED];
 
 const FEATURED_BY_NAME = new Map(
   ALL_FEATURED_PLAYERS.flatMap((p) => [p.name, ...(p.aliases ?? [])].map((n) => [normalizeName(n), p] as const)),

@@ -18,6 +18,7 @@ export function PlayerHeader({
   actions,
   showRosterProfile = true,
   currentTeamText,
+  retiredText,
 }: {
   player: Player;
   currentTeam: Team | null;
@@ -28,6 +29,8 @@ export function PlayerHeader({
   showRosterProfile?: boolean;
   /** NBAのロスター外の所属を出す選手(河村勇輝のGリーグ所属)だけ指定する。指定すると所属の表記をこの文に置き換える */
   currentTeamText?: string;
+  /** 引退した選手の表示(例: 2020年に引退)。所属の表示の代わりに出す */
+  retiredText?: string;
 }) {
   const displayName = player.full_name_ja ?? player.full_name;
   const showEnglishSubtitle = Boolean(player.full_name_ja);
@@ -45,7 +48,9 @@ export function PlayerHeader({
         <p className="mt-0.5 text-sm text-muted">{player.full_name}</p>
       )}
       <p className="mb-6 mt-1 text-sm text-muted">
-        {currentTeamText ? (
+        {retiredText ? (
+          `${retiredText} ・ `
+        ) : currentTeamText ? (
           `${currentTeamText} ・ 2026-27現在所属 ・ `
         ) : currentTeamPending ? (
           "ロスター準備中（2026-27）"

@@ -97,8 +97,9 @@ export function playerPageTitle(
   if (kawamuraExtrasFor(player.full_name)) return kawamuraTitle(name, view, current);
   const team = teamShortLabel(currentTeam);
   const tail = [team, current ? currentSeasonTitleText(current) : null].filter(Boolean).join(" ");
-  const suffix = tail ? `｜${tail}` : "";
   const featured = featuredPlayerFor(player.full_name);
+  // 所属・今季成績が無い引退選手などは、解説の titleSuffix(例: 2024年殿堂入り)を付ける
+  const suffix = tail ? `｜${tail}` : featured?.titleSuffix ? `｜${featured.titleSuffix}` : "";
   if (view === "stats") return `${name}のシーズン別成績${featured?.college ? "（NBA・大学）" : "・スタッツ"}${suffix}`;
   if (view === "gamelog") return `${name}の${seasonLabel(ROSTER_SEASON)}試合別成績（ゲームログ）${suffix}`;
   // 「{選手名} 身長」で検索されることが多いため、身長が分かる選手は「身長」を入れる
