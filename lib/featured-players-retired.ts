@@ -53,8 +53,8 @@ export const FEATURED_PLAYERS_RETIRED: FeaturedPlayer[] = [
       { q: "ヴィンス・カーターはスラムダンクコンテストで優勝した？", a: "はい。2000年のスラムダンクコンテストで優勝しました。" },
     ],
     careerStats: vinceCarterStats,
-    // 動画: 2026-11-16に登録した https://www.youtube.com/shorts/pW2NB1vtULY は YouTube 側で削除済み(埋め込みが「削除されました」になる)。
-    // 完成版の新しいURLが分かったら videos: ["https://www.youtube.com/shorts/動画ID"] を戻す
+    // 公式チャンネルの完成版(2026-11-16登録)。最初に登録した pW2NB1vtULY は YouTube 側で削除済み
+    videos: ["https://www.youtube.com/shorts/rXRgPJ92l1c"],
     columns: [{ title: "ヴィンス・カーターの伝説の1枚はどのようにして生まれたか", href: "/news/9bc673ff-7656-4f50-942e-84ca0d111ed3" }],
   },
 ];
