@@ -4,14 +4,20 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ROSTER_SEASON, seasonLabel } from "@/lib/seasons";
 
-const navItems = [
+// 1段目: 毎日の入口
+const primaryNavItems = [
   { href: "/", label: "HOME" },
   { href: "/news", label: "NEWS" },
   { href: "/games", label: "試合結果" },
   { href: "/standings", label: "順位表" },
   { href: "/teams", label: "TEAMS" },
   { href: "/stats", label: "PLAYERS" },
+];
+
+// 2段目: 読み物と資料(スマホでは折り返して全項目を見せる)
+const secondaryNavItems = [
   { href: "/legends", label: "レジェンド" },
+  { href: "/videos", label: "動画" },
   { href: "/awards", label: "AWARDS" },
   { href: "/players", label: `選手名鑑 ${seasonLabel(ROSTER_SEASON)}` },
   { href: "/draft", label: "DRAFT" },
@@ -57,17 +63,33 @@ export function SiteHeader() {
               THE BUSINESS OF BASKETBALL
             </span>
           </div>
-          <nav className="mt-6 flex gap-6 overflow-x-auto text-[13px] font-bold sm:gap-7">
-            {navItems.map((item) => {
+          <nav className="mt-6 flex gap-3.5 overflow-x-auto text-[12px] font-bold sm:gap-7 sm:text-[13px]">
+            {primaryNavItems.map((item) => {
               const isActive = isNavActive(item.href, pathname);
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`whitespace-nowrap border-b-[3px] pb-[15px] transition-colors ${
+                  className={`whitespace-nowrap border-b-[3px] pb-3 transition-colors ${
                     isActive
                       ? "border-gold text-white"
                       : "border-transparent text-slate-300 hover:text-white"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+          <nav className="flex flex-wrap gap-x-3.5 gap-y-2 border-t border-white/10 py-3 text-[12px] font-semibold sm:gap-x-6">
+            {secondaryNavItems.map((item) => {
+              const isActive = isNavActive(item.href, pathname);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`whitespace-nowrap transition-colors ${
+                    isActive ? "text-gold" : "text-slate-400 hover:text-white"
                   }`}
                 >
                   {item.label}
