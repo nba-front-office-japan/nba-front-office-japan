@@ -48,7 +48,7 @@ export function LeagueTitlesSection({ titles, name }: { titles: LeagueTitle[]; n
           </Link>
           の年度別リーダーと同じ基準です。平均・成功率は、規定の試合数などを満たした選手の中での1位です。
         </li>
-        <li>・1969-70より前のNBAは、公式には得点・リバウンド・アシストを合計で1位を決めていたため、公式記録と1位が異なるシーズンがあります。</li>
+        <li>・NBAの得点王・リバウンド王・アシスト王は、1968-69までは公式の決め方に合わせて合計の1位です（1969-70以降は1試合平均）。</li>
         <li>・出典: Basketball-Reference（公開データセット）</li>
       </ul>
     </section>

@@ -246,19 +246,33 @@ def main() -> int:
     def entry(r: dict, value: float, stat: str) -> dict:
         return {"id": r["id"], "team": r["team"], "g": int(r["g"] or 0), "value": round(value, digits.get(stat, 1))}
 
+    # NBA は 1968-69 まで、得点・リバウンド・アシストのタイトルを合計で決めていた(NBA公式)。
+    # その年は規定なしの合計で1位を決め、値も合計で持つ(byTotal=True)。平均で決めた場合と1位が違うのは8シーズン
+    # (例: 1967-68 は得点王デイブ・ビング、アシスト王ウィルト・チェンバレン)
+    def by_total_title(stat: str, r: dict) -> bool:
+        return stat in ("pts", "trb", "ast") and r["lg"] == "NBA" and r["season"] <= 1969
+
     # 年度別リーダー(同率1位は全員)
     yearly: dict[str, list[dict]] = {}
     for stat, fn in yearly_stats.items():
         groups: dict[tuple[int, str], list[tuple[float, dict]]] = defaultdict(list)
         for r in seasons:
-            v = fn(r)
+            if by_total_title(stat, r):
+                v = r[stat] if recorded(stat, r["lg"], r["season"]) else None
+            else:
+                v = fn(r)
             if v is not None:
                 groups[(r["season"], r["lg"])].append((v, r))
         out = []
         for (season, lg), vals in sorted(groups.items(), key=lambda x: (-x[0][0], x[0][1] != "NBA")):
             nd = digits.get(stat, 1)
             best = max(round(v, nd + 2) for v, _ in vals)
-            leaders = [entry(r, v, stat) for v, r in vals if round(v, nd + 2) == best]
+            total_based = by_total_title(stat, vals[0][1])
+            leaders = [
+                {**entry(r, v, stat), "value": int(v), "byTotal": True} if total_based else entry(r, v, stat)
+                for v, r in vals
+                if round(v, nd + 2) == best
+            ]
             out.append({"season": season - 1, "lg": lg, "leaders": leaders})
         yearly[stat] = out
 

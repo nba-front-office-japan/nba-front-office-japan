@@ -166,7 +166,16 @@ function YearlyTable({ stat, lg, links }: { stat: LeaderStat; lg: LeagueFilter; 
               </td>
               <td className={`${td} hidden text-muted sm:table-cell`}>{e.team?.replaceAll("/", "・")}</td>
               <td className={`${td} hidden tabular-nums text-muted sm:table-cell`}>{e.g}</td>
-              <td className={`${td} text-right font-semibold tabular-nums`}>{fmt(stat, e.value, "yearly")}</td>
+              <td className={`${td} text-right font-semibold tabular-nums`}>
+                {e.byTotal ? (
+                  <>
+                    {e.value.toLocaleString("en-US")}
+                    <span className="ml-1 text-[11px] font-normal text-muted">合計</span>
+                  </>
+                ) : (
+                  fmt(stat, e.value, "yearly")
+                )}
+              </td>
             </tr>
           )),
         )}
@@ -274,6 +283,7 @@ export default async function LegendLeadersPage({ searchParams }: PageProps<"/le
         <li>・年度別リーダーは「リーグ」でNBAだけ・ABAだけに絞り込めます（ABAは1967-68〜1975-76の9シーズン）。</li>
         <li>・スティール・ブロックは1973-74（ABAは1972-73）以降、3PはNBAが1979-80以降に記録開始。記録の無い年の試合は平均の計算に入れていません。ただしABA 1971-72はアーティス・ギルモアのブロック（422本）だけ記録があるため、通算記録・通算平均に含めています。</li>
         <li>・規定（試合数・成功数など）は年代により異なり、Basketball-Referenceの基準に合わせています。途中移籍したシーズンは合計で表示しています。</li>
+        <li>・NBAの得点・リバウンド・アシストは、1968-69までは公式に合計で1位を決めていたため、その年は合計の1位を「合計」と付けて表示しています（1969-70以降は1試合平均）。</li>
         <li>・出典: Basketball-Reference（公開データセット sumitrodatta/bball-reference-datasets）</li>
         <li>
           ・項目の意味は

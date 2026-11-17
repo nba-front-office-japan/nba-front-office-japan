@@ -12,9 +12,9 @@ const YEARLY = (raw as unknown as { yearly: Record<string, YearlyLeaders[]> }).y
 export type LeagueTitleStat = "pts" | "trb" | "ast" | "stl" | "blk" | "fg_pct" | "x3p" | "x3p_pct";
 
 export const LEAGUE_TITLE_DEFS: { stat: LeagueTitleStat; label: string; note: string }[] = [
-  { stat: "pts", label: "得点王", note: "1試合平均得点" },
-  { stat: "trb", label: "リバウンド王", note: "1試合平均リバウンド" },
-  { stat: "ast", label: "アシスト王", note: "1試合平均アシスト" },
+  { stat: "pts", label: "得点王", note: "1試合平均得点（1968-69までのNBAは合計）" },
+  { stat: "trb", label: "リバウンド王", note: "1試合平均リバウンド（1968-69までのNBAは合計）" },
+  { stat: "ast", label: "アシスト王", note: "1試合平均アシスト（1968-69までのNBAは合計）" },
   { stat: "stl", label: "スティール王", note: "1試合平均スティール" },
   { stat: "blk", label: "ブロック王", note: "1試合平均ブロック" },
   { stat: "fg_pct", label: "FG%1位", note: "フィールドゴール成功率" },

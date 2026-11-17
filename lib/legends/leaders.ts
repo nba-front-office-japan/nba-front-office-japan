@@ -15,6 +15,8 @@ export type LeaderEntry = {
   from?: number;
   to?: number;
   lgs?: string[];
+  /** 年度別リーダーで、合計で1位を決めたシーズン(NBA 1968-69までの得点・リバウンド・アシスト)。value は合計 */
+  byTotal?: boolean;
 };
 export type YearlyLeaders = { season: number; lg: "NBA" | "ABA"; leaders: LeaderEntry[] };
 
@@ -42,7 +44,7 @@ export const VIEW_OPTIONS: { value: LeaderView; label: string; title: string; de
     value: "yearly",
     label: "年度別リーダー",
     title: "年度別リーダー",
-    description: "各シーズンの1位（タイトル獲得者）。平均・成功率は、規定の試合数などを満たした選手が対象です。",
+    description: "各シーズンの1位（タイトル獲得者）。平均・成功率は、規定の試合数などを満たした選手が対象です。NBAの得点・リバウンド・アシストは、1968-69までは公式と同じく合計の1位です。",
   },
   { value: "total", label: "通算記録", title: "通算記録ランキング", description: "NBAとABAの通算合計の歴代上位50人です。" },
   {
