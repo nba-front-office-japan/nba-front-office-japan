@@ -27,6 +27,8 @@ export type LegendSeasonRow = LegendStatLine & {
   team: string;
   isTotal: boolean;
   age: number | null;
+  /** ABAのシーズンだけ "ABA"(引退した名選手の解説で、NBAとABAを合算して出す選手用)。無ければNBA */
+  league?: string;
 };
 
 export type LegendAwardRow = {
@@ -71,7 +73,7 @@ export type Legend = {
 // ---------------------------------------------------------------------------
 
 /** 1シーズン1行にまとめた表示用の行。移籍した年は TOT 行を使い、チーム名を並べる */
-export type LegendDisplaySeason = LegendStatLine & { season: number; teams: string[]; age: number | null };
+export type LegendDisplaySeason = LegendStatLine & { season: number; teams: string[]; age: number | null; league?: string };
 
 export function collapseLegendSeasons(rows: LegendSeasonRow[]): LegendDisplaySeason[] {
   const bySeason = new Map<number, LegendSeasonRow[]>();

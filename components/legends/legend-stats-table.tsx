@@ -26,7 +26,10 @@ function SeasonRow({ s }: { s: LegendDisplaySeason }) {
   return (
     <tr className="border-b border-line/60 hover:bg-[#f6f9ff] dark:hover:bg-white/[.03]">
       <td className="whitespace-nowrap px-2 py-2.5 font-bold">{formatSeasonLabel(s.season)}</td>
-      <td className="whitespace-nowrap px-2 py-2.5 text-muted">{s.teams.join("・")}</td>
+      <td className="whitespace-nowrap px-2 py-2.5 text-muted">
+        {s.teams.join("・")}
+        {s.league === "ABA" && <span className="ml-1 text-xs font-bold">(ABA)</span>}
+      </td>
       <td className="whitespace-nowrap px-2 py-2.5 tabular-nums">{s.age ?? DASH}</td>
       <td className="whitespace-nowrap px-2 py-2.5 tabular-nums">{s.gp ?? DASH}</td>
       <td className="whitespace-nowrap px-2 py-2.5 tabular-nums">{pg(s.min)}</td>
@@ -98,6 +101,7 @@ export function LegendStatsTable({
 }) {
   const [type, setType] = useState<"regular" | "playoffs">("regular");
   const rows = type === "regular" ? regular : playoffs;
+  const hasAba = [...regular, ...playoffs].some((s) => s.league === "ABA");
 
   return (
     <div>
@@ -153,7 +157,13 @@ export function LegendStatsTable({
       <ul className="mt-3 space-y-1 text-xs leading-relaxed text-muted">
         <li>・MIN〜BLK・TOVは1試合平均。移籍したシーズンは合計を1行で表示し、在籍チームを並べています。</li>
         <li>・「—」は公式記録が無い項目です（出場時間は1951-52以降、スティール・ブロックは1973-74以降、ターンオーバーは1977-78以降、3Pは1979-80以降に記録開始）。通算平均は、その項目が記録されているシーズンの試合だけで計算しています。</li>
-        <li>・NBA（前身のBAAを含む）での成績です。ABAの成績は含みません。</li>
+        {hasAba ? (
+          <li>
+            ・NBAとABAの成績を合わせています（ABAのシーズンは「(ABA)」と表示）。通算平均・通算合計も両リーグの合計で、オールタイムリーダーズの通算記録と同じ数え方です。ABAではブロックは1971-72以降、スティールは1972-73以降、3Pはリーグ創設時から記録があります。
+          </li>
+        ) : (
+          <li>・NBA（前身のBAAを含む）での成績です。ABAの成績は含みません。</li>
+        )}
         <li>・出典: Basketball-Reference（公開データセット sumitrodatta/bball-reference-datasets）</li>
         <li>
           ・項目の意味は
