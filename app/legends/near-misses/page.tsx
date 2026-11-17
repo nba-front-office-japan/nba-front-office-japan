@@ -35,6 +35,12 @@ export default async function NearMissesPage() {
         には選ばれなかったものの、殿堂入りやタイトル獲得で歴史に名を残した引退選手たち。経歴・プレースタイル・通算成績（レギュラーシーズン・プレーオフ）を各選手のページで紹介しています。
       </p>
 
+      {players.some(({ fp }) => fp.name === "Yuta Tabuse") && (
+        <p className="-mt-3 mb-6 max-w-3xl text-[15px] leading-7">
+          一覧の最後では、日本人初のNBA選手・<strong>田臥勇太</strong>（現役・宇都宮ブレックス所属）も紹介しています。
+        </p>
+      )}
+
       <LegendsTabs current="near" />
 
       <p className="mb-3 text-xs text-muted">{players.length}人を掲載（順次追加します）</p>

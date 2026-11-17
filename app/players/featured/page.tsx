@@ -29,7 +29,9 @@ export default async function FeaturedPlayersPage() {
   const starNames = [...FEATURED_PLAYERS.slice(3).map((p) => p.name).filter((n) => n !== "Ja Morant"), "Joel Embiid"];
   const stars = starNames.flatMap((name) => links.filter((l) => l.featured.name === name));
   // 引退した選手(解説の retired)は最後の「引退した名選手」に分ける
-  const retired = links.filter((l) => l.featured.retired);
+  // 田臥勇太は現役(Bリーグ)なので、引退した名選手ではなく日本人選手の枠に出す
+  const isTabuse = (l: (typeof links)[number]) => l.featured.name === "Yuta Tabuse";
+  const retired = links.filter((l) => l.featured.retired && !isTabuse(l));
   const others = links.filter((l) => !japanese.includes(l.featured) && !starNames.includes(l.featured.name) && !l.featured.retired);
   // モラントは注目の選手の3番目(エンビードがいた位置)に置く
   const morant = others.findIndex((l) => l.featured.name === "Ja Morant");
@@ -50,7 +52,7 @@ export default async function FeaturedPlayersPage() {
         groups={[
           { id: "stars", title: "トップスター", lead: "MVP経験者やリーグの顔となるスーパースター。", players: stars },
           { id: "more", title: "注目の選手", lead: "オールスター選手や今後が楽しみな若手など。", players: others },
-          { id: "japanese", title: "日本人選手", lead: "NBAに挑戦する日本人選手。", players: links.filter((l) => japanese.includes(l.featured)) },
+          { id: "japanese", title: "日本人選手", lead: "NBAに挑戦する日本人選手。", players: links.filter((l) => japanese.includes(l.featured) || isTabuse(l)) },
           { id: "retired", title: "引退した名選手", lead: "殿堂入りやタイトル獲得で歴史に名を残した往年の名選手。", players: retired },
         ]}
       />

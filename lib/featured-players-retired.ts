@@ -29,6 +29,7 @@ import bernardKingStats from "@/data/players/bernard-king-stats.json";
 import artisGilmoreStats from "@/data/players/artis-gilmore-stats.json";
 import dennisJohnsonStats from "@/data/players/dennis-johnson-stats.json";
 import ralphSampsonStats from "@/data/players/ralph-sampson-stats.json";
+import yutaTabuseStats from "@/data/players/yuta-tabuse-stats.json";
 
 // すべて NBA75周年記念チームに入っていない引退選手。/legends の「惜しくも75選外」(/legends/near-misses)にも、この並びで出す
 export const FEATURED_PLAYERS_RETIRED: FeaturedPlayer[] = [
@@ -1173,5 +1174,43 @@ export const FEATURED_PLAYERS_RETIRED: FeaturedPlayer[] = [
       { q: "ラルフ・サンプソンは殿堂入りしている？", a: "はい。2012年にネイスミス・バスケットボール殿堂入りしました。" },
     ],
     careerStats: ralphSampsonStats,
+  },
+  // 田臥勇太は現役(Bリーグ・宇都宮ブレックス)。「惜しくも75選外」の最後に「日本人初のNBA選手」として載せる(2026-11-17 yuの判断)。
+  // retired は見出しの文言として使い、「引退」とは書かない。人気選手ガイドでは日本人選手の枠に出す(app/players/featured)
+  {
+    name: "Yuta Tabuse",
+    nameJa: "田臥勇太",
+    brefId: "tabusyu01",
+    asOf: "2026年11月",
+    retired: "NBAでは2004-05シーズンにプレー・現在は宇都宮ブレックス所属",
+    titleSuffix: "日本人初のNBA選手",
+    hideSalary: true,
+    catchphrase:
+      "日本人として初めてNBAのコートに立った選手。2004年にフェニックス・サンズでデビューし、今も宇都宮ブレックスで現役を続けています。",
+    career: [
+      "1980年、神奈川県横浜市生まれ。秋田県の能代工業高校で、インターハイ・国体・ウインターカップの3冠を3年続けて達成しました。",
+      "高校卒業後はアメリカに渡り、ブリガムヤング大学ハワイ校でプレーしました。帰国後はトヨタ自動車でプレーし、その後ふたたびNBA入りを目指してアメリカへ渡りました。",
+      "2004年秋、フェニックス・サンズのトレーニングキャンプを経て開幕ロースターに入り、2004年11月3日のホークス戦で日本人初のNBAデビューを果たしました。",
+      "サンズでは4試合に出場し、同じ年の12月に契約を解除されました。その後もNBAの下部リーグなどで挑戦を続けています。",
+      "2008年に日本へ戻り、栃木ブレックス(現・宇都宮ブレックス)に入団しました。2026-27シーズンはブレックス在籍19シーズン目で、40代になった今も現役を続けています。",
+    ],
+    playStyle: [
+      "身長173cmのポイントガード。高校時代から、スピードのあるドリブルと視野の広いパスで知られてきました。",
+      "NBAでは4試合・合計17分の出場で7得点・3アシストを記録し、3ポイントも1本決めています。",
+      "日本人選手がNBAを目指す道を切り開いた存在で、2018年に渡邊雄太が2人目の日本人NBA選手になりました。",
+    ],
+    achievements: [
+      "日本人初のNBA選手(2004年11月3日、サンズでデビュー)",
+      "NBA通算4試合・7得点・4リバウンド・3アシスト",
+      "能代工業高校で3年連続3冠(インターハイ・国体・ウインターカップ)",
+      "宇都宮ブレックスに19シーズン在籍(2026-27シーズン時点)",
+    ],
+    faqs: [
+      { q: "日本人初のNBA選手は？", a: "田臥勇太です。2004年11月3日、フェニックス・サンズの一員としてホークス戦でデビューしました。" },
+      { q: "田臥勇太のNBAでの成績は？", a: "2004-05シーズンにサンズで4試合に出場し、合計7得点・4リバウンド・3アシストを記録しました。" },
+      { q: "田臥勇太は今どこでプレーしている？", a: "Bリーグの宇都宮ブレックスです。2026-27シーズンも契約を継続し、ブレックス在籍19シーズン目を迎えています。" },
+      { q: "2人目の日本人NBA選手は？", a: "渡邊雄太です。2018-19シーズンにメンフィス・グリズリーズでデビューしました。" },
+    ],
+    careerStats: yutaTabuseStats,
   },
 ];
