@@ -8,10 +8,14 @@ import { SiteHeader } from "@/components/site-header";
 import { HomeStage } from "@/components/home-stage";
 import { fetchIndexablePlayerIds } from "@/lib/player-indexable";
 import { SITE_INTRO } from "@/lib/site-intro";
+import { allSiteVideos, formatVideoDate, videoThumbnail } from "@/lib/videos";
 import { announcementExcerpt, fetchPublishedAnnouncements, formatAnnouncementDate } from "@/lib/announcements";
 
 // トップページに出すお知らせの件数(公開中のものを新しい順に)
 const HOME_ANNOUNCEMENT_LIMIT = 3;
+
+// トップページに出す新着動画の本数(/videos と同じ新しい順)
+const HOME_VIDEO_LIMIT = 3;
 
 // ホームの注目ニュース欄の文言。分析機能を追加したら「Featured Analysis」「今日の分析」などに差し替える。
 const HOME_COPY = {
@@ -42,6 +46,7 @@ export default async function Home() {
     ]);
 
   const featured = articles[0] ?? null;
+  const latestVideos = allSiteVideos().slice(0, HOME_VIDEO_LIMIT);
   const playerCount = indexablePlayerIds.length > 0 ? indexablePlayerIds.length : null;
 
   return (
@@ -128,6 +133,40 @@ export default async function Home() {
             )}
           </section>
         </div>
+
+        {/* 新着動画(公式YouTube)。押すと動画一覧(/videos)のその動画の位置へ移る。登録が無いときは出さない */}
+        {latestVideos.length > 0 && (
+          <section aria-labelledby="home-videos" className="home-cinema__panel mt-10">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <div>
+                <p className="home-cinema__label">Videos</p>
+                <h2 id="home-videos" className="home-cinema__serif mt-2 text-2xl font-bold text-[#fff8eb]">
+                  新着動画
+                </h2>
+              </div>
+              <Link href="/videos" className="home-cinema__more">
+                動画一覧 →
+              </Link>
+            </div>
+            <ul className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-3">
+              {latestVideos.map((v) => (
+                <li key={v.media.url}>
+                  <Link href={`/videos#video-${v.media.videoId}`} className="home-cinema__link group block">
+                    <span className="block aspect-video overflow-hidden bg-black">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={videoThumbnail(v.media)} alt="" loading="lazy" className="h-full w-full object-cover transition-opacity group-hover:opacity-85" />
+                    </span>
+                    <span className="mt-2 block text-xs tabular-nums text-[#e1bb71]">
+                      {v.media.shorts ? "Shorts" : "長尺"}
+                      {v.lang === "en" && "・English"}・{formatVideoDate(v.date)}
+                    </span>
+                    <span className="mt-0.5 block text-[15px] font-bold leading-6">{v.title}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {/* GUIDE「はじめに」への短い導入。文は元の文書「はじめに」から抜粋し、全文はGUIDEに載せる */}
         <section aria-labelledby="home-intro" className="home-cinema__intro mt-12">

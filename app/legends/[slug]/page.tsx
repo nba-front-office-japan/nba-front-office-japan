@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { PageShell } from "@/components/page-shell";
+import { PlayerMediaSection } from "@/components/videos/player-media-section";
+import { LEGEND_VIDEOS } from "@/lib/legends/videos";
 import { LegendStatsTable } from "@/components/legends/legend-stats-table";
 import { LeagueTitlesSection } from "@/components/legends/league-titles";
 import { leagueTitleSummary, leagueTitlesFor } from "@/lib/legends/titles";
@@ -306,6 +308,9 @@ export default async function LegendPage({ params, searchParams }: PageProps<"/l
               ))}
             </div>
           </section>
+
+          {/* 動画の登録(1本1行)は lib/legends/videos.ts。登録した選手だけ欄を出し、/videos にも並ぶ */}
+          <PlayerMediaSection videos={LEGEND_VIDEOS[l.slug]?.videos} columns={LEGEND_VIDEOS[l.slug]?.columns} className="mt-6" />
 
           <p className="mt-6 text-sm text-muted">
             シーズン別の成績は

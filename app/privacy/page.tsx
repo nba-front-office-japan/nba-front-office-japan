@@ -46,7 +46,7 @@ export default function PrivacyPage() {
       </LegalSection>
       <LegalSection heading="外部サービスの埋め込みについて">
         <p>
-          記事には、X（旧Twitter）・YouTube・Instagram・TikTokなどの投稿を埋め込む場合があります。
+          記事・選手ページ・動画一覧には、X（旧Twitter）・YouTube・Instagram・TikTokなどの投稿や動画（サムネイル画像を含む）を埋め込む場合があります。
           埋め込まれたコンテンツを表示すると、各サービスが利用者の情報を取得することがあります。取り扱いは各サービスのプライバシーポリシーに従います。
         </p>
       </LegalSection>

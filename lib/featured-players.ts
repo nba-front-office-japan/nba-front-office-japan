@@ -44,10 +44,11 @@ export type FeaturedPlayer = {
    */
   careerStats?: FeaturedCareerStats;
   /**
-   * Profile の「動画・コラム」に埋め込む動画のURL(YouTube の動画・Shorts。ニュースの関連メディアと同じ検証・表示)。
+   * Profile の「動画・コラム」に埋め込む動画(YouTube の動画・Shorts。ニュースの関連メディアと同じ検証・表示)。
+   * 1本1行で { url, title(YouTube の表示どおり), date(公開日 YYYY-MM-DD), lang?: "en" } と書くと、動画まとめページ(/videos)にも自動で並ぶ。
    * 縦型のショートは https://www.youtube.com/shorts/動画ID の形で書くと縦長で表示する。無い選手には欄を出さない
    */
-  videos?: string[];
+  videos?: VideoInput[];
   /** Profile の「動画・コラム」に出す関連コラムへのリンク */
   columns?: { title: string; href: string }[];
   /**
@@ -82,6 +83,7 @@ export type FeaturedCollegeSeason = {
 export type FeaturedCollegeStats = { seasons: FeaturedCollegeSeason[]; source: string };
 
 import type { LegendSeasonRow } from "@/lib/legends/calc";
+import type { VideoInput } from "@/lib/videos";
 import { FEATURED_PLAYERS_2 } from "@/lib/featured-players-2";
 import { FEATURED_PLAYERS_3 } from "@/lib/featured-players-3";
 import { FEATURED_PLAYERS_RETIRED } from "@/lib/featured-players-retired";
