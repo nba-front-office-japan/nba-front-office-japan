@@ -83,12 +83,11 @@ export const FEATURED_PLAYERS_RETIRED: FeaturedPlayer[] = [
       { q: "ヴィンス・カーターはスラムダンクコンテストで優勝した？", a: "はい。2000年のスラムダンクコンテストで優勝しました。" },
     ],
     careerStats: vinceCarterStats,
-    // 公式チャンネルの完成版(2026-11-16登録)。最初に登録した pW2NB1vtULY は YouTube 側で削除済み。
-    // 長尺の2本はタイトルを公開後に YouTube の表示と照合する(登録時点では非公開で確認できなかった)
+    // 公式チャンネルの完成版(2026-11-16登録)。最初に登録した pW2NB1vtULY は YouTube 側で削除済み
     videos: [
       { url: "https://www.youtube.com/shorts/rXRgPJ92l1c", title: "ヴィンス・カーター、あの写真が生まれた瞬間の映像", date: "2026-11-16" },
-      { url: "https://www.youtube.com/watch?v=rr7No26DAtY", title: "ヴィンス・カーター(長尺・日本語版)", date: "2026-11-18" },
-      { url: "https://www.youtube.com/watch?v=YB05hzyLIbI", title: "Vince Carter (full-length, English)", date: "2026-11-18", lang: "en" },
+      { url: "https://www.youtube.com/watch?v=rr7No26DAtY", title: "伝説の1枚は「何も起きていない」写真だった｜ヴィンス・カーター 1999年12月7日", date: "2026-11-18" },
+      { url: "https://www.youtube.com/watch?v=YB05hzyLIbI", title: "Vince Carter's Most Famous Photo Was a Complete Accident", date: "2026-11-18", lang: "en" },
     ],
     columns: [{ title: "ヴィンス・カーターの伝説の1枚はどのようにして生まれたか", href: "/news/9bc673ff-7656-4f50-942e-84ca0d111ed3" }],
   },

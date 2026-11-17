@@ -5,9 +5,8 @@ import type { VideoColumn, VideoInput } from "@/lib/videos";
 export const LEGEND_VIDEOS: Record<string, { videos: VideoInput[]; columns?: VideoColumn[] }> = {
   "michael-jordan": {
     videos: [
-      // タイトルは公開後に YouTube の表示と照合する(登録時点では非公開で確認できなかった)
-      { url: "https://www.youtube.com/shorts/IUrnSlKwA9w", title: "Failure", date: "2026-11-17" },
-      { url: "https://www.youtube.com/watch?v=Xc6055uBwaA", title: "「Jam」撮影の舞台裏", date: "2026-11-17" },
+      { url: "https://www.youtube.com/shorts/IUrnSlKwA9w", title: "「9,000本外した。だから成功する」ジョーダン伝説のCM｜1997年ナイキ「Failure」", date: "2026-11-17" },
+      { url: "https://www.youtube.com/watch?v=Xc6055uBwaA", title: "2人のマイケルが顔を合わせた舞台裏｜ジョーダン×ジャクソン「Jam」撮影現場", date: "2026-11-17" },
     ],
   },
 };
