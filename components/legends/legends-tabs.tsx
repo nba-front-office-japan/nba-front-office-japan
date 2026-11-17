@@ -1,9 +1,10 @@
 import Link from "next/link";
 
-// レジェンド枠のサブタブ(レジェンド一覧 / オールタイムリーダーズ)。大きめのボタンで、選択中は紺地に金の文字
+// レジェンド枠のサブタブ(レジェンド一覧 / オールタイムリーダーズ / 惜しくも75選外)。大きめのボタンで、選択中は紺地に金の文字
 const TABS = [
   { href: "/legends", key: "list", label: "レジェンド一覧", sub: "75周年記念チーム 76人" },
   { href: "/legends/leaders", key: "leaders", label: "オールタイムリーダーズ", sub: "歴代記録・ランキング" },
+  { href: "/legends/near-misses", key: "near", label: "惜しくも75選外", sub: "殿堂入りなどの名選手" },
 ] as const;
 
 export function LegendsTabs({ current }: { current: (typeof TABS)[number]["key"] }) {

@@ -51,7 +51,7 @@ export default async function FeaturedPlayersPage() {
           { id: "stars", title: "トップスター", lead: "MVP経験者やリーグの顔となるスーパースター。", players: stars },
           { id: "more", title: "注目の選手", lead: "オールスター選手や今後が楽しみな若手など。", players: others },
           { id: "japanese", title: "日本人選手", lead: "NBAに挑戦する日本人選手。", players: links.filter((l) => japanese.includes(l.featured)) },
-          { id: "retired", title: "引退した名選手", lead: "殿堂入りした往年の名選手。", players: retired },
+          { id: "retired", title: "引退した名選手", lead: "殿堂入りやタイトル獲得で歴史に名を残した往年の名選手。", players: retired },
         ]}
       />
     </PageShell>

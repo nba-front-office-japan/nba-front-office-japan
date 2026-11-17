@@ -5,6 +5,8 @@ import { SALARY_SEASONS, formatUsd, optionFor } from "@/lib/salary/types";
 import { formatUsdJa } from "@/lib/salary/lines";
 import { parseRelatedMediaUrl, type RelatedMedia } from "@/lib/news/related-media";
 import { MediaEmbed, MediaScriptLoaders } from "@/components/news/related-media";
+import { LeagueTitlesSection } from "@/components/legends/league-titles";
+import { leagueTitlesFor } from "@/lib/legends/titles";
 
 // 有名選手の選手ページ(Profile)に出す日本語の解説: 経歴・プレースタイル・主な実績・日本との関わり・年俸・よくある質問。
 // よくある質問は FAQPage の構造化データ(JSON-LD)にも出す。
@@ -83,6 +85,12 @@ export function FeaturedPlayerProfile({ featured, salary }: { featured: Featured
           ))}
         </ul>
       </Section>
+      {/* 引退した名選手(brefId あり)は、オールタイムリーダーズと同じデータから「獲得したリーグ1位」を出す(1度も無ければ出さない) */}
+      {featured.brefId && (
+        <div className="mt-2">
+          <LeagueTitlesSection titles={leagueTitlesFor(featured.brefId)} name={featured.nameJa} />
+        </div>
+      )}
       {(videos.length > 0 || columns.length > 0) && (
         <Section id="featured-media" eyebrow="Video & Column" title="動画・コラム">
           {videos.length > 0 && (

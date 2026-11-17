@@ -2,6 +2,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { LEADER_PLAYERS } from "@/lib/legends/leaders";
+import { ALL_FEATURED_PLAYERS, featuredPlayerFor } from "@/lib/featured-players";
 
 const plain = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "");
 
@@ -44,11 +45,20 @@ export const fetchLeaderPlayerInfo = unstable_cache(
         if (row?.full_name_ja) namesJa[id] = row.full_name_ja;
         continue;
       }
+      // 解説のある引退した名選手(lib/featured-players-retired.ts の brefId)は、選手ページへリンクし解説の日本語名で出す
+      const retired = ALL_FEATURED_PLAYERS.find((fp) => fp.brefId === id);
+      if (retired) {
+        const row = matched.find((r) => featuredPlayerFor(r.full_name) === retired);
+        if (row) links[id] = row.id;
+        namesJa[id] = retired.nameJa;
+        continue;
+      }
       const ja = [...new Set(matched.map((r) => r.full_name_ja).filter((v): v is string => !!v))];
       if (ja.length === 1) namesJa[id] = ja[0];
     }
     return { links, namesJa };
   },
-  ["legend-leader-player-info"],
+  // 引退した名選手へのリンクを足したときにキーを変えた(古いキャッシュを使わないため)
+  ["legend-leader-player-info-v2"],
   { revalidate: 86400 },
 );

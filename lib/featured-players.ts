@@ -50,6 +50,11 @@ export type FeaturedPlayer = {
   videos?: string[];
   /** Profile の「動画・コラム」に出す関連コラムへのリンク */
   columns?: { title: string; href: string }[];
+  /**
+   * Basketball-Reference の選手ID(引退した名選手)。Profile に「獲得したリーグ1位」の欄を出し、
+   * オールタイムリーダーズ(/legends/leaders)の表からこの選手ページへリンクする
+   */
+  brefId?: string;
 };
 
 /** 手で入れたNBAの通算成績(Basketball-Reference の Totals。移籍した年はチーム別の行と TOT 行) */
