@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { PageShell } from "@/components/page-shell";
 import { LegendStatsTable } from "@/components/legends/legend-stats-table";
+import { LeagueTitlesSection } from "@/components/legends/league-titles";
+import { leagueTitleSummary, leagueTitlesFor } from "@/lib/legends/titles";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { fetchActiveLegendPlayerIds } from "@/lib/legends/active-links";
 import { awardsPageHref } from "@/lib/legends/award-links";
@@ -197,6 +199,8 @@ function highlights(l: Legend, summaries: LegendAwardSummary[]): string[] {
     .filter(([, n]) => n > 0)
     .map(([label, n]) => `${label}${n}回`);
   if (titles.length > 0) lines.push(`主なタイトルは${titles.join("、")}。`);
+  const leagueTitles = leagueTitlesFor(String(l.personId));
+  if (leagueTitles.length > 0) lines.push(`シーズンのリーグ1位は${leagueTitleSummary(leagueTitles)}です。`);
   if ((LEGEND_PLAYOFFS_AVAILABLE || l.playoffsLoaded) && playoffs.length > 0 && po.ppg !== null) {
     lines.push(`プレーオフは${playoffs.length}シーズン・通算${po.career.gp}試合に出場し、平均${po.ppg.toFixed(1)}点を記録しました。`);
   }
@@ -288,6 +292,8 @@ export default async function LegendPage({ params, searchParams }: PageProps<"/l
           </section>
 
           <AwardsSection summaries={summaries} others={others} />
+
+          <LeagueTitlesSection titles={leagueTitlesFor(String(l.personId))} name={l.nameJa} />
 
           <section aria-labelledby="legend-highlights" className="mt-6 border border-line bg-surface p-5 sm:p-6">
             <Eyebrow>Highlights</Eyebrow>

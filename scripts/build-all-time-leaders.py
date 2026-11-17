@@ -41,6 +41,9 @@ FIRST_RECORDED = {
     ("stl", "ABA"): 1973,
     ("blk", "ABA"): 1973,
 }
+# 通算(合計・通算平均)だけ早く数え始める項目。ABA 1971-72 のブロックは Basketball-Reference に
+# アーティス・ギルモアの422本だけ記録がある(その年の1試合平均のリーダーは B-Ref にも無いので、年度別・シーズン最高には入れない)
+CAREER_FIRST_RECORDED = {("blk", "ABA"): 1972}
 # 規定の「または合計値」で使う列(Basketball-Reference の表に合わせる)
 OR_TOTAL_KEYS = {"pts": "pts", "trb": "trb", "ast": "ast", "stl": "stl", "blk": "blk", "x3p": "mp"}
 
@@ -53,6 +56,10 @@ def num(v: str | None) -> float | None:
 
 def recorded(stat: str, lg: str, season: int) -> bool:
     return season >= FIRST_RECORDED.get((stat, lg), 0)
+
+
+def career_recorded(stat: str, lg: str, season: int) -> bool:
+    return season >= CAREER_FIRST_RECORDED.get((stat, lg), FIRST_RECORDED.get((stat, lg), 0))
 
 
 # ---------------------------------------------------------------------------
@@ -273,7 +280,7 @@ def main() -> int:
         c["last"] = max(c.get("last", 0), r["season"])
         c.setdefault("lgs", set()).add(r["lg"])  # type: ignore[arg-type]
         for stat in PER_GAME:
-            if recorded(stat, r["lg"], r["season"]) and r[stat] is not None:
+            if career_recorded(stat, r["lg"], r["season"]) and r[stat] is not None:
                 c[stat] += r[stat]
                 c[f"{stat}_g"] += r["g"] or 0
         for k in ["fg", "fga", "x3pa"]:

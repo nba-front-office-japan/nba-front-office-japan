@@ -1,6 +1,6 @@
 // レジェンド枠(/legends)のデータ。NBA 75th Anniversary Team の76人(50 Greatest Players の50人を含む)。
 // 元データは data/legends/legends.json(scripts/build-legends-from-bref.py が公開データセット(Basketball-Reference の記録)から作る)。
-// 優勝・ファイナルMVP・オールスターMVPはスクリプト内の一覧(出典つき)から付ける。プレーオフ成績は未収録(playoffsAvailable=false)。
+// 優勝・ファイナルMVP・オールスターMVPはスクリプト内の一覧(出典つき)から付ける。プレーオフ成績は scripts/import-legend-playoffs.py で76人分を取り込み済み(playoffsLoaded=true)。
 // DB(player_stats)には入れない: /stats の一覧に昔のシーズンが混ざらないようにするため。
 //
 // 記録が無い項目(1973-74より前のスティール・ブロック・ターンオーバー、1979-80より前の3P、初期の出場時間など)は null。

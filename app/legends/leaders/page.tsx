@@ -272,7 +272,7 @@ export default async function LegendLeadersPage({ searchParams }: PageProps<"/le
         <li>・「LEGEND」はNBA75周年記念チームの選手で、名前からプロフィールへ移動できます。現役選手は選手ページへ移動できます。</li>
         <li>・通算記録・通算平均はNBAとABAの合計です。ABAの成績を含むシーズン・選手には「ABA」と表示しています。</li>
         <li>・年度別リーダーは「リーグ」でNBAだけ・ABAだけに絞り込めます（ABAは1967-68〜1975-76の9シーズン）。</li>
-        <li>・スティール・ブロックは1973-74（ABAは1972-73）以降、3PはNBAが1979-80以降に記録開始。記録の無い年の試合は平均の計算に入れていません。</li>
+        <li>・スティール・ブロックは1973-74（ABAは1972-73）以降、3PはNBAが1979-80以降に記録開始。記録の無い年の試合は平均の計算に入れていません。ただしABA 1971-72はアーティス・ギルモアのブロック（422本）だけ記録があるため、通算記録・通算平均に含めています。</li>
         <li>・規定（試合数・成功数など）は年代により異なり、Basketball-Referenceの基準に合わせています。途中移籍したシーズンは合計で表示しています。</li>
         <li>・出典: Basketball-Reference（公開データセット sumitrodatta/bball-reference-datasets）</li>
         <li>
