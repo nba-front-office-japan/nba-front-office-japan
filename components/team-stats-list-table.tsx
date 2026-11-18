@@ -18,8 +18,12 @@ const SORTED_COLUMN_CLASS = "font-extrabold text-[#b00020]";
 const perGame = (total: number, games: number) => (games > 0 ? total / games : null);
 const pct = (made: number, attempted: number) => (attempted > 0 ? (made / attempted) * 100 : null);
 
-function statColumns(side: (r: TeamStatsListRow) => TeamStatTotals, prefix: string): Column[] {
-  return [
+const ZERO: TeamStatTotals = { pts: 0, fgm: 0, fga: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0, oreb: 0, dreb: 0, reb: 0, ast: 0, stl: 0, blk: 0, tov: 0, pf: 0 };
+
+function statColumns(pick: (r: TeamStatsListRow) => TeamStatTotals | null, prefix: string): Column[] {
+  // 相手チームの合計が無いシーズン(選手成績の合算)は、相手側の列を「-」にする
+  const side = (r: TeamStatsListRow) => pick(r) ?? ZERO;
+  const cols: Column[] = [
     { key: `${prefix}fgPct`, label: "FG%", title: "フィールドゴール成功率", value: (r) => pct(side(r).fgm, side(r).fga), digits: 1, pct: true },
     { key: `${prefix}fg3m`, label: "3PM", title: "3ポイント成功数", value: (r) => perGame(side(r).fg3m, r.games), digits: 1 },
     { key: `${prefix}threePct`, label: "3P%", title: "3ポイント成功率", value: (r) => pct(side(r).fg3m, side(r).fg3a), digits: 1, pct: true },
@@ -33,6 +37,7 @@ function statColumns(side: (r: TeamStatsListRow) => TeamStatTotals, prefix: stri
     { key: `${prefix}tov`, label: "TOV", title: "ターンオーバー", value: (r) => perGame(side(r).tov, r.games), digits: 1 },
     { key: `${prefix}pf`, label: "PF", title: "ファウル", value: (r) => perGame(side(r).pf, r.games), digits: 1 },
   ];
+  return cols.map((c) => ({ ...c, value: (r: TeamStatsListRow) => (pick(r) ? c.value(r) : null) }));
 }
 
 const RECORD_COLUMNS: Column[] = [
@@ -45,13 +50,13 @@ const COLUMNS: Record<View, Column[]> = {
   own: [
     ...RECORD_COLUMNS,
     { key: "pts", label: "PTS", title: "得点", value: (r) => perGame(r.own.pts, r.games), digits: 1 },
-    { key: "oppPts", label: "OPP", title: "失点", value: (r) => perGame(r.opponent.pts, r.games), digits: 1 },
-    { key: "diff", label: "DIFF", title: "得失点差(得点 − 失点)", value: (r) => perGame(r.own.pts - r.opponent.pts, r.games), digits: 1, signed: true },
+    { key: "oppPts", label: "OPP", title: "失点", value: (r) => (r.opponent ? perGame(r.opponent.pts, r.games) : null), digits: 1 },
+    { key: "diff", label: "DIFF", title: "得失点差(得点 − 失点)", value: (r) => (r.opponent ? perGame(r.own.pts - r.opponent.pts, r.games) : null), digits: 1, signed: true },
     ...statColumns((r) => r.own, ""),
   ],
   opponent: [
     ...RECORD_COLUMNS,
-    { key: "oppPts", label: "OPP PTS", title: "失点(相手の得点)", value: (r) => perGame(r.opponent.pts, r.games), digits: 1 },
+    { key: "oppPts", label: "OPP PTS", title: "失点(相手の得点)", value: (r) => (r.opponent ? perGame(r.opponent.pts, r.games) : null), digits: 1 },
     ...statColumns((r) => r.opponent, "opp_"),
   ],
 };
@@ -64,7 +69,7 @@ function formatValue(col: Column, value: number | null): string {
   return text;
 }
 
-export function TeamStatsListTable({ rows }: { rows: TeamStatsListRow[] }) {
+export function TeamStatsListTable({ rows, hasOpponent = true }: { rows: TeamStatsListRow[]; hasOpponent?: boolean }) {
   const [view, setView] = useState<View>("own");
   const [sort, setSort] = useState<{ key: string; dir: "asc" | "desc" }>({ key: "pts", dir: "desc" });
   const columns = COLUMNS[view];
@@ -101,7 +106,8 @@ export function TeamStatsListTable({ rows }: { rows: TeamStatsListRow[] }) {
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
-        <div className="flex gap-2" role="group" aria-label="表示する成績">
+        {/* 相手チームの合計が無いシーズン(選手成績の合算)は切り替えを出さない */}
+        <div className={`flex gap-2 ${hasOpponent ? "" : "hidden"}`} role="group" aria-label="表示する成績">
           <button type="button" aria-pressed={view === "own"} onClick={() => switchView("own")} className={tabClass(view === "own")}>
             チームの成績
           </button>

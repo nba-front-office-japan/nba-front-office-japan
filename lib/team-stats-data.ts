@@ -38,15 +38,18 @@ export interface TeamStatsListRow {
   abbreviation: string;
   nameJa: string;
   games: number;
-  wins: number;
-  losses: number;
+  // 勝敗・相手チームの合計は試合のボックススコアから集計したシーズンだけ(選手成績の合算のシーズンは null)
+  wins: number | null;
+  losses: number | null;
   // チーム自身の合計と、相手チームの合計(失点 = opponent.pts)
   own: TeamStatTotals;
-  opponent: TeamStatTotals;
+  opponent: TeamStatTotals | null;
 }
 
 export interface TeamStatsList {
   rows: TeamStatsListRow[];
+  // box: 試合のボックススコアのチーム合計から集計 / players: 選手のシーズン成績(player_stats)の合算
+  source: "box" | "players";
   gamesCounted: number;
   lastGameDate: string | null;
   // チーム合計がそろっていないため数えなかった試合
@@ -143,12 +146,76 @@ export async function fetchTeamStatsList(supabase: ServerClient, season: number)
     ];
     for (const [team, own, opp] of sides) {
       team.games++;
-      if ((own.pts ?? 0) > (opp.pts ?? 0)) team.wins++;
-      else team.losses++;
+      if ((own.pts ?? 0) > (opp.pts ?? 0)) team.wins = (team.wins ?? 0) + 1;
+      else team.losses = (team.losses ?? 0) + 1;
       addTotals(team.own, own);
-      addTotals(team.opponent, opp);
+      if (team.opponent) addTotals(team.opponent, opp);
     }
   }
 
-  return { rows: [...rowsById.values()], gamesCounted, lastGameDate, incompleteGames };
+  return { rows: [...rowsById.values()], source: "box", gamesCounted, lastGameDate, incompleteGames };
+}
+
+// 選手成績の合算で表示するシーズン。チームの試合数はレギュラーシーズンの全試合数(全チーム同じ)。
+// 試合のボックススコアが無いシーズンのため、勝敗・失点・相手チームの成績は出さない。
+export const PLAYER_TOTALS_SEASONS: Record<number, { games: number }> = {
+  2025: { games: 82 },
+};
+
+type PlayerStatsSumRow = Pick<
+  Database["public"]["Tables"]["player_stats"]["Row"],
+  | "team_id" | "points" | "field_goals_made" | "field_goals_attempted" | "three_pointers_made" | "three_pointers_attempted"
+  | "free_throws_made" | "free_throws_attempted" | "rebounds_offensive" | "rebounds_defensive" | "rebounds_total"
+  | "assists" | "steals" | "blocks" | "turnovers" | "personal_fouls"
+>;
+
+// 選手のシーズン成績(player_stats)を、チーム別の行(team_id がある行。シーズン合計の TOT 行は除く)で足してチームの合計にする
+export async function fetchTeamStatsFromPlayerTotals(supabase: ServerClient, season: number): Promise<TeamStatsList> {
+  const config = PLAYER_TOTALS_SEASONS[season];
+  if (!config) throw new Error(`${season}年のチームスタッツは選手成績の合算に対応していません。`);
+  const [teamsResult, statsResult] = await Promise.all([
+    supabase.from("teams").select("id, abbreviation, name").order("abbreviation"),
+    fetchAllRows<PlayerStatsSumRow>((from, to) =>
+      supabase
+        .from("player_stats")
+        .select(
+          "team_id, points, field_goals_made, field_goals_attempted, three_pointers_made, three_pointers_attempted, free_throws_made, free_throws_attempted, rebounds_offensive, rebounds_defensive, rebounds_total, assists, steals, blocks, turnovers, personal_fouls"
+        )
+        .eq("season", season)
+        .eq("season_type", "regular_season")
+        .not("team_id", "is", null)
+        .order("id")
+        .range(from, to)
+    ),
+  ]);
+  if (teamsResult.error) throw new Error(`チーム情報の取得に失敗しました: ${teamsResult.error.message}`);
+  if (statsResult.error) throw new Error(`選手成績の取得に失敗しました: ${statsResult.error.message}`);
+
+  const rowsById = new Map<string, TeamStatsListRow>(
+    (teamsResult.data ?? []).map((t) => [
+      t.id,
+      { teamId: t.id, abbreviation: t.abbreviation, nameJa: teamNameJa(t.abbreviation) ?? t.name, games: config.games, wins: null, losses: null, own: zeroTotals(), opponent: null },
+    ])
+  );
+  for (const r of statsResult.data) {
+    const team = r.team_id ? rowsById.get(r.team_id) : undefined;
+    if (!team) continue;
+    const t = team.own;
+    t.pts += r.points;
+    t.fgm += r.field_goals_made;
+    t.fga += r.field_goals_attempted;
+    t.fg3m += r.three_pointers_made;
+    t.fg3a += r.three_pointers_attempted;
+    t.ftm += r.free_throws_made;
+    t.fta += r.free_throws_attempted;
+    t.oreb += r.rebounds_offensive;
+    t.dreb += r.rebounds_defensive;
+    t.reb += r.rebounds_total;
+    t.ast += r.assists;
+    t.stl += r.steals;
+    t.blk += r.blocks;
+    t.tov += r.turnovers;
+    t.pf += r.personal_fouls;
+  }
+  return { rows: [...rowsById.values()], source: "players", gamesCounted: 0, lastGameDate: null, incompleteGames: 0 };
 }
