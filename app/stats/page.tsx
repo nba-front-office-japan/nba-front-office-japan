@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { BriefSheet, BriefSide } from "@/components/brief-sheet";
 import { PageShell } from "@/components/page-shell";
+import { StatsKindTabs } from "@/components/stats-kind-tabs";
 import { StatsListFilters } from "@/components/stats-list-filters";
 import { StatsListTable } from "@/components/stats-list-table";
 import { CURRENT_STATS_SEASON, fetchEnglishNameMatchIds, fetchStatsPage, fetchStatsSeasons, isCurrentStatsSeason, parseStatsQuery } from "@/lib/stats-list";
@@ -116,6 +117,7 @@ export default async function StatsPage({ searchParams }: PageProps<"/stats">) {
           </>
         }
       >
+        <StatsKindTabs active="players" />
         <StatsListFilters query={data.query} latestSeason={data.latestSeason} seasons={data.seasons} teams={data.teams} />
         <StatsListTable query={data.query} latestSeason={data.latestSeason} result={data.result} />
         {/* 収録範囲・複数チームの扱いの注意書き(ページ最下部) */}
