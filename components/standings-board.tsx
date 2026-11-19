@@ -15,9 +15,11 @@ const DIVISION_LABEL: Record<string, string> = {
   Northwest: "ノースウェスト",
   Pacific: "パシフィック",
   Southwest: "サウスウェスト",
+  // 2003-04 まで(過去の順位表)
+  Midwest: "ミッドウェスト",
 };
 
-const DIVISION_ORDER = ["Atlantic", "Central", "Southeast", "Northwest", "Pacific", "Southwest"];
+const DIVISION_ORDER = ["Atlantic", "Central", "Southeast", "Northwest", "Midwest", "Pacific", "Southwest"];
 
 function formatPct(value: number | null): string {
   return value === null ? "—" : value.toFixed(3).replace(/^0/, "");
@@ -141,7 +143,7 @@ export function StandingsBoard({ rows }: { rows: StandingRow[] }) {
       )}
       {view === "division" && (
         <div className="grid grid-cols-1 gap-6">
-          {DIVISION_ORDER.map((division) => (
+          {DIVISION_ORDER.filter((division) => rows.some((row) => row.division === division)).map((division) => (
             <StandingTable key={division} label={DIVISION_LABEL[division] ?? division} rows={rows.filter((row) => row.division === division)} />
           ))}
         </div>

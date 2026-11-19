@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { BriefSheet, BriefSide } from "@/components/brief-sheet";
 import { PageShell } from "@/components/page-shell";
+import { SeasonSelect } from "@/components/season-select";
 import { StandingsBoard } from "@/components/standings-board";
+import { standingsSeasonOptions } from "@/lib/historical-standings";
 import { ROSTER_SEASON, seasonLabel } from "@/lib/seasons";
 import { fetchStandings } from "@/lib/standings-data";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -45,6 +47,7 @@ export default async function StandingsPage() {
           ) : undefined
         }
       >
+        <SeasonSelect season={ROSTER_SEASON} options={standingsSeasonOptions()} />
         {error ? (
           <p className="border-l-4 border-red-500 bg-red-50 px-4 py-3 text-sm text-red-800 dark:bg-red-950/30 dark:text-red-200">{error}</p>
         ) : !data || !hasRows ? (

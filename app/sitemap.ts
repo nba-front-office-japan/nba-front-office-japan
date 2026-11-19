@@ -1,3 +1,4 @@
+import { historicalStandingsSeasons, seasonSlug } from "@/lib/historical-standings";
 import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/site";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -46,6 +47,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // レジェンド選手(現役は既存の選手ページへ転送するので載せない)
   for (const l of LEGENDS) {
     if (!l.isActive) entries.push({ url: `${SITE_URL}/legends/${l.slug}` });
+  }
+  // 過去シーズンの順位表
+  for (const season of historicalStandingsSeasons()) {
+    entries.push({ url: `${SITE_URL}/standings/${seasonSlug(season)}` });
   }
   for (const year of PAST_DRAFT_YEARS) {
     entries.push({ url: `${SITE_URL}/draft/${year}` });

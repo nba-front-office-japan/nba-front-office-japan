@@ -564,6 +564,39 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["games"]["Insert"]>;
         Relationships: [];
       };
+      // 過去シーズンの試合結果(過去の順位表用)。supabase/migrations/20261119020000_historical_games.sql
+      historical_games: {
+        Row: {
+          id: string;
+          source: "balldontlie";
+          source_game_id: number;
+          season: number;
+          postseason: boolean;
+          game_date: string;
+          home_team_id: string;
+          away_team_id: string;
+          home_score: number;
+          away_score: number;
+          period: number | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          source?: "balldontlie";
+          source_game_id: number;
+          season: number;
+          postseason?: boolean;
+          game_date: string;
+          home_team_id: string;
+          away_team_id: string;
+          home_score: number;
+          away_score: number;
+          period?: number | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["historical_games"]["Insert"]>;
+        Relationships: [];
+      };
       nba_season_awards: {
         Row: {
           id: string;
