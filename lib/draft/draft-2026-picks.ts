@@ -30,7 +30,7 @@ export const DRAFT_2026_PICKS: DraftPick[] = [
     round: 1,
     pickInRound: 1,
     overallPick: 1,
-    playerNameJa: "AJ・ディバンサ",
+    playerNameJa: "AJ・ディバンツァ",
     playerNameEn: "AJ Dybantsa",
     teamDisplay: "Washington Wizards",
     teamRaw: "ワシントン・ウィザーズ",

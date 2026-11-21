@@ -127,6 +127,20 @@ export function FeaturedPlayerProfile({ featured, salary }: { featured: Featured
           </p>
         </Section>
       )}
+      {featured.related && featured.related.length > 0 && (
+        <Section id="featured-related" eyebrow="Related" title="関連する選手">
+          <ul className="divide-y divide-line text-sm">
+            {featured.related.map((r) => (
+              <li key={r.href} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-2 first:pt-0 last:pb-0">
+                <Link href={r.href} className="font-bold text-blue underline-offset-2 hover:underline">
+                  {r.name} ›
+                </Link>
+                <span className="text-xs text-muted">{r.note}</span>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
       <Section id="featured-faq" eyebrow="FAQ" title="よくある質問">
         <dl className="space-y-4">
           {faqs.map((f) => (
