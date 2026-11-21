@@ -121,6 +121,8 @@ export const GUIDE_PAGES: Record<string, string> = {
   サラリーキャップ迂回に関する処分: "/guide/salary-cap-circumvention",
   // 「NBA用語辞典」(URL はもとの用語一覧と同じ /guide/glossary)と、難易度(初級・中級・上級)を選んだ状態の用語集トップ
   NBA用語辞典: "/guide/glossary",
+  // 「観る・読む」(ドキュメンタリー・映画・本。作品データは lib/watch-read.ts)
+  "観る・読むNBA": "/guide/watch-read",
 初級: "/guide/glossary?level=beginner",
   中級: "/guide/glossary?level=intermediate",
   上級: "/guide/glossary?level=advanced",

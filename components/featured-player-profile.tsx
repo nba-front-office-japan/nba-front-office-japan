@@ -6,6 +6,7 @@ import { formatUsdJa } from "@/lib/salary/lines";
 import { PlayerMediaSection } from "@/components/videos/player-media-section";
 import { LeagueTitlesSection } from "@/components/legends/league-titles";
 import { leagueTitlesFor } from "@/lib/legends/titles";
+import { worksForFeatured } from "@/lib/watch-read";
 
 // 有名選手の選手ページ(Profile)に出す日本語の解説: 経歴・プレースタイル・主な実績・日本との関わり・年俸・よくある質問。
 // よくある質問は FAQPage の構造化データ(JSON-LD)にも出す。
@@ -87,7 +88,7 @@ export function FeaturedPlayerProfile({ featured, salary }: { featured: Featured
           <LeagueTitlesSection titles={leagueTitlesFor(featured.brefId)} name={featured.nameJa} />
         </div>
       )}
-      <PlayerMediaSection videos={featured.videos} columns={featured.columns} />
+      <PlayerMediaSection videos={featured.videos} columns={featured.columns} works={worksForFeatured(featured.name)} />
       {featured.japan && featured.japan.length > 0 && (
         <Section id="featured-japan" eyebrow="Japan" title="日本との関わり">
           <Paragraphs items={featured.japan} />
